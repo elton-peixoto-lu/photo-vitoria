@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaHeart, FaUserCircle } from 'react-icons/fa';
-import { ActionButtons, CONTATO } from '../components/ContatoInfo.jsx';
+import { CONTATO } from '../components/ContatoInfo.jsx';
 import ImageWithBlur from '../components/ImageWithBlur';
 
 const DEPOIMENTOS = [
@@ -103,7 +103,7 @@ export default function Estudio() {
             {/* Grid de fotos, mapa e depoimentos */}
             {destaques.length > 0 && (
               <div className="flex-1 flex flex-col justify-center w-full">
-                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8 max-w-7xl mx-auto">
+                <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 max-w-7xl mx-auto">
                   {destaques.slice(0, 8).map((foto, i) => (
                     <div className="relative" key={i}>
                       <ImageWithBlur src={foto} alt={`Destaque ${i + 1}`} className="rounded-lg shadow-md w-full h-48 object-cover opacity-80 transition duration-500" />

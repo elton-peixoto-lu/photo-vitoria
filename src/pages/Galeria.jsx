@@ -105,7 +105,7 @@ export default function Galeria() {
                 <p className="text-pink-300 text-center">Nenhuma foto encontrada.</p>
               ) : (
                 <div
-                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4 w-full"
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 w-full"
                 >
                   {(fotosPorAlbum[album.key] || []).map((foto, idx) => {
                     const url = typeof foto === 'string' ? foto : foto.url;
@@ -146,18 +146,13 @@ export default function Galeria() {
           >
             <button className="absolute top-3 right-3 text-white/80 hover:text-pink-300 text-4xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={closeModal} aria-label="Fechar">&times;</button>
             <button className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={prevFoto} aria-label="Anterior">&#60;</button>
-            <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative">
+            <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative max-w-xs sm:max-w-2xl md:max-w-3xl mx-auto">
               <ImageWithBlur
                 src={fotosPorAlbum[modal.album][modal.index]}
                 alt={`Foto ${modal.index + 1}`}
                 className="rounded-2xl shadow max-h-[80vh] max-w-full object-contain bg-white transition-all duration-300"
                 style={{ userSelect: 'none' }}
                 draggable={false}
-              />
-              <ActionButtons
-                show={true}
-                contatos={CONTATO}
-                className="transition-opacity duration-300 opacity-0 hover:opacity-100 focus:opacity-100 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30"
               />
             </div>
             <button className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={nextFoto} aria-label="Próxima">&#62;</button>

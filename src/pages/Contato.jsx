@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { FaWhatsapp, FaEnvelope, FaInstagram } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
-import { CONTATO, BotaoInstagram, BotaoWhatsapp, BotaoEmail, ActionButtons } from '../components/ContatoInfo.jsx';
+import { CONTATO, BotaoInstagram, BotaoWhatsapp, BotaoEmail } from '../components/ContatoInfo.jsx';
 import ImageWithBlur from '../components/ImageWithBlur';
 
 function useGridFotos() {
@@ -112,7 +112,7 @@ export default function Contato() {
             </motion.div>
             {/* Após o título/logo e antes do restante do conteúdo: */}
             {gridFotos.length > 0 && (
-              <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8 max-w-7xl mx-auto">
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 max-w-7xl mx-auto">
                 {gridFotos.map((foto, i) => (
                   <div className="relative" key={i}>
                     <ImageWithBlur src={foto} alt={`Destaque ${i + 1}`} className="rounded-lg shadow-md w-full h-48 object-cover" />
