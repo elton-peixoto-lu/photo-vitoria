@@ -190,7 +190,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             {fotos.map((url, i) => (
               <div
                 key={i}
-                className="flex items-center justify-center w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen relative group px-2"
+                className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
                 tabIndex={0}
               >
                 {/* Blur up: imagem borrada de fundo */}
@@ -206,14 +206,21 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 <img
                   src={url}
                   alt={`Foto ${i + 1}`}
-                  className="w-full h-full object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700"
-                  style={{ margin: '0 auto', background: '#fff', opacity: sizes[i]?.loaded ? 1 : 0, zIndex: 2 }}
+                  className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
+                  style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
                   onContextMenu={e => e.preventDefault()}
                   onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
                   draggable={false}
                 />
-                {/* Marcas d'água visuais sobre a foto, espalhadas */}
-                <div className="absolute inset-0 z-20 pointer-events-none select-none">
+                {/* Botões de ação: abaixo da imagem no mobile, centralizados sobre a foto no desktop */}
+                <div className="flex gap-3 mt-3 md:mt-0 md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-30">
+                  <ActionButtons
+                    contatos={CONTATO}
+                    className="text-2xl md:text-3xl"
+                  />
+                </div>
+                {/* Marcas d'água visuais sobre a foto, espalhadas (desktop apenas) */}
+                <div className="absolute inset-0 z-20 pointer-events-none select-none hidden md:block">
                   {[...Array(7)].map((_, j) => (
                     <img
                       key={j}
@@ -229,11 +236,6 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                     />
                   ))}
                 </div>
-                {/* Botões de ação sobre a imagem, aparecem com fade ao hover/focus no slide inteiro */}
-                <ActionButtons
-                  contatos={CONTATO}
-                  className="opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30"
-                />
               </div>
             ))}
           </Slider>
