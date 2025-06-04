@@ -1,0 +1,18 @@
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%);
+  font-family: 'Inter', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove estilos antigos do Vite/React default */
+.logo, .card, .read-the-docs {
+  display: none !important;
+}

@@ -1,0 +1,24 @@
+# Node
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+# Vite/React
+.vite/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Mac
+.DS_Store
+# VSCode
+.vscode/
+# Test/coverage
+coverage/
+# Render/Vercel
+.vercel/
+.render/
+# Outros
+*.log

@@ -1,0 +1,170 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { FaSearch } from 'react-icons/fa';
+import { ActionButtons, CONTATO } from '../components/ContatoInfo';
+import ImageWithBlur from '../components/ImageWithBlur';
+
+const ALBUNS = [
+  { key: 'casamentos', label: 'Casamentos' },
+  { key: 'infantil', label: 'Infantil' },
+  { key: 'femininos', label: 'Femininos' },
+  { key: 'pre-weding', label: 'Pre-Weding' },
+];
+
+export default function Galeria() {
+  const [fotosPorAlbum, setFotosPorAlbum] = useState({});
+  const [carregando, setCarregando] = useState(true);
+  const [modal, setModal] = useState({ album: null, index: null });
+
+  useEffect(() => {
+    async function fetchAll() {
+      setCarregando(true);
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const result = {};
+      for (const album of ALBUNS) {
+        try {
+          const res = await fetch(`${apiUrl}/galeria/${album.key}`);
+          const arr = await res.json();
+          result[album.key] = arr;
+        } catch { result[album.key] = []; }
+      }
+      setFotosPorAlbum(result);
+      setCarregando(false);
+    }
+    fetchAll();
+  }, []);
+
+  function openModal(album, index) { setModal({ album, index }); }
+  function closeModal() { setModal({ album: null, index: null }); }
+  function prevFoto() {
+    setModal(m => ({
+      album: m.album,
+      index: m.index === 0 ? (fotosPorAlbum[m.album]?.length || 1) - 1 : m.index - 1
+    }));
+  }
+  function nextFoto() {
+    setModal(m => ({
+      album: m.album,
+      index: m.index === (fotosPorAlbum[m.album]?.length || 1) - 1 ? 0 : m.index + 1
+    }));
+  }
+
+  return (
+    <div className="relative min-h-screen flex flex-col w-full">
+      {/* Fundo gradiente + blur de imagem */}
+      <div className="absolute inset-0 z-0 w-full h-full min-h-screen">
+        <div className="w-full h-full min-h-screen absolute inset-0" style={{
+          background: 'linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%)',
+          opacity: 0.7,
+        }} />
+      </div>
+      {/* Marcas d'água decorativas sobre o conteúdo (glassmorphism) */}
+      <div className="absolute inset-0 z-30 pointer-events-none select-none">
+        {[...Array(5)].map((_, i) => (
+          <img
+            key={i}
+            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+            alt="Marca d'água logo"
+            className="absolute opacity-5 w-32 md:w-40"
+            style={{
+              top: `${10 + 16 * i}%`,
+              left: `${i % 2 === 0 ? 10 : 60}%`,
+              transform: `rotate(${i % 2 === 0 ? 8 : -12}deg)`
+            }}
+            draggable={false}
+          />
+        ))}
+      </div>
+      {/* Bloco principal centralizado */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
+        <div className="w-full max-w-7xl flex-1 flex flex-col items-center justify-center px-4 md:px-8">
+          {/* Grids por álbum */}
+          {!carregando && ALBUNS.map(album => (
+            <section key={album.key} className="w-full mb-16 relative flex flex-col items-center justify-center">
+              {/* Fundo blur da sessão com as fotos do álbum */}
+              {(fotosPorAlbum[album.key]?.length > 0) && (
+                <div className="absolute inset-0 w-full h-full z-0 rounded-2xl overflow-hidden" style={{ pointerEvents: 'none' }}>
+                  <div className="flex w-full h-full">
+                    {fotosPorAlbum[album.key].slice(0, 3).map((foto, idx) => (
+                      <div key={idx} style={{
+                        flex: 1,
+                        backgroundImage: `url(${foto})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'blur(24px) brightness(0.7)',
+                        opacity: 0.18 + 0.08 * idx,
+                        minHeight: 140,
+                      }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Título da sessão */}
+              <h2 className="relative z-10 text-2xl md:text-3xl font-extrabold text-pink-600 mb-6 mt-8 text-left w-full pl-4 drop-shadow bg-white/80 rounded-lg inline-block px-6 py-2 shadow-lg border-l-4 border-pink-300 font-sans">{album.label}</h2>
+              {(fotosPorAlbum[album.key]?.length === 0) ? (
+                <p className="text-pink-300 text-center">Nenhuma foto encontrada.</p>
+              ) : (
+                <div
+                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4 w-full"
+                >
+                  {(fotosPorAlbum[album.key] || []).map((foto, idx) => {
+                    const url = typeof foto === 'string' ? foto : foto.url;
+                    const nome = typeof foto === 'string' ? `Foto ${idx + 1}` : (foto.nome || `Foto ${idx + 1}`);
+                    return (
+                      <button
+                        key={url ? `${url}-${idx}` : idx}
+                        className="group relative aspect-[4/5] bg-pink-100/30 rounded-lg overflow-hidden shadow hover:scale-105 transition-transform"
+                        onClick={() => setModal({ album: album.key, index: idx })}
+                        aria-label={`Abrir foto ${idx + 1} do álbum ${album.label}`}
+                      >
+                        <ImageWithBlur
+                          src={url}
+                          alt={nome}
+                          className="object-cover w-full h-full group-hover:brightness-90 transition"
+                          loading="lazy"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ))}
+          {carregando && <div className="text-xl text-gray-400 py-12">Carregando galeria...</div>}
+        </div>
+      </div>
+      {/* Modal de zoom/detalhe */}
+      {modal.album && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 transition-all duration-300" onClick={closeModal}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.25 }}
+            className="relative max-w-3xl w-full flex flex-col items-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <button className="absolute top-3 right-3 text-white/80 hover:text-pink-300 text-4xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={closeModal} aria-label="Fechar">&times;</button>
+            <button className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={prevFoto} aria-label="Anterior">&#60;</button>
+            <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative">
+              <ImageWithBlur
+                src={fotosPorAlbum[modal.album][modal.index]}
+                alt={`Foto ${modal.index + 1}`}
+                className="rounded-2xl shadow max-h-[80vh] max-w-full object-contain bg-white transition-all duration-300"
+                style={{ userSelect: 'none' }}
+                draggable={false}
+              />
+              <ActionButtons
+                show={true}
+                contatos={CONTATO}
+                className="transition-opacity duration-300 opacity-0 hover:opacity-100 focus:opacity-100 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30"
+              />
+            </div>
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={nextFoto} aria-label="Próxima">&#62;</button>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+} 
+
