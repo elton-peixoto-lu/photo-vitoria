@@ -44,7 +44,24 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col w-full">
+    <div className="relative min-h-screen flex flex-col w-full md:ml-40">
+      {/* Fundo blur absoluto com uma das fotos de destaque */}
+      {quatro[0] && (
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundImage: `url(${quatro[0]})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(32px) brightness(0.7)',
+              opacity: 0.7,
+            }}
+            className="w-full h-full"
+          />
+        </div>
+      )}
       {/* HERO de boas-vindas com logo em grid de marca d'água */}
       <section className="relative w-full flex flex-col items-center justify-center min-h-[50vh] py-8 md:py-16 z-10">
         {/* Grid de logos no fundo, menos logos no mobile */}
@@ -87,9 +104,9 @@ export default function Home() {
         </div>
       </section>
       {/* Grid de fotos de destaque centralizado e responsivo */}
-      <section className="flex flex-col items-center justify-center w-full z-10 py-8 md:py-12 px-2">
+      <section className="flex flex-col items-center justify-center w-full z-10 py-8 md:py-12">
         <h2 className="text-xl md:text-3xl font-bold text-pink-400 mb-6 md:mb-8 text-center drop-shadow">Destaques recentes</h2>
-        <div className="w-full max-w-4xl md:max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="w-full max-w-4xl md:max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 px-2 md:px-8">
           {quatro.map((foto, i) => (
             <div key={i} className="relative w-full h-60 flex items-center justify-center">
               <ImageWithBlur
