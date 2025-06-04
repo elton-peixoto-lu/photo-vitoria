@@ -45,77 +45,64 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen flex flex-col w-full">
-      {/* Fundo gradiente + blur de imagem */}
-      <div className="absolute inset-0 z-0 w-full h-full min-h-screen">
-        <div className="w-full h-full min-h-screen absolute inset-0" style={{
-          background: 'linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%)',
-          opacity: 0.7,
-        }} />
-        {quatro.length === 4 && (
-          <div className="w-full h-full min-h-screen absolute inset-0 flex">
-            {quatro.map((foto, i) => (
-              <div key={i} style={{
-                flex: 1,
-                backgroundImage: `url(${foto})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                filter: 'blur(32px) brightness(0.7)',
-                opacity: 0.8,
-              }} />
-            ))}
-          </div>
-        )}
-      </div>
-      {/* Marcas d'água decorativas sobre o conteúdo (glassmorphism) */}
-      <div className="absolute inset-0 z-30 pointer-events-none select-none">
-        {[...Array(5)].map((_, i) => (
+      {/* HERO de boas-vindas com logo em grid de marca d'água */}
+      <section className="relative w-full flex flex-col items-center justify-center min-h-[60vh] py-16 z-10">
+        {/* Grid de logos no fundo */}
+        <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none flex flex-wrap opacity-20">
+          {[...Array(5)].map((_, row) => (
+            <div key={row} className="flex flex-1 w-full h-1/5 justify-center items-center">
+              {[...Array(6)].map((_, col) => (
+                <img
+                  key={col}
+                  src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                  alt="Logo Vitória Fotografia"
+                  className="w-24 md:w-32 opacity-10 mx-4 my-2"
+                  style={{ filter: 'blur(0.5px)' }}
+                  draggable={false}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+        {/* Texto de boas-vindas centralizado */}
+        <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-2xl mx-auto py-12 px-4">
           <img
-            key={i}
             src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
-            alt="Marca d'água logo"
-            className="absolute opacity-5 w-32 md:w-40"
-            style={{
-              top: `${10 + 16 * i}%`,
-              left: `${i % 2 === 0 ? 10 : 60}%`,
-              transform: `rotate(${i % 2 === 0 ? 8 : -12}deg)`
-            }}
+            alt="Logo Vitória Fotografia"
+            className="w-40 md:w-56 mb-6 drop-shadow-xl"
             draggable={false}
+            style={{ userSelect: 'none' }}
           />
-        ))}
-      </div>
-      {/* Conteúdo principal */}
-      <div className="flex flex-col items-center justify-center w-full z-10 pt-12 pb-4">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-pink-500 mb-4 drop-shadow-sm text-center font-sans">Bem-vindo ao universo da Vitória Fotografia</h1>
-        <p className="text-lg md:text-xl text-gray-700 font-medium text-center max-w-2xl font-sans">
-          "Transformando emoções em memórias inesquecíveis."
-          <br />
-          Ensaio fotográfico, eventos, casamentos, família e muito mais — com sensibilidade, técnica e olhar artístico.
-          <br />
-          <span className="block mt-6">
-            <a
-              href="/contato"
-              className="inline-flex items-center gap-2 font-bold bg-gradient-to-r from-pink-200 via-pink-400 to-yellow-200 bg-clip-text text-transparent underline decoration-pink-300 decoration-2 underline-offset-4 hover:decoration-yellow-400 transition-all duration-300 group drop-shadow-md font-sans"
-              style={{ WebkitTextStroke: '0.5px #f472b6', textShadow: '0 2px 8px #fffbe9, 0 1px 2px #fbc2eb' }}
-            >
-              Fale com a fotógrafa
-            </a>
-          </span>
-        </p>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
-        <div className="w-full max-w-5xl flex flex-row items-center justify-center gap-6 py-8">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-pink-500 mb-4 drop-shadow-lg text-center font-sans">Bem-vindo ao universo da Vitória Fotografia</h1>
+          <p className="text-lg md:text-2xl text-gray-700 font-medium text-center font-sans bg-white/70 rounded-xl px-6 py-4 shadow-lg">
+            "Transformando emoções em memórias inesquecíveis."<br />
+            Ensaio fotográfico, eventos, casamentos, família e muito mais — com sensibilidade, técnica e olhar artístico.
+          </p>
+          <a
+            href="/contato"
+            className="mt-8 inline-flex items-center gap-2 font-bold bg-gradient-to-r from-pink-200 via-pink-400 to-yellow-200 bg-clip-text text-transparent underline decoration-pink-300 decoration-2 underline-offset-4 hover:decoration-yellow-400 transition-all duration-300 group drop-shadow-md font-sans text-xl md:text-2xl"
+            style={{ WebkitTextStroke: '0.5px #f472b6', textShadow: '0 2px 8px #fffbe9, 0 1px 2px #fbc2eb' }}
+          >
+            Fale com a fotógrafa
+          </a>
+        </div>
+      </section>
+      {/* Grid de fotos de destaque centralizado */}
+      <section className="flex flex-col items-center justify-center w-full z-10 py-12">
+        <h2 className="text-2xl md:text-3xl font-bold text-pink-400 mb-8 text-center drop-shadow">Destaques recentes</h2>
+        <div className="w-full max-w-5xl flex flex-row flex-wrap items-center justify-center gap-8 md:gap-10">
           {quatro.map((foto, i) => (
-            <div key={i} className="relative w-1/4 h-72 flex items-center justify-center">
+            <div key={i} className="relative w-64 h-80 flex items-center justify-center">
               <ImageWithBlur
                 src={foto}
                 alt={`Destaque ${i + 1}`}
-                className="rounded-lg shadow-md w-full h-full object-cover"
+                className="rounded-xl shadow-lg w-full h-full object-cover"
                 style={{ background: '#fff' }}
               />
             </div>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
