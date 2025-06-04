@@ -89,7 +89,7 @@ export default function Home() {
       {/* Grid de fotos de destaque centralizado e responsivo */}
       <section className="flex flex-col items-center justify-center w-full z-10 py-8 md:py-12 px-2">
         <h2 className="text-xl md:text-3xl font-bold text-pink-400 mb-6 md:mb-8 text-center drop-shadow">Destaques recentes</h2>
-        <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="w-full max-w-4xl md:max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {quatro.map((foto, i) => (
             <div key={i} className="relative w-full h-60 flex items-center justify-center">
               <ImageWithBlur

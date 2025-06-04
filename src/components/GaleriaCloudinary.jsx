@@ -178,19 +178,19 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
         </div>
       )}
       {/* Carrossel centralizado acima do blur */}
-      <div className="relative z-10 w-full max-w-7xl min-h-[400px] flex flex-col items-center justify-center">
+      <div className="relative z-10 w-full max-w-full md:max-w-7xl min-h-[300px] md:min-h-[400px] flex flex-col items-center justify-center px-2 md:px-0">
         {!loading && fotos.length > 0 && (
           <Slider
             ref={sliderRef}
             {...settings}
             autoplay={semSetasDots}
             autoplaySpeed={3000}
-            className="w-full min-h-[400px] max-h-screen"
+            className="w-full min-h-[300px] md:min-h-[400px] max-h-[60vh] md:max-h-screen"
           >
             {fotos.map((url, i) => (
               <div
                 key={i}
-                className="flex items-center justify-center w-full min-h-[400px] max-h-screen relative group"
+                className="flex items-center justify-center w-full min-h-[300px] md:min-h-[400px] max-h-[60vh] md:max-h-screen relative group"
                 tabIndex={0}
               >
                 {/* Blur up: imagem borrada de fundo */}
@@ -206,7 +206,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 <img
                   src={url}
                   alt={`Foto ${i + 1}`}
-                  className="relative max-w-full max-h-screen object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700"
+                  className="relative max-w-full max-h-[60vh] md:max-h-[80vh] object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700"
                   style={{ margin: '0 auto', background: '#fff', opacity: sizes[i]?.loaded ? 1 : 0, zIndex: 2 }}
                   onContextMenu={e => e.preventDefault()}
                   onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}

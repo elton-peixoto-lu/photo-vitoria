@@ -192,3 +192,36 @@ CLOUDINARY_API_KEY=sua-api-key
 CLOUDINARY_API_SECRET=sua-api-secret
 MONGO_URI=sua-string-de-conexao-mongodb
 PORT=4000
+
+---
+
+## Otimização de Imagens com Cloudinary
+
+Para garantir carregamento rápido e experiência visual moderna, este projeto utiliza várias técnicas de otimização de imagens via Cloudinary:
+
+- **Formato automático:** Todas as imagens são servidas no formato mais eficiente suportado pelo navegador (WebP, AVIF, JPEG, etc) usando o parâmetro `f_auto`.
+- **Qualidade e tamanho otimizados:** As imagens são entregues com qualidade reduzida (`q_70`) e largura máxima de 800px (`w_800`), evitando downloads desnecessários de arquivos grandes.
+- **Compressão extra e remoção de metadata:** Parâmetros `fl_lossy,fl_strip_profile` garantem arquivos ainda menores.
+- **Carregamento preguiçoso (lazy):** Todas as imagens fora do topo da página usam `loading="lazy"`, melhorando o tempo de carregamento inicial.
+- **Blur Up/Placeholder:** Um preview borrado é exibido enquanto a imagem principal carrega, evitando "piscadas" e melhorando a experiência visual.
+
+### Exemplo de URL otimizada do Cloudinary
+```
+https://res.cloudinary.com/SEU_CLOUD/image/upload/f_auto,q_70,w_800,fl_lossy,fl_strip_profile/v123/foto.jpg
+```
+
+### Como funciona no código
+O componente `ImageWithBlur` já aplica automaticamente essas otimizações para todas as imagens do site:
+```jsx
+function getCloudinaryOptimizedUrl(url, width = 800, quality = 70) {
+  if (!url) return '';
+  return url.replace(
+    '/upload/',
+    `/upload/f_auto,q_${quality},w_${width},fl_lossy,fl_strip_profile/`
+  );
+}
+```
+
+Se quiser personalizar largura/qualidade, basta ajustar os parâmetros na função acima.
+
+---
