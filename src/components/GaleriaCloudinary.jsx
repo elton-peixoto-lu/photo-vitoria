@@ -21,17 +21,8 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   const [showActions, setShowActions] = useState(false);
   const sliderRef = useRef();
   const [paused, setPaused] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768);
-    }
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  // Fetch das fotos (sempre igual)
   useEffect(() => {
     if (fotos.length > 0) setPrevFotos(fotos);
     setLoading(true);
@@ -54,6 +45,9 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
       })
       .finally(() => setLoading(false));
   }, [pasta]);
+
+  // Detecção de mobile apenas para renderização
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   useEffect(() => {
     if (!autoAvancarFimAlbum) return;
