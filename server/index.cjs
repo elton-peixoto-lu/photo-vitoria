@@ -4,7 +4,21 @@ const cors = require('cors');
 const galeriaRoutes = require('./galeriaRoutes.cjs');
 
 const app = express();
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://photo-vitoria.vercel.app'
+];
+app.use(cors({
+  origin: function(origin, callback) {
+    // Permite requisições sem origin (ex: ferramentas internas)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 app.use('/api/galeria', galeriaRoutes);
 
 const PORT = process.env.PORT || 4000;
