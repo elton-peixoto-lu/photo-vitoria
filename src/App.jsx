@@ -10,7 +10,7 @@ import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
-import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
+import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaCrown, FaRing } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -22,7 +22,7 @@ const MENU = [
   { label: 'Casamentos', path: '/galeria-casamentos', icon: <FaHeart size={18} /> },
   { label: 'Femininos', path: '/galeria-femininos', icon: <FaVenus size={18} /> },
   { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <FaCameraRetro size={18} /> },
-  { label: 'Noivas', path: '/galeria-noivas', icon: <FaImages size={18} /> },
+  { label: 'Noivas', path: '/galeria-noivas', icon: <FaCrown size={20} /> },
   { label: 'Estúdio', path: '/estudio', icon: <FaCamera size={18} /> },
   { label: 'Contato', path: '/contato', icon: <FaEnvelope size={18} /> },
 ];
