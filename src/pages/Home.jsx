@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import GaleriaCloudinary from '../components/GaleriaCloudinary';
 import { CONTATO } from '../components/ContatoInfo';
 import ImageWithBlur from '../components/ImageWithBlur';
+import { FaImages } from 'react-icons/fa';
 
 // export default function Home() {
 //   return null;
@@ -45,6 +46,14 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen flex flex-col w-full md:ml-40">
+      {/* Botão flutuante para Galeria no mobile */}
+      <a
+        href="/galeria"
+        className="fixed bottom-6 right-6 z-[90] w-16 h-16 flex items-center justify-center rounded-full bg-pink-500 text-white text-3xl shadow-lg drop-shadow-lg md:hidden hover:bg-pink-600 transition-all"
+        aria-label="Ir para Galeria"
+      >
+        <FaImages />
+      </a>
       {/* Fundo blur absoluto com uma das fotos de destaque */}
       {quatro[0] && (
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">

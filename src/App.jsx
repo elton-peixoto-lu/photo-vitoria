@@ -8,7 +8,7 @@ import AdminPromocoes from './admin/AdminPromocoes';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
-import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 
 const MENU = [
