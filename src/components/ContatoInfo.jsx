@@ -11,8 +11,8 @@ export const CONTATO = {
     label: 'WhatsApp',
   },
   email: {
-    url: 'mailto:contato@vitoriafoto.com',
-    address: 'contato@vitoriafoto.com',
+    url: 'mailto:estudiovitoriafreitas@gmail.com',
+    address: 'estudiovitoriafreitas@gmail.com',
     label: 'E-mail',
   },
 };

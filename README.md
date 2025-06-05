@@ -230,44 +230,28 @@ Se quiser personalizar largura/qualidade, basta ajustar os parâmetros na funç�
 
 ```mermaid
 flowchart LR
-    subgraph Usuário
-        A[Navegador / PWA]
-    end
+subgraph Usuário
+    A[Navegador / PWA]
+end
 
-    subgraph Frontend
-        B[Vercel / React]
-        C[Service Worker / PWA Cache]
-    end
+subgraph Frontend
+    B[Vercel / React]
+    C[Service Worker / PWA Cache]
+end
 
-    subgraph Backend
-        D[Render / Express]
-    end
+subgraph Backend
+    D[Render / Express]
+end
 
-    subgraph Cloudinary
-        E[Cloudinary CDN (Imagens)]
-    end
+subgraph Cloudinary
+    E[Cloudinary CDN (Imagens)]
+end
 
-    A <--> B
-    B <--> C
-    B <--> D
-    D <--> E
-    B -.-> E
-
-    %% Legenda
-    classDef legend fill:#fffbe9,stroke:#fbc2eb,stroke-width:2px;
-    class L1,L2,L3,L4,L5 legend;
-    L1[Usuário: Navegador ou PWA instalado]
-    L2[Frontend: React hospedado na Vercel, interface e lógica]
-    L3[Service Worker: Cache local/PWA, acelera visitas seguintes]
-    L4[Backend: Express no Render, faz ponte entre frontend e Cloudinary]
-    L5[Cloudinary: CDN global de imagens, entrega otimizada]
-
-    %% Legenda visual
-    L1 -.-> A
-    L2 -.-> B
-    L3 -.-> C
-    L4 -.-> D
-    L5 -.-> E
+A <--> B
+B <--> C
+B <--> D
+D <--> E
+B -.-> E
 ```
 
 ---
