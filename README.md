@@ -228,31 +228,10 @@ Se quiser personalizar largura/qualidade, basta ajustar os parâmetros na funç�
 
 ## System Design
 
-```mermaid
-flowchart LR
-subgraph Usuário
-    A[Navegador / PWA]
-end
+![System Design](./docs/system-design.png)
 
-subgraph Frontend
-    B[Vercel / React]
-    C[Service Worker / PWA Cache]
-end
-
-subgraph Backend
-    D[Render / Express]
-end
-
-subgraph Cloudinary
-    E[Cloudinary CDN (Imagens)]
-end
-
-A <--> B
-B <--> C
-B <--> D
-D <--> E
-B -.-> E
-```
+Veja o diagrama interativo no MermaidChart:  
+[https://www.mermaidchart.com/app/projects/ce4c078e-1fd5-4d22-8b49-d89a813714e3/diagrams/9132348c-d4b4-40ce-99fd-876d85602b6d/](https://www.mermaidchart.com/app/projects/ce4c078e-1fd5-4d22-8b49-d89a813714e3/diagrams/9132348c-d4b4-40ce-99fd-876d85602b6d/)
 
 ---
 
