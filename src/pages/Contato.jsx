@@ -193,7 +193,7 @@ export default function Contato() {
                   return;
                 }
                 setCaptchaError('');
-                setFormEnviado(true);
+                // Não bloqueie o envio, deixe o navegador enviar para o Formspree normalmente
               }}
             >
               <h2 className="text-xl font-bold text-pink-500 mb-2">Ou envie sua mensagem:</h2>
