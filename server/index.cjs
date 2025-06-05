@@ -6,7 +6,9 @@ const galeriaRoutes = require('./galeriaRoutes.cjs');
 const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://photo-vitoria.vercel.app'
+  'https://photo-vitoria.vercel.app',
+  'https://estudiovitoriafreitas.com.br',
+  'https://www.estudiovitoriafreitas.com.br'
 ];
 app.use(cors({
   origin: function(origin, callback) {
