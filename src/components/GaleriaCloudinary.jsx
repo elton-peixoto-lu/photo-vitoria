@@ -138,6 +138,9 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   }
 
   if (isMobile) {
+    if (loading) return <div className="w-full flex items-center justify-center py-12 text-lg text-gray-400">Carregando fotos...</div>;
+    if (!fotos || fotos.length === 0) return <div className="w-full flex items-center justify-center py-12 text-lg text-pink-300">Nenhuma foto encontrada.</div>;
+    console.log('Fotos mobile:', fotos);
     // Mobile: lista de miniaturas
     return (
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-2">
