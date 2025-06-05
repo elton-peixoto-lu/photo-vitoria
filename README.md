@@ -222,9 +222,6 @@ function getCloudinaryOptimizedUrl(url, width = 800, quality = 70) {
 }
 ```
 
-Se quiser personalizar largura/qualidade, basta ajustar os parâmetros na função acima.
-
----
 
 ## System Design
 
@@ -235,7 +232,7 @@ Veja o diagrama interativo no MermaidChart:
 
 ---
 
-## Deploy SPA (Single Page Application) no Vercel
+## Fazer Deploy SPA (Single Page Application) no Vercel
 
 Este projeto é uma aplicação React (SPA). Para garantir que todas as rotas funcionem corretamente ao acessar URLs diretamente (ex: /obrigado, /galeria, /lgpd), é necessário configurar o Vercel para redirecionar todas as rotas para o index.html.
 
