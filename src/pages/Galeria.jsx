@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from 'react-icons/fa';
-import { ActionButtons, CONTATO } from '../components/ContatoInfo';
+import { ActionButtons, CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
 import ImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 
@@ -78,6 +78,12 @@ export default function Galeria() {
       </div>
       {/* Bloco principal centralizado */}
       <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
+        {/* Botões de contato fixos no topo */}
+        <div className="w-full flex flex-wrap justify-center gap-4 mb-8 mt-4 z-20">
+          <BotaoWhatsapp className="flex-1 min-w-[180px] max-w-xs px-6 py-3 rounded-lg bg-green-500 text-white text-lg font-bold shadow-lg hover:bg-green-600 transition-all justify-center font-sans" />
+          <BotaoEmail className="hidden md:flex flex-1 min-w-[180px] max-w-xs px-6 py-3 rounded-lg bg-pink-400 text-white text-lg font-bold shadow-lg hover:bg-pink-500 transition-all justify-center font-sans" />
+          <BotaoInstagram className="flex-1 min-w-[180px] max-w-xs px-6 py-3 rounded-lg bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-400 text-white text-lg font-bold shadow-lg hover:from-yellow-400 hover:to-pink-500 transition-all justify-center font-sans" />
+        </div>
         <div className="w-full max-w-7xl flex-1 flex flex-col items-center justify-center px-4 md:px-8">
           {/* Grids por álbum */}
           {!carregando && ALBUNS.map(album => (
