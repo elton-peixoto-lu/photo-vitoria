@@ -8,6 +8,7 @@ import { getGaleriaCache, setGaleriaCache } from '../cacheGalerias';
 import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
+import { LOGO_URL } from '../constants';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
@@ -252,7 +253,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                   {[...Array(7)].map((_, j) => (
                     <img
                       key={j}
-                      src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                      src={LOGO_URL}
                       alt="Marca d'água logo"
                       className="absolute opacity-10 w-24 md:w-32"
                       style={{

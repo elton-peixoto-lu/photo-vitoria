@@ -6,8 +6,8 @@ export const CONTATO = {
     label: 'Instagram',
   },
   whatsapp: {
-    url: 'https://wa.me/5511999999999',
-    number: '+55 11 99999-9999',
+    url: 'https://wa.me/5511975184864?text=Ol%C3%A1%2C%20vim%20pelo%20site%20%F0%9F%91%8B%20pode%20me%20ajudar%3F',
+    number: '+55 11 97518-4864',
     label: 'WhatsApp',
   },
   email: {

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaHeart, FaUserCircle } from 'react-icons/fa';
 import { CONTATO } from '../components/ContatoInfo.jsx';
 import ImageWithBlur from '../components/ImageWithBlur';
+import { LOGO_URL } from '../constants';
 
 const DEPOIMENTOS = [
   {
@@ -65,7 +66,7 @@ export default function Estudio() {
         {[...Array(5)].map((_, i) => (
           <img
             key={i}
-            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+            src={LOGO_URL}
             alt="Marca d'água logo"
             className="absolute opacity-5 w-32 md:w-40"
             style={{
@@ -111,7 +112,7 @@ export default function Estudio() {
                         {[...Array(3)].map((_, j) => (
                           <img
                             key={j}
-                            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                            src={LOGO_URL}
                             alt="Marca d'água logo"
                             className="absolute opacity-10 w-12 md:w-20"
                             style={{

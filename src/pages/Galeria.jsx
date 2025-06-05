@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaSearch } from 'react-icons/fa';
 import { ActionButtons, CONTATO } from '../components/ContatoInfo';
 import ImageWithBlur from '../components/ImageWithBlur';
+import { LOGO_URL } from '../constants';
 
 const ALBUNS = [
   { key: 'casamentos', label: 'Casamentos' },
@@ -63,7 +64,7 @@ export default function Galeria() {
         {[...Array(5)].map((_, i) => (
           <img
             key={i}
-            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+            src={LOGO_URL}
             alt="Marca d'água logo"
             className="absolute opacity-5 w-32 md:w-40"
             style={{

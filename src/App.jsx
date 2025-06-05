@@ -10,6 +10,7 @@ import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
 import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
+import { LOGO_URL } from './constants';
 
 const MENU = [
   { label: 'Home', path: '/', icon: <FaHome size={18} /> },
@@ -75,7 +76,7 @@ function Logo() {
   return (
     <div className="flex flex-col items-center mb-10 mt-6 select-none">
       <img
-        src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+        src={LOGO_URL}
         alt="Logo Fotos da Vitória"
         className="w-32 h-auto mb-2 drop-shadow"
       />

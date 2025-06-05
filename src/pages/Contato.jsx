@@ -3,6 +3,7 @@ import { FaWhatsapp, FaEnvelope, FaInstagram } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import { CONTATO, BotaoInstagram, BotaoWhatsapp, BotaoEmail } from '../components/ContatoInfo.jsx';
 import ImageWithBlur from '../components/ImageWithBlur';
+import { LOGO_URL } from '../constants';
 
 function useGridFotos() {
   const [fotos, setFotos] = useState([]);
@@ -79,7 +80,7 @@ export default function Contato() {
         {[...Array(5)].map((_, i) => (
           <img
             key={i}
-            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+            src="https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png"
             alt="Marca d'água logo"
             className="absolute opacity-5 w-32 md:w-40"
             style={{
@@ -103,7 +104,7 @@ export default function Contato() {
               className="mb-8 mt-2 select-none flex justify-center relative"
             >
               <img
-                src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                src={LOGO_URL}
                 alt="Logo Vitória Fotografia"
                 className="w-40 h-auto md:w-56 drop-shadow-lg"
                 draggable={false}
@@ -120,7 +121,7 @@ export default function Contato() {
                       {[...Array(3)].map((_, j) => (
                         <img
                           key={j}
-                          src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                          src="https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png"
                           alt="Marca d'água logo"
                           className="absolute opacity-10 w-12 md:w-20"
                           style={{
@@ -164,6 +165,13 @@ export default function Contato() {
               <BotaoEmail className="w-full flex-[1_1_0] px-8 py-4 rounded-lg bg-pink-400 text-white text-xl font-bold shadow-lg hover:bg-pink-500 transition-all justify-center min-w-[220px] font-sans" />
               <BotaoInstagram className="w-full flex-[1_1_0] px-8 py-4 rounded-lg bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-400 text-white text-xl font-bold shadow-lg hover:from-yellow-400 hover:to-pink-500 transition-all justify-center min-w-[220px] font-sans" />
             </motion.div>
+            {/* Balão de incentivo ao WhatsApp */}
+            <div className="w-full flex justify-center mb-4">
+              <div className="relative bg-gradient-to-r from-pink-100 via-yellow-50 to-pink-50 border border-pink-200 rounded-2xl shadow-lg px-6 py-3 flex items-center gap-3 animate-bounce-slow hover:animate-none transition-all duration-300" style={{ maxWidth: 420 }}>
+                <span className="inline-block bg-green-100 text-green-700 rounded-full px-3 py-1 text-sm font-bold mr-2 shadow-sm border border-green-200">WhatsApp</span>
+                <span className="text-pink-600 font-semibold text-base md:text-lg">Me mande um oi e poderá ganhar <span className="text-pink-500 font-extrabold">até 10%</span></span>
+              </div>
+            </div>
             {/* Spacer flexível para centralização vertical */}
             <div className="flex-1" />
             {/* Formulário de contato */}

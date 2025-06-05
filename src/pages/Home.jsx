@@ -3,6 +3,7 @@ import GaleriaCloudinary from '../components/GaleriaCloudinary';
 import { CONTATO } from '../components/ContatoInfo';
 import ImageWithBlur from '../components/ImageWithBlur';
 import { FaImages } from 'react-icons/fa';
+import { LOGO_URL } from '../constants';
 
 // export default function Home() {
 //   return null;
@@ -80,7 +81,7 @@ export default function Home() {
               {[...Array(3)].map((_, col) => (
                 <img
                   key={col}
-                  src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+                  src={LOGO_URL}
                   alt="Logo Vitória Fotografia"
                   className="w-16 md:w-24 opacity-10 mx-2 my-1"
                   draggable={false}
@@ -92,7 +93,7 @@ export default function Home() {
         {/* Texto de boas-vindas centralizado */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-2xl mx-auto py-8 px-2 md:py-12 md:px-4">
           <img
-            src="https://res.cloudinary.com/driuyeufs/image/upload/v1748900747/logo_xfrtze.png"
+            src={LOGO_URL}
             alt="Logo Vitória Fotografia"
             className="w-28 md:w-40 mb-4 md:mb-6 drop-shadow-xl"
             draggable={false}
@@ -128,6 +129,20 @@ export default function Home() {
           ))}
         </div>
       </section>
+      {/* Balão de incentivo ao WhatsApp */}
+      <div className="w-full flex justify-center mb-4 z-20">
+        <a
+          href="https://wa.me/5511975184864?text=Ol%C3%A1%2C%20vim%20pelo%20site%20%F0%9F%91%8B%20pode%20me%20ajudar%3F"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative bg-gradient-to-r from-pink-100 via-yellow-50 to-pink-50 border border-pink-200 rounded-2xl shadow-lg px-6 py-3 flex items-center gap-3 hover:scale-105 transition-all duration-300 group"
+          style={{ maxWidth: 420 }}
+          aria-label="Fale no WhatsApp e ganhe desconto"
+        >
+          <span className="inline-block bg-green-100 text-green-700 rounded-full px-3 py-1 text-sm font-bold mr-2 shadow-sm border border-green-200">WhatsApp</span>
+          <span className="text-pink-600 font-semibold text-base md:text-lg">Me mande um oi e poderá ganhar <span className="text-pink-500 font-extrabold">até 10%</span></span>
+        </a>
+      </div>
     </div>
   );
 }
