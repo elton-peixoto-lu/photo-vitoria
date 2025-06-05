@@ -211,7 +211,7 @@ export default function App() {
       <div className="flex min-h-screen">
         {/* Botão hambúrguer mobile */}
         <button
-          className="fixed top-4 left-4 z-50 p-2 rounded-md bg-white/90 shadow-lg border border-pink-100 text-pink-400 block md:hidden focus:outline-none"
+          className="fixed top-4 left-4 z-[100] p-2 rounded-md bg-white/90 shadow-lg border border-pink-100 text-pink-400 block md:hidden focus:outline-none"
           onClick={() => setMenuOpen(true)}
           aria-label="Abrir menu"
         >

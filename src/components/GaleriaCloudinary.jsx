@@ -137,14 +137,13 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     console.log('Fotos mobile:', fotos);
     // Mobile: lista de miniaturas
     return (
-      <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-2">
+      <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
         {fotos.map((url, i) => (
           <div key={i} className="w-full flex flex-col items-center justify-center">
             <img
               src={url}
               alt={`Foto ${i + 1}`}
-              className="max-w-[90vw] max-h-[40vh] object-contain rounded-lg shadow bg-white border-2 border-lime-400"
-              style={{ margin: '0 auto' }}
+              className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white border-2 border-lime-400"
               draggable={false}
             />
             <div className="flex gap-3 mt-2 justify-center">
