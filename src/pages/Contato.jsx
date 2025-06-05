@@ -219,6 +219,7 @@ export default function Contato() {
                 <input type="checkbox" required id="lgpd" className="accent-pink-400" />
                 <label htmlFor="lgpd">Li e concordo com a <a href="/lgpd" className="underline text-pink-500 hover:text-pink-700" target="_blank" rel="noopener noreferrer">Política de Privacidade (LGPD)</a>.</label>
               </div>
+              <input type="hidden" name="_redirect" value="/obrigado" />
               <button type="submit" className="mt-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all">Enviar mensagem</button>
               {formEnviado && <div className="text-green-600 font-bold mt-2">Mensagem enviada! Obrigado pelo contato.</div>}
             </motion.form>

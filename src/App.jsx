@@ -8,9 +8,11 @@ import AdminPromocoes from './admin/AdminPromocoes';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
+import Obrigado from './pages/Obrigado';
 import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
+import CookieBanner from './components/CookieBanner';
 
 const MENU = [
   { label: 'Home', path: '/', icon: <FaHome size={18} /> },
@@ -238,10 +240,12 @@ export default function App() {
               <Route path="/estudio" element={<Estudio />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/admin" element={<AdminPromocoes />} />
+              <Route path="/obrigado" element={<Obrigado />} />
             </Routes>
           </div>
         </div>
       </div>
+      <CookieBanner />
     </BrowserRouter>
   );
 }
