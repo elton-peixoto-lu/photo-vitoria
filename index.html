@@ -5,9 +5,30 @@
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fotos da Vitória - Fotografia Profissional</title>
+    <!-- CookieConsent by Osano -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
+  <script>
+    window.addEventListener('load', function(){
+      window.cookieconsent.initialise({
+        palette: {
+          popup: { background: '#fffbe9', text: '#a21caf' },
+          button: { background: '#a21caf', text: '#fff' }
+        },
+        theme: 'classic',
+        position: 'bottom',
+        content: {
+          message: 'Este site utiliza cookies para melhorar sua experiência.',
+          dismiss: 'Aceitar',
+          link: 'Saiba mais',
+          href: '/lgpd'
+        }
+      })
+    });
+  </script>
 </html>

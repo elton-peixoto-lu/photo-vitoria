@@ -60,6 +60,9 @@ export default function Contato() {
   const formspreeId = import.meta.env.VITE_FORMSPREE_ID;
   const formAction = `https://formspree.io/${formspreeId}`;
   const [formEnviado, setFormEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState('');
+  const navigate = window.location ? (path => window.location.assign(path)) : () => {};
 
   return (
     <div className="relative min-h-screen flex flex-col w-full">
@@ -184,16 +187,33 @@ export default function Contato() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7, duration: 0.7 }}
               className="flex flex-col gap-5 w-full max-w-3xl bg-white/90 rounded-xl shadow-md p-8 mx-auto"
-              action={formAction}
-              method="POST"
-              onSubmit={e => {
+              onSubmit={async e => {
+                e.preventDefault();
+                setErroEnvio('');
                 if (captchaInput.trim() !== captchaAnswer) {
-                  e.preventDefault();
                   setCaptchaError('Resposta incorreta. Por favor, tente novamente.');
                   return;
                 }
                 setCaptchaError('');
-                // Não bloqueie o envio, deixe o navegador enviar para o Formspree normalmente
+                setEnviando(true);
+                const data = new FormData(e.target);
+                try {
+                  const res = await fetch(formAction, {
+                    method: 'POST',
+                    body: data,
+                    headers: { 'Accept': 'application/json' },
+                  });
+                  if (res.ok) {
+                    setFormEnviado(true);
+                    setTimeout(() => navigate('/obrigado'), 500);
+                  } else {
+                    setErroEnvio('Erro ao enviar. Tente novamente mais tarde.');
+                  }
+                } catch {
+                  setErroEnvio('Erro ao enviar. Tente novamente mais tarde.');
+                } finally {
+                  setEnviando(false);
+                }
               }}
             >
               <h2 className="text-xl font-bold text-pink-500 mb-2">Ou envie sua mensagem:</h2>
@@ -219,9 +239,8 @@ export default function Contato() {
                 <input type="checkbox" required id="lgpd" className="accent-pink-400" />
                 <label htmlFor="lgpd">Li e concordo com a <a href="/lgpd" className="underline text-pink-500 hover:text-pink-700" target="_blank" rel="noopener noreferrer">Política de Privacidade (LGPD)</a>.</label>
               </div>
-              <input type="hidden" name="_redirect" value="/obrigado" />
-              <button type="submit" className="mt-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all">Enviar mensagem</button>
-              {formEnviado && <div className="text-green-600 font-bold mt-2">Mensagem enviada! Obrigado pelo contato.</div>}
+              <button type="submit" className="mt-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all" disabled={enviando}>{enviando ? 'Enviando...' : 'Enviar mensagem'}</button>
+              {erroEnvio && <div className="text-red-600 font-bold mt-2">{erroEnvio}</div>}
             </motion.form>
           </div>
         </div>
