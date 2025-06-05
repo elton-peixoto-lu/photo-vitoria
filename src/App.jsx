@@ -8,7 +8,7 @@ import AdminPromocoes from './admin/AdminPromocoes';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
-import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes } from 'react-icons/fa';
+import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 
 const MENU = [
@@ -85,14 +85,40 @@ function Logo() {
 
 function Sidebar({ mobile = false, open = false, onClose }) {
   const location = useLocation();
-  // Lista de itens do menu que aparecem no mobile (apenas ícones)
   const MOBILE_MENU_PATHS = ['/', '/galeria', '/contato', '/estudio'];
-  // Overlay para mobile
   if (mobile) {
     return (
       <>
         {open && (
           <>
+            {/* Botões de ação fixos no topo */}
+            <div className="fixed top-2 left-2 z-[110] flex gap-3 items-center">
+              {/* Seta de voltar */}
+              <button
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-3xl focus:outline-none"
+                onClick={onClose}
+                aria-label="Voltar"
+                tabIndex={open ? 0 : -1}
+              >
+                <FaArrowLeft />
+              </button>
+              {/* Botão coração (exemplo) */}
+              <a href="#" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-2xl">
+                <FaHeart />
+              </a>
+              {/* Botão WhatsApp */}
+              <a href={CONTATO.whatsapp.url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-green-200 text-green-500 text-2xl">
+                <FaWhatsapp />
+              </a>
+              {/* Botão Instagram */}
+              <a href={CONTATO.instagram.url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-2xl">
+                <FaInstagram />
+              </a>
+              {/* Botão Email */}
+              <a href={CONTATO.email.url} className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-blue-100 text-blue-400 text-2xl">
+                <FaEnvelope />
+              </a>
+            </div>
             <div
               className="fixed inset-0 z-[99] bg-black/40 transition-opacity duration-300 opacity-100 pointer-events-auto"
               onClick={onClose}
@@ -105,14 +131,7 @@ function Sidebar({ mobile = false, open = false, onClose }) {
               className="fixed left-0 top-0 z-[100] bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 w-20 h-screen flex flex-col px-2 py-4 shadow-2xl border-r border-[#f3e8ff]"
               style={{ width: 80 }}
             >
-              <button
-                className="absolute top-4 right-4 text-3xl text-pink-400 hover:text-pink-600 focus:outline-none"
-                onClick={onClose}
-                aria-label="Fechar menu"
-                tabIndex={open ? 0 : -1}
-              >
-                <FaTimes />
-              </button>
+              <div className="mt-20" /> {/* Espaço para os botões fixos */}
               <Logo />
               <nav className="flex-1 flex flex-col gap-2 mt-4 items-center">
                 {MENU.filter(item => MOBILE_MENU_PATHS.includes(item.path)).map(item => (
