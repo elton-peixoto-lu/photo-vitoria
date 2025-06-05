@@ -73,3 +73,4 @@ export default function GaleriaGoogleDrive({ categoria, folderId }) {
     </div>
   );
 } 
+ 
