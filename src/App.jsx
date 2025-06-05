@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 import Contato from './pages/Contato';
@@ -13,6 +13,7 @@ import Lgpd from './pages/Lgpd';
 import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const MENU = [
   { label: 'Home', path: '/', icon: <FaHome size={18} /> },
@@ -213,6 +214,28 @@ function Sidebar({ mobile = false, open = false, onClose }) {
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    function handler(e) {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    }
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      setShowInstall(false);
+      setDeferredPrompt(null);
+    }
+  };
+
   return (
     <BrowserRouter>
       <div className="flex min-h-screen">
@@ -246,6 +269,17 @@ export default function App() {
           </div>
         </div>
       </div>
+      <SpeedInsights />
+      {/* Botão flutuante de instalar app (PWA) */}
+      {showInstall && (
+        <button
+          onClick={handleInstallClick}
+          className="fixed bottom-6 right-6 z-[200] bg-pink-500 hover:bg-pink-600 text-white font-bold px-6 py-3 rounded-full shadow-xl text-lg animate-bounce-slow"
+          style={{ boxShadow: '0 4px 24px #fbc2eb55' }}
+        >
+          Instalar app
+        </button>
+      )}
     </BrowserRouter>
   );
 }
