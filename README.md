@@ -271,3 +271,23 @@ flowchart LR
 ```
 
 ---
+
+## Deploy SPA (Single Page Application) no Vercel
+
+Este projeto é uma aplicação React (SPA). Para garantir que todas as rotas funcionem corretamente ao acessar URLs diretamente (ex: /obrigado, /galeria, /lgpd), é necessário configurar o Vercel para redirecionar todas as rotas para o index.html.
+
+Adicione o arquivo `vercel.json` na raiz do projeto com o seguinte conteúdo:
+
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
+```
+
+Assim, qualquer rota será servida pelo React Router, evitando erros 404 ao acessar links diretos.
+
+Se for migrar para outro serviço (Netlify, Firebase, etc), consulte a documentação para configurar o rewrite/catch-all equivalente.
+
+---
