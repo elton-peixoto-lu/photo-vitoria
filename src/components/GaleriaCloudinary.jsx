@@ -21,6 +21,16 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   const [showActions, setShowActions] = useState(false);
   const sliderRef = useRef();
   const [paused, setPaused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768);
+    }
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (fotos.length > 0) setPrevFotos(fotos);
@@ -121,6 +131,28 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               className={`absolute left-0 top-0 h-full bg-pink-400 transition-all duration-3000 ${idx < atual ? 'w-full' : idx === atual && !paused ? 'w-full animate-timer-bar' : 'w-0'}`}
               style={idx === atual && !paused ? { animationDuration: '3s' } : {}}
             />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    // Mobile: lista de miniaturas
+    return (
+      <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-2">
+        {fotos.map((url, i) => (
+          <div key={i} className="w-full flex flex-col items-center justify-center">
+            <img
+              src={url}
+              alt={`Foto ${i + 1}`}
+              className="max-w-[90vw] max-h-[40vh] object-contain rounded-lg shadow bg-white border-2 border-lime-400"
+              style={{ margin: '0 auto' }}
+              draggable={false}
+            />
+            <div className="flex gap-3 mt-2 justify-center">
+              <ActionButtons contatos={CONTATO} className="text-2xl" />
+            </div>
           </div>
         ))}
       </div>
