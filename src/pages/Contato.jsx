@@ -57,6 +57,10 @@ export default function Contato() {
     }
   }, [gridFotos]);
 
+  const formspreeId = import.meta.env.VITE_FORMSPREE_ID;
+  const formAction = `https://formspree.io/${formspreeId}`;
+  const [formEnviado, setFormEnviado] = useState(false);
+
   return (
     <div className="relative min-h-screen flex flex-col w-full">
       {/* Fundo gradiente + blur de imagem */}
@@ -180,15 +184,16 @@ export default function Contato() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7, duration: 0.7 }}
               className="flex flex-col gap-5 w-full max-w-3xl bg-white/90 rounded-xl shadow-md p-8 mx-auto"
+              action={formAction}
+              method="POST"
               onSubmit={e => {
-                e.preventDefault();
                 if (captchaInput.trim() !== captchaAnswer) {
+                  e.preventDefault();
                   setCaptchaError('Resposta incorreta. Por favor, tente novamente.');
                   return;
                 }
                 setCaptchaError('');
-                setFormStatus('Mensagem enviada! (simulação)');
-                // Aqui você pode implementar o envio real do formulário
+                setFormEnviado(true);
               }}
             >
               <h2 className="text-xl font-bold text-pink-500 mb-2">Ou envie sua mensagem:</h2>
@@ -215,7 +220,7 @@ export default function Contato() {
                 <label htmlFor="lgpd">Li e concordo com a <a href="/lgpd" className="underline text-pink-500 hover:text-pink-700" target="_blank" rel="noopener noreferrer">Política de Privacidade (LGPD)</a>.</label>
               </div>
               <button type="submit" className="mt-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg shadow transition-all">Enviar mensagem</button>
-              {formStatus && <div className="text-green-600 font-bold mt-2">{formStatus}</div>}
+              {formEnviado && <div className="text-green-600 font-bold mt-2">Mensagem enviada! Obrigado pelo contato.</div>}
             </motion.form>
           </div>
         </div>
