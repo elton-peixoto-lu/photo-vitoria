@@ -22,6 +22,7 @@ const MENU = [
   { label: 'Casamentos', path: '/galeria-casamentos', icon: <FaHeart size={18} /> },
   { label: 'Femininos', path: '/galeria-femininos', icon: <FaVenus size={18} /> },
   { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <FaCameraRetro size={18} /> },
+  { label: 'Noivas', path: '/galeria-noivas', icon: <FaImages size={18} /> },
   { label: 'Estúdio', path: '/estudio', icon: <FaCamera size={18} /> },
   { label: 'Contato', path: '/contato', icon: <FaEnvelope size={18} /> },
 ];
@@ -260,6 +261,7 @@ export default function App() {
               <Route path="/galeria-casamentos" element={<GaleriaCloudinary pasta="casamentos" semSetasDots={true} />} />
               <Route path="/galeria-femininos" element={<GaleriaCloudinary pasta="femininos" semSetasDots={true} />} />
               <Route path="/galeria-pre-weding" element={<GaleriaCloudinary pasta="pre-weding" semSetasDots={true} />} />
+              <Route path="/galeria-noivas" element={<GaleriaCloudinary pasta="noivas" semSetasDots={true} />} />
               <Route path="/estudio" element={<Estudio />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/admin" element={<AdminPromocoes />} />

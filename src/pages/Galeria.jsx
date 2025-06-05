@@ -10,6 +10,7 @@ const ALBUNS = [
   { key: 'infantil', label: 'Infantil' },
   { key: 'femininos', label: 'Femininos' },
   { key: 'pre-weding', label: 'Pre-Weding' },
+  { key: 'noivas', label: 'Noivas' },
 ];
 
 export default function Galeria() {
