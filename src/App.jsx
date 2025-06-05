@@ -90,7 +90,7 @@ function Logo() {
 
 function Sidebar({ mobile = false, open = false, onClose }) {
   const location = useLocation();
-  const MOBILE_MENU_PATHS = ['/', '/galeria', '/contato', '/estudio'];
+  const MOBILE_MENU_PATHS = ['/', '/galeria', '/contato', '/estudio', '/galeria-noivas'];
   if (mobile) {
     return (
       <>
