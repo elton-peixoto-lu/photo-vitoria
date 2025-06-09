@@ -56,7 +56,7 @@ export default function GaleriaGoogleDrive({ categoria, folderId }) {
       {loading && <div className="absolute inset-0 flex items-center justify-center text-white text-xl">Carregando fotos...</div>}
       {!loading && fotos.length > 0 && (
         <Slider {...settings} className="h-screen">
-          {fotos.map(foto => (
+          {(Array.isArray(fotos) ? fotos : []).map(foto => (
             <div key={foto.id} className="w-full h-screen flex items-center justify-center">
               <img
                 src={`https://drive.google.com/uc?export=view&id=${foto.id}`}

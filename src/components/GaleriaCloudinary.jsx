@@ -141,7 +141,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     // Mobile: lista de miniaturas
     return (
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
-        {(fotos || []).map((foto, i) => (
+        {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
           <div key={i} className="w-full flex flex-col items-center justify-center">
             <img
               src={getCloudinaryOptimizedUrl(foto.url)}
@@ -161,7 +161,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   if (modoGridOnly) {
     return (
       <>
-        {(fotos || []).map((foto, i) => (
+        {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
           <div key={i} className="relative w-full h-64 flex items-center justify-center">
             <img
               src={getCloudinaryOptimizedUrl(foto.url)}
@@ -210,7 +210,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             autoplaySpeed={3000}
             className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
           >
-            {(fotos || []).map((foto, i) => (
+            {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
               <div
                 key={i}
                 className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
@@ -323,7 +323,7 @@ export function GaleriaFlipbook({ fotos = [], onFimAlbum }) {
           className="mx-auto shadow-2xl rounded-2xl bg-white"
           style={{ boxShadow: '0 8px 32px #fbc2eb55', borderRadius: '1.2rem', touchAction: 'pan-y pinch-zoom' }}
         >
-          {fotos.map((url, i) => (
+          {(Array.isArray(fotos) ? fotos : []).map((url, i) => (
             <div key={i} className="w-full h-full flex items-center justify-center bg-white rounded-2xl overflow-hidden">
               <img
                 src={getCloudinaryOptimizedUrl(url)}

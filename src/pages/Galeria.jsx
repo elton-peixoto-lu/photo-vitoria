@@ -115,7 +115,7 @@ export default function Galeria() {
                 <div
                   className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 w-full"
                 >
-                  {(fotosPorAlbum[album.key] || []).map((foto, idx) => {
+                  {(Array.isArray(fotosPorAlbum[album.key]) ? fotosPorAlbum[album.key] : []).map((foto, idx) => {
                     const url = typeof foto === 'string' ? foto : foto.url;
                     const nome = typeof foto === 'string' ? `Foto ${idx + 1}` : (foto.nome || `Foto ${idx + 1}`);
                     return (
