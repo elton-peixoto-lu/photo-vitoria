@@ -283,7 +283,6 @@ export default function App() {
           Instalar app
         </button>
       )}
-      <CookieBanner />
     </BrowserRouter>
   );
 }
