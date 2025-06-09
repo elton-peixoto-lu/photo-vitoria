@@ -9,6 +9,7 @@ import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
 import { LOGO_URL } from '../constants';
+import { getCloudinaryOptimizedUrl } from '../cloudinaryUtils';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
@@ -142,7 +143,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
         {fotos.map((url, i) => (
           <div key={i} className="w-full flex flex-col items-center justify-center">
             <img
-              src={url}
+              src={getCloudinaryOptimizedUrl(url)}
               alt={`Foto ${i + 1}`}
               className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white border-2 border-lime-400"
               draggable={false}
@@ -162,7 +163,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
         {fotos.map((url, i) => (
           <div key={i} className="relative w-full h-64 flex items-center justify-center">
             <img
-              src={url}
+              src={getCloudinaryOptimizedUrl(url)}
               alt={`Foto ${i + 1}`}
               className="rounded-lg shadow-md w-full h-full object-cover"
               draggable={false}
@@ -224,7 +225,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               >
                 {/* Blur up: imagem borrada de fundo */}
                 <img
-                  src={getCloudinaryBlurUrl(url)}
+                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(url))}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
                   style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
@@ -233,7 +234,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 />
                 {/* Imagem real com fade */}
                 <img
-                  src={url}
+                  src={getCloudinaryOptimizedUrl(url)}
                   alt={`Foto ${i + 1}`}
                   className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
                   style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
@@ -332,7 +333,7 @@ export function GaleriaFlipbook({ fotos = [], onFimAlbum }) {
           {fotos.map((url, i) => (
             <div key={i} className="w-full h-full flex items-center justify-center bg-white rounded-2xl overflow-hidden">
               <img
-                src={url}
+                src={getCloudinaryOptimizedUrl(url)}
                 alt={`Foto ${i + 1}`}
                 className="object-cover w-full h-full rounded-2xl select-none"
                 style={{ background: '#fff', maxHeight: '100%', maxWidth: '100%' }}
