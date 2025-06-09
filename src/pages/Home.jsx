@@ -121,7 +121,7 @@ export default function Home() {
           {quatro.map((foto, i) => (
             <div key={i} className="relative w-full h-60 flex items-center justify-center">
               <ImageWithBlur
-                src={foto}
+                src={foto?.url || foto}
                 alt={`Destaque ${i + 1}`}
                 className="rounded-xl shadow-lg w-full h-full object-cover"
                 style={{ background: '#fff' }}
