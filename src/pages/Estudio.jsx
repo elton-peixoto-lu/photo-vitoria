@@ -27,7 +27,7 @@ function useDestaques() {
     const apiUrl = import.meta.env.VITE_API_URL;
     fetch(`${apiUrl}/galeria/destaques`)
       .then(res => res.json())
-      .then(fotos => setFotos(fotos.slice(0, 9))) // pega até 9
+      .then(data => setFotos((data.images || []).slice(0, 9))) // pega até 9
       .catch(() => setFotos([]));
   }, []);
   return fotos;

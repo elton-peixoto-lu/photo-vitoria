@@ -18,7 +18,8 @@ export default function Home() {
     const apiUrl = import.meta.env.VITE_API_URL;
     fetch(`${apiUrl}/galeria/destaques`)
       .then(res => res.json())
-      .then(arr => {
+      .then(data => {
+        const arr = data.images || [];
         setFotos(arr);
         if (arr.length >= 4) {
           setQuatro(getRandomQuatro(arr));
@@ -62,7 +63,7 @@ export default function Home() {
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${quatro[0]})`,
+              backgroundImage: `url(${quatro[0]?.url || quatro[0]})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(32px) brightness(0.7)',

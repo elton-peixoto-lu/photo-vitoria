@@ -26,8 +26,8 @@ export default function Galeria() {
       for (const album of ALBUNS) {
         try {
           const res = await fetch(`${apiUrl}/galeria/${album.key}`);
-          const arr = await res.json();
-          result[album.key] = arr;
+          const data = await res.json();
+          result[album.key] = data.images || [];
         } catch { result[album.key] = []; }
       }
       setFotosPorAlbum(result);
@@ -156,7 +156,7 @@ export default function Galeria() {
             <button className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={prevFoto} aria-label="Anterior">&#60;</button>
             <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative max-w-xs sm:max-w-2xl md:max-w-3xl mx-auto">
               <ImageWithBlur
-                src={fotosPorAlbum[modal.album][modal.index]}
+                src={fotosPorAlbum[modal.album][modal.index]?.url || fotosPorAlbum[modal.album][modal.index]}
                 alt={`Foto ${modal.index + 1}`}
                 className="rounded-2xl shadow max-h-[80vh] max-w-full object-contain bg-white transition-all duration-300"
                 style={{ userSelect: 'none' }}

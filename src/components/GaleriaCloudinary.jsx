@@ -41,9 +41,10 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     const apiUrl = import.meta.env.VITE_API_URL;
     fetch(`${apiUrl}/galeria/${encodeURIComponent(pasta)}`)
       .then(res => res.json())
-      .then(fotos => {
-        setFotos(fotos);
-        setGaleriaCache(pasta, fotos);
+      .then(data => {
+        const imagens = data.images || [];
+        setFotos(imagens);
+        setGaleriaCache(pasta, imagens);
       })
       .finally(() => setLoading(false));
   }, [pasta]);
@@ -140,10 +141,10 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     // Mobile: lista de miniaturas
     return (
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
-        {fotos.map((url, i) => (
+        {fotos.map((foto, i) => (
           <div key={i} className="w-full flex flex-col items-center justify-center">
             <img
-              src={getCloudinaryOptimizedUrl(url)}
+              src={getCloudinaryOptimizedUrl(foto.url)}
               alt={`Foto ${i + 1}`}
               className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white border-2 border-lime-400"
               draggable={false}
@@ -160,10 +161,10 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   if (modoGridOnly) {
     return (
       <>
-        {fotos.map((url, i) => (
+        {fotos.map((foto, i) => (
           <div key={i} className="relative w-full h-64 flex items-center justify-center">
             <img
-              src={getCloudinaryOptimizedUrl(url)}
+              src={getCloudinaryOptimizedUrl(foto.url)}
               alt={`Foto ${i + 1}`}
               className="rounded-lg shadow-md w-full h-full object-cover"
               draggable={false}
@@ -198,7 +199,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${fotos[currentSlide || 0]})`,
+              backgroundImage: `url(${fotos[currentSlide || 0].url})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(32px) brightness(0.7)',
@@ -217,7 +218,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             autoplaySpeed={3000}
             className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
           >
-            {fotos.map((url, i) => (
+            {fotos.map((foto, i) => (
               <div
                 key={i}
                 className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
@@ -225,7 +226,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               >
                 {/* Blur up: imagem borrada de fundo */}
                 <img
-                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(url))}
+                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(foto.url))}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
                   style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
@@ -234,7 +235,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 />
                 {/* Imagem real com fade */}
                 <img
-                  src={getCloudinaryOptimizedUrl(url)}
+                  src={getCloudinaryOptimizedUrl(foto.url)}
                   alt={`Foto ${i + 1}`}
                   className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
                   style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}

@@ -12,16 +12,16 @@ function useGridFotos() {
       let grid = [];
       const apiUrl = import.meta.env.VITE_API_URL;
       try {
-        const destaques = await fetch(`${apiUrl}/galeria/destaques`).then(r => r.json());
+        const destaques = await fetch(`${apiUrl}/galeria/destaques`).then(r => r.json()).then(data => data.images || []);
         grid = [...destaques];
         const faltam = 4 - grid.length;
         if (faltam > 0) {
           const albuns = ['casamentos', 'infantil', 'femininos', 'pre-weding'];
           for (let album of albuns) {
             if (grid.length >= 4) break;
-            const albumFotos = await fetch(`${apiUrl}/galeria/${album}`).then(r => r.json());
+            const albumFotos = await fetch(`${apiUrl}/galeria/${album}`).then(r => r.json()).then(data => data.images || []);
             for (let f of albumFotos) {
-              if (!grid.includes(f)) {
+              if (!grid.find(img => img.url === f.url)) {
                 grid.push(f);
                 if (grid.length >= 4) break;
               }
