@@ -14,6 +14,7 @@ import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import CookieBanner from './components/CookieBanner';
 
 const MENU = [
   { label: 'Home', path: '/', icon: <FaHome size={18} /> },
@@ -282,6 +283,7 @@ export default function App() {
           Instalar app
         </button>
       )}
+      <CookieBanner />
     </BrowserRouter>
   );
 }
