@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCloudinaryBlurUrl, getCloudinaryOptimizedUrl } from '../cloudinaryUtils';
 
 export default function ImageWithBlur({ src, alt, className = '', style = {}, loading = 'lazy', ...props }) {
   const [loaded, setLoaded] = useState(false);

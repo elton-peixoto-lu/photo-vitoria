@@ -9,7 +9,7 @@ import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
 import { LOGO_URL } from '../constants';
-import { getCloudinaryOptimizedUrl } from '../cloudinaryUtils';
+import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUtils';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
