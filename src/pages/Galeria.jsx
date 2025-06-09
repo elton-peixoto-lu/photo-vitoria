@@ -93,10 +93,10 @@ export default function Galeria() {
               {(fotosPorAlbum[album.key]?.length > 0) && (
                 <div className="absolute inset-0 w-full h-full z-0 rounded-2xl overflow-hidden" style={{ pointerEvents: 'none' }}>
                   <div className="flex w-full h-full">
-                    {fotosPorAlbum[album.key].slice(0, 3).map((foto, idx) => (
+                    {(fotosPorAlbum[album.key] || []).slice(0, 3).map((foto, idx) => (
                       <div key={idx} style={{
                         flex: 1,
-                        backgroundImage: `url(${foto})`,
+                        backgroundImage: `url(${typeof foto === 'string' ? foto : foto.url})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         filter: 'blur(24px) brightness(0.7)',

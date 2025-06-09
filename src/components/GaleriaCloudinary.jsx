@@ -141,7 +141,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     // Mobile: lista de miniaturas
     return (
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
-        {fotos.map((foto, i) => (
+        {(fotos || []).map((foto, i) => (
           <div key={i} className="w-full flex flex-col items-center justify-center">
             <img
               src={getCloudinaryOptimizedUrl(foto.url)}
@@ -161,7 +161,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   if (modoGridOnly) {
     return (
       <>
-        {fotos.map((foto, i) => (
+        {(fotos || []).map((foto, i) => (
           <div key={i} className="relative w-full h-64 flex items-center justify-center">
             <img
               src={getCloudinaryOptimizedUrl(foto.url)}
@@ -181,14 +181,6 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     if (!sliderRef.current) return;
     sliderRef.current.slickPlay && sliderRef.current.slickPlay();
   }, [semSetasDots, fotos.length]);
-
-  // Adiciona função utilitária para gerar URL borrada do Cloudinary
-  function getCloudinaryBlurUrl(url) {
-    if (!url) return '';
-    // Exemplo: insere parâmetros de blur, qualidade e largura na URL do Cloudinary
-    // Suporta URLs do tipo: https://res.cloudinary.com/<cloud>/image/upload/v123/arquivo.jpg
-    return url.replace('/upload/', '/upload/e_blur:1000,q_10,w_40/');
-  }
 
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden">
@@ -218,7 +210,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             autoplaySpeed={3000}
             className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
           >
-            {fotos.map((foto, i) => (
+            {(fotos || []).map((foto, i) => (
               <div
                 key={i}
                 className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"

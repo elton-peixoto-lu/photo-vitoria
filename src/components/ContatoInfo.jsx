@@ -17,11 +17,6 @@ export const CONTATO = {
   },
 };
 
-// Funções utilitárias para facilitar uso
-export function getInstagramUrl() { return CONTATO.instagram.url; }
-export function getWhatsappUrl() { return CONTATO.whatsapp.url; }
-export function getEmailUrl() { return CONTATO.email.url; }
-
 import { FaHeart, FaRegHeart, FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 import React, { useState } from 'react';
 

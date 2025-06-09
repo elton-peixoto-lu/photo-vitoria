@@ -1,22 +1,7 @@
 import React, { useState } from 'react';
 
-function getCloudinaryBlurUrl(url) {
-  if (!url) return '';
-  return url.replace('/upload/', '/upload/e_blur:1000,q_10,w_40/');
-}
-
-// Função para otimizar URLs do Cloudinary
-function getCloudinaryOptimizedUrl(url, width = 800, quality = 70) {
-  if (!url) return '';
-  return url.replace(
-    '/upload/',
-    `/upload/f_auto,q_${quality},w_${width},fl_lossy,fl_strip_profile/`
-  );
-}
-
 export default function ImageWithBlur({ src, alt, className = '', style = {}, loading = 'lazy', ...props }) {
   const [loaded, setLoaded] = useState(false);
-  const optimizedSrc = getCloudinaryOptimizedUrl(src);
 
   return (
     <div className="relative w-full h-full">
@@ -31,7 +16,7 @@ export default function ImageWithBlur({ src, alt, className = '', style = {}, lo
       />
       {/* Imagem real com fade */}
       <img
-        src={optimizedSrc}
+        src={getCloudinaryOptimizedUrl(src)}
         alt={alt}
         className={`relative w-full h-full object-cover transition-opacity duration-700 ${className}`}
         style={{ ...style, opacity: loaded ? 1 : 0, zIndex: 2 }}

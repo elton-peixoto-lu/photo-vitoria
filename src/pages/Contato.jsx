@@ -121,7 +121,7 @@ export default function Contato() {
             {/* Após o título/logo e antes do restante do conteúdo: */}
             {gridFotos.length > 0 && (
               <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 max-w-7xl mx-auto">
-                {gridFotos.map((foto, i) => (
+                {(gridFotos || []).map((foto, i) => (
                   <div className="relative" key={i}>
                     <ImageWithBlur src={foto?.url || foto} alt={`Destaque ${i + 1}`} className="rounded-lg shadow-md w-full h-48 object-cover" />
                     <div className="absolute inset-0 z-20 pointer-events-none select-none">
