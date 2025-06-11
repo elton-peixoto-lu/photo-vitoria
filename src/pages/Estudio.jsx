@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaHeart, FaUserCircle } from 'react-icons/fa';
 import { CONTATO } from '../components/ContatoInfo.jsx';
-import ImageWithBlur from '../components/ImageWithBlur';
+import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 
 const DEPOIMENTOS = [
@@ -107,7 +107,12 @@ export default function Estudio() {
                 <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 max-w-7xl mx-auto">
                   {(Array.isArray(destaques) ? destaques : []).slice(0, 8).map((foto, i) => (
                     <div className="relative" key={i}>
-                      <ImageWithBlur src={foto?.url || foto} alt={`Destaque ${i + 1}`} className="rounded-lg shadow-md w-full h-48 object-cover opacity-80 transition duration-500" />
+                      <SafeImageWithBlur
+                        src={foto?.url || foto}
+                        fallback={typeof foto === 'string' ? `/images/estudio/${foto}` : '/images/estudio/fallback.avif'}
+                        alt={`Destaque ${i + 1}`}
+                        className="rounded-lg shadow-md w-full h-48 object-cover opacity-80 transition duration-500"
+                      />
                       <div className="absolute inset-0 z-20 pointer-events-none select-none">
                         {[...Array(3)].map((_, j) => (
                           <img

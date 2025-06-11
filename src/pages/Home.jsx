@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import GaleriaCloudinary from '../components/GaleriaCloudinary';
 import { CONTATO } from '../components/ContatoInfo';
-import ImageWithBlur from '../components/ImageWithBlur';
+import SafeImageWithBlur from '../components/ImageWithBlur';
 import { FaImages } from 'react-icons/fa';
 import { LOGO_URL } from '../constants';
 
@@ -120,8 +120,9 @@ export default function Home() {
         <div className="w-full max-w-4xl md:max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 px-2 md:px-8">
           {(Array.isArray(quatro) ? quatro : []).map((foto, i) => (
             <div key={i} className="relative w-full h-60 flex items-center justify-center">
-              <ImageWithBlur
+              <SafeImageWithBlur
                 src={foto?.url || foto}
+                fallback={typeof foto === 'string' ? `/images/home/${foto}` : '/images/home/fallback.avif'}
                 alt={`Destaque ${i + 1}`}
                 className="rounded-xl shadow-lg w-full h-full object-cover"
                 style={{ background: '#fff' }}

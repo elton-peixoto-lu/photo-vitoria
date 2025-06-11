@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from 'react-icons/fa';
-import { ActionButtons, CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
-import ImageWithBlur from '../components/ImageWithBlur';
+import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
+import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 
 const ALBUNS = [
-  { key: 'casamentos', label: 'Casamentos' },
-  { key: 'infantil', label: 'Infantil' },
-  { key: 'femininos', label: 'Femininos' },
-  { key: 'pre-weding', label: 'Pre-Weding' },
-  { key: 'noivas', label: 'Noivas' },
+  { key: 'casamentos', label: 'Casamentos', folder: 'casamentos' },
+  { key: 'infantil', label: 'Infantil', folder: 'infantil' },
+  { key: 'femininos', label: 'Femininos', folder: 'femininos' },
+  { key: 'pre-weding', label: 'Pre-Weding', folder: 'pre-weding' },
+  { key: 'noivas', label: 'Noivas', folder: 'noivas' },
 ];
 
 export default function Galeria() {
@@ -128,8 +128,9 @@ export default function Galeria() {
                         onClick={() => setModal({ album: album.key, index: idx })}
                         aria-label={`Abrir foto ${idx + 1} do álbum ${album.label}`}
                       >
-                        <ImageWithBlur
+                        <SafeImageWithBlur
                           src={url}
+                          fallback={typeof url === 'string' ? `/images/galeria/${album.key}/${url}` : `/images/galeria/${album.key}/fallback.avif`}
                           alt={nome}
                           className="object-cover w-full h-full group-hover:brightness-90 transition"
                           loading="lazy"
@@ -158,11 +159,16 @@ export default function Galeria() {
             <button className="absolute top-3 right-3 text-white/80 hover:text-pink-300 text-4xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={closeModal} aria-label="Fechar">&times;</button>
             <button className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-pink-300 text-3xl font-bold z-10 bg-white/20 rounded-full p-2 shadow transition-all" onClick={prevFoto} aria-label="Anterior">&#60;</button>
             <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative max-w-xs sm:max-w-2xl md:max-w-3xl mx-auto">
-              <ImageWithBlur
+              <SafeImageWithBlur
                 src={
                   safeFotos(modal.album)[modal.index]?.url ||
                   safeFotos(modal.album)[modal.index] ||
                   ''
+                }
+                fallback={
+                  typeof safeFotos(modal.album)[modal.index]?.url === 'string'
+                    ? `/images/galeria/${modal.album}/${safeFotos(modal.album)[modal.index]?.url}`
+                    : `/images/galeria/${modal.album}/fallback.avif`
                 }
                 alt={`Foto ${modal.index + 1}`}
                 className="rounded-2xl shadow max-h-[80vh] max-w-full object-contain bg-white transition-all duration-300"
