@@ -8,13 +8,18 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node server/index.cjs"
+    "server": "node server/index.cjs",
+    "sync:images": "node scripts/syncImages.mjs",
+    "sync:images:force": "node scripts/syncImages.mjs --force",
+    "sync:images:web": "node scripts/syncWebInterface.mjs",
+    "sync:test": "node scripts/test.mjs"
   },
   "dependencies": {
     "@cloudinary/react": "^1.14.3",
     "@cloudinary/url-gen": "^1.21.0",
     "@vercel/speed-insights": "^1.2.0",
     "altcha": "^2.0.2",
+    "chalk": "^4.1.2",
     "cloudinary": "^2.6.1",
     "cors": "^2.8.5",
     "daisyui": "^5.0.42",
@@ -30,6 +35,7 @@
     "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.6.1",
     "react-slick": "^0.30.3",
+    "sharp": "^0.33.5",
     "slick-carousel": "^1.8.1",
     "vite-plugin-pwa": "^1.0.0"
   },

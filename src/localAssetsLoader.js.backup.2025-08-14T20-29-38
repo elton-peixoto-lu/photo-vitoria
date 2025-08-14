@@ -1,0 +1,200 @@
+// Sistema de carregamento híbrido: assets locais + API fallback com circuit breaker
+import { getGaleriaCache, setGaleriaCache } from './cacheGalerias';
+
+// Mapeamento das imagens locais por pasta
+const LOCAL_IMAGES_MAP = {
+  "casamentos": [],
+  "infantil": [],
+  "femininos": [],
+  "pre-weding": [],
+  "noivas": []
+};
+
+// Circuit Breaker para controlar fallback para API
+class CircuitBreaker {
+  constructor(failureThreshold = 3, timeout = 60000) {
+    this.failureThreshold = failureThreshold;
+    this.timeout = timeout;
+    this.failureCount = 0;
+    this.lastFailureTime = null;
+    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+  }
+
+  async call(fn) {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailureTime > this.timeout) {
+        this.state = 'HALF_OPEN';
+      } else {
+        throw new Error('Circuit breaker is OPEN');
+      }
+    }
+
+    try {
+      const result = await fn();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  onSuccess() {
+    this.failureCount = 0;
+    this.state = 'CLOSED';
+  }
+
+  onFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+    
+    if (this.failureCount >= this.failureThreshold) {
+      this.state = 'OPEN';
+    }
+  }
+}
+
+// Instância global do circuit breaker
+const apiCircuitBreaker = new CircuitBreaker(3, 30000); // 3 falhas, 30s timeout
+
+// Função para carregar imagens locais
+export function loadLocalImages(pasta) {
+  console.log(`🏠 Carregando imagens locais para pasta: ${pasta}`);
+  
+  const localImages = LOCAL_IMAGES_MAP[pasta];
+  if (!localImages || !Array.isArray(localImages)) {
+    console.warn(`❌ Pasta '${pasta}' não encontrada no mapeamento local`);
+    return [];
+  }
+
+  // Converte para o formato esperado pelo sistema atual
+  return localImages.map((filename, index) => ({
+    url: `/images/galeria/${pasta}/${filename}`,
+    thumb: `/images/galeria/${pasta}/${filename}`, // Mesmo arquivo (já otimizado em AVIF)
+    width: 800, // Valores padrão - podem ser ajustados
+    height: 1200,
+    format: 'avif',
+    public_id: `local_${pasta}_${index}`,
+    isLocal: true // Flag para identificar imagens locais
+  }));
+}
+
+// Função para carregar via API (com circuit breaker)
+async function loadFromAPI(pasta) {
+  console.log(`🌐 Tentando carregar via API para pasta: ${pasta}`);
+  
+  const apiUrl = import.meta.env.VITE_API_URL;
+  
+  return await apiCircuitBreaker.call(async () => {
+    const response = await fetch(`${apiUrl}/galeria/${encodeURIComponent(pasta)}`, {
+      timeout: 10000 // 10s timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API retornou status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.images || [];
+  });
+}
+
+// Função principal híbrida com fallback
+export async function loadGalleryImages(pasta) {
+  console.log(`🔄 Iniciando carregamento híbrido para pasta: ${pasta}`);
+  
+  // Verifica cache primeiro
+  const cachedImages = getGaleriaCache(pasta);
+  if (cachedImages && cachedImages.length > 0) {
+    console.log(`💾 Imagens encontradas no cache para pasta: ${pasta}`);
+    return cachedImages;
+  }
+
+  try {
+    // Estratégia 1: Tenta carregar imagens locais primeiro
+    const localImages = loadLocalImages(pasta);
+    
+    if (localImages && localImages.length > 0) {
+      console.log(`✅ ${localImages.length} imagens locais carregadas para pasta: ${pasta}`);
+      
+      // Valida se as imagens locais existem realmente
+      const validatedImages = await validateLocalImages(localImages);
+      
+      if (validatedImages.length > 0) {
+        setGaleriaCache(pasta, validatedImages);
+        return validatedImages;
+      } else {
+        console.warn(`⚠️ Nenhuma imagem local válida encontrada para pasta: ${pasta}`);
+      }
+    }
+
+    // Estratégia 2: Fallback para API
+    console.log(`🔄 Tentando fallback para API para pasta: ${pasta}`);
+    const apiImages = await loadFromAPI(pasta);
+    
+    if (apiImages && apiImages.length > 0) {
+      console.log(`✅ ${apiImages.length} imagens carregadas via API para pasta: ${pasta}`);
+      setGaleriaCache(pasta, apiImages);
+      return apiImages;
+    }
+
+    console.warn(`⚠️ Nenhuma imagem encontrada via API para pasta: ${pasta}`);
+    return [];
+
+  } catch (error) {
+    console.error(`❌ Erro no carregamento híbrido para pasta ${pasta}:`, error);
+    
+    // Último recurso: retorna imagens locais mesmo que algumas possam estar quebradas
+    const localImages = loadLocalImages(pasta);
+    if (localImages && localImages.length > 0) {
+      console.log(`🆘 Usando imagens locais como último recurso para pasta: ${pasta}`);
+      return localImages;
+    }
+    
+    return [];
+  }
+}
+
+// Valida se as imagens locais realmente existem
+async function validateLocalImages(images) {
+  console.log(`🔍 Validando ${images.length} imagens locais...`);
+  
+  const validImages = [];
+  
+  // Valida em lotes para melhor performance
+  const batchSize = 5;
+  for (let i = 0; i < images.length; i += batchSize) {
+    const batch = images.slice(i, i + batchSize);
+    const promises = batch.map(async (image) => {
+      try {
+        const response = await fetch(image.url, { method: 'HEAD' });
+        return response.ok ? image : null;
+      } catch {
+        return null;
+      }
+    });
+    
+    const results = await Promise.all(promises);
+    validImages.push(...results.filter(img => img !== null));
+  }
+  
+  console.log(`✅ ${validImages.length}/${images.length} imagens locais validadas`);
+  return validImages;
+}
+
+// Função para obter estatísticas do circuit breaker
+export function getCircuitBreakerStats() {
+  return {
+    state: apiCircuitBreaker.state,
+    failureCount: apiCircuitBreaker.failureCount,
+    lastFailureTime: apiCircuitBreaker.lastFailureTime
+  };
+}
+
+// Função para resetar o circuit breaker (útil para debug/admin)
+export function resetCircuitBreaker() {
+  apiCircuitBreaker.failureCount = 0;
+  apiCircuitBreaker.state = 'CLOSED';
+  apiCircuitBreaker.lastFailureTime = null;
+  console.log('🔄 Circuit breaker resetado');
+}

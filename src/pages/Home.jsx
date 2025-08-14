@@ -4,46 +4,86 @@ import { CONTATO } from '../components/ContatoInfo';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { FaImages } from 'react-icons/fa';
 import { LOGO_URL } from '../constants';
+import { loadGalleryImages } from '../localAssetsLoader';
 
 // export default function Home() {
 //   return null;
 // }
 
 export default function Home() {
-  const [fotos, setFotos] = useState([]);
-  const [quatro, setQuatro] = useState([]);
+  const [fotosDestaque, setFotosDestaque] = useState([]);
+  const [galeriaAtual, setGaleriaAtual] = useState(0);
   const intervalRef = useRef();
 
+  // Todas as galerias disponíveis
+  const galerias = [
+    { key: 'casamentos', label: 'Casamentos', url: '/galeria-casamentos' },
+    { key: 'infantil', label: 'Infantil', url: '/galeria-infantil' },
+    { key: 'femininos', label: 'Femininos', url: '/galeria-femininos' },
+    { key: 'pre-weding', label: 'Pre-Wedding', url: '/galeria-pre-weding' },
+    { key: 'noivas', label: 'Noivas', url: '/galeria-noivas' }
+  ];
+
+  // Carrega 1 imagem aleatória de cada galeria
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    fetch(`${apiUrl}/galeria/destaques`)
-      .then(res => res.json())
-      .then(data => {
-        const arr = data.images || [];
-        setFotos(arr);
-        if (arr.length >= 4) {
-          setQuatro(getRandomQuatro(arr));
+    async function carregarImagensDestaque() {
+      console.log('🏠 Carregando imagens de destaque para Home...');
+      
+      const imagensDestaque = [];
+      
+      for (const galeria of galerias) {
+        try {
+          const imagens = await loadGalleryImages(galeria.key);
+          
+          if (imagens && imagens.length > 0) {
+            // Seleciona uma imagem aleatória da galeria
+            const imagemAleatoria = imagens[Math.floor(Math.random() * imagens.length)];
+            
+            imagensDestaque.push({
+              ...imagemAleatoria,
+              galeria: galeria.key,
+              galeriaLabel: galeria.label,
+              galeriaUrl: galeria.url
+            });
+            
+            console.log(`✅ Imagem selecionada da galeria ${galeria.label}`);
+          } else {
+            console.warn(`⚠️ Nenhuma imagem encontrada na galeria ${galeria.label}`);
+          }
+        } catch (error) {
+          console.error(`❌ Erro ao carregar galeria ${galeria.label}:`, error);
         }
-      });
+      }
+      
+      setFotosDestaque(imagensDestaque);
+      console.log(`🎉 ${imagensDestaque.length} imagens de destaque carregadas!`);
+    }
+    
+    carregarImagensDestaque();
   }, []);
 
+  // Rotaciona as imagens de destaque a cada 4 segundos
   useEffect(() => {
-    if (fotos.length < 4) return;
+    if (fotosDestaque.length === 0) return;
+    
     clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setQuatro(getRandomQuatro(fotos));
-    }, 3000);
+      setGaleriaAtual(prev => (prev + 1) % fotosDestaque.length);
+    }, 4000);
+    
     return () => clearInterval(intervalRef.current);
-  }, [fotos]);
+  }, [fotosDestaque]);
 
-  function getRandomQuatro(arr) {
-    if (arr.length < 4) return arr;
-    let idxs = [];
-    while (idxs.length < 4) {
-      let idx = Math.floor(Math.random() * arr.length);
-      if (!idxs.includes(idx)) idxs.push(idx);
+  // Função para obter sempre 4 imagens para exibir (completa com repetições se necessário)
+  function get4ImagensDestaque() {
+    if (fotosDestaque.length === 0) return [];
+    
+    const imagens = [];
+    for (let i = 0; i < 4; i++) {
+      const index = i % fotosDestaque.length;
+      imagens.push(fotosDestaque[index]);
     }
-    return idxs.map(i => arr[i]);
+    return imagens;
   }
 
   return (
@@ -57,19 +97,19 @@ export default function Home() {
         <FaImages />
       </a>
       {/* Fundo blur absoluto com uma das fotos de destaque */}
-      {quatro[0] && (
+      {fotosDestaque[galeriaAtual] && (
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
           <div
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${quatro[0]?.url || quatro[0]})`,
+              backgroundImage: `url(${fotosDestaque[galeriaAtual]?.url})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(32px) brightness(0.7)',
               opacity: 0.7,
             }}
-            className="w-full h-full"
+            className="w-full h-full transition-all duration-1000"
           />
         </div>
       )}
@@ -114,21 +154,117 @@ export default function Home() {
           </a>
         </div>
       </section>
-      {/* Grid de fotos de destaque centralizado e responsivo */}
+      {/* Seção das galerias com imagem principal e 4 miniaturas */}
       <section className="flex flex-col items-center justify-center w-full z-10 py-8 md:py-12">
-        <h2 className="text-xl md:text-3xl font-bold text-pink-400 mb-6 md:mb-8 text-center drop-shadow">Destaques recentes</h2>
-        <div className="w-full max-w-4xl md:max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 px-2 md:px-8">
-          {(Array.isArray(quatro) ? quatro : []).map((foto, i) => (
-            <div key={i} className="relative w-full h-60 flex items-center justify-center">
-              <SafeImageWithBlur
-                src={foto?.url || foto}
-                fallback={typeof foto === 'string' ? `/images/home/${foto}` : '/images/home/fallback.avif'}
-                alt={`Destaque ${i + 1}`}
-                className="rounded-xl shadow-lg w-full h-full object-cover"
-                style={{ background: '#fff' }}
-              />
+        <h2 className="text-xl md:text-3xl font-bold text-pink-400 mb-6 md:mb-8 text-center drop-shadow">
+          Explore Nossas Galerias
+        </h2>
+        
+        <div className="w-full max-w-6xl mx-auto px-4">
+          {fotosDestaque.length > 0 ? (
+            <>
+              {/* Imagem principal da galeria atual - SEMPRE INTEIRA */}
+              <div className="mb-8">
+                <div className="relative w-full bg-gradient-to-br from-pink-50 to-yellow-50 rounded-2xl overflow-hidden shadow-2xl group border border-pink-200">
+                  {/* Container com aspect ratio adaptável para mostrar imagem inteira */}
+                  <div className="relative w-full" style={{ 
+                    minHeight: '300px',
+                    maxHeight: '500px',
+                    height: 'clamp(300px, 40vh, 500px)' 
+                  }}>
+                    <SafeImageWithBlur
+                      src={fotosDestaque[galeriaAtual]?.url}
+                      fallback="/images/fallback.avif"
+                      alt={`${fotosDestaque[galeriaAtual]?.galeriaLabel} - Destaque`}
+                      className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                      style={{ backgroundColor: '#fefefe' }}
+                    />
+                    
+                    {/* Overlay com info da galeria */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-6 left-6 right-6">
+                        <h3 className="text-xl md:text-3xl font-bold text-white mb-2">
+                          {fotosDestaque[galeriaAtual]?.galeriaLabel}
+                        </h3>
+                        <a
+                          href={fotosDestaque[galeriaAtual]?.galeriaUrl}
+                          className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-medium transition-all duration-300 transform hover:scale-105 text-sm md:text-base"
+                        >
+                          <FaImages className="text-base md:text-lg" />
+                          Ver Galeria Completa
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 4 Miniaturas fixas das galerias */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                {get4ImagensDestaque().map((foto, i) => (
+                  <a
+                    key={`miniatura-${foto?.galeria}-${i}`}
+                    href={foto?.galeriaUrl || `/galeria-${foto?.galeria}`}
+                    className={`group relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 block ${
+                      fotosDestaque[galeriaAtual]?.galeria === foto?.galeria
+                        ? 'border-pink-500 ring-2 ring-pink-300' 
+                        : 'border-white/50'
+                    }`}
+                  >
+                    {/* Container da miniatura - também mostra imagem inteira */}
+                    <div className="relative w-full aspect-[4/5] bg-gradient-to-br from-gray-50 to-gray-100">
+                      <SafeImageWithBlur
+                        src={foto?.url}
+                        fallback="/images/fallback.avif"
+                        alt={`${foto?.galeriaLabel} - Preview`}
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                        style={{ backgroundColor: '#fefefe' }}
+                      />
+                      
+                      {/* Label da galeria */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent">
+                        <div className="p-3">
+                          <p className="text-white text-xs md:text-sm font-bold truncate">
+                            {foto?.galeriaLabel}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Indicador ativo */}
+                      {fotosDestaque[galeriaAtual]?.galeria === foto?.galeria && (
+                        <div className="absolute top-2 right-2">
+                          <div className="w-3 h-3 bg-pink-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+              
+              {/* Indicadores das galerias (botões de navegação) */}
+              <div className="flex flex-wrap justify-center gap-2 md:gap-3 mt-8">
+                {galerias.map((galeria, index) => (
+                  <a
+                    key={galeria.key}
+                    href={galeria.url}
+                    className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 no-underline ${
+                      index === galeriaAtual 
+                        ? 'bg-pink-500 text-white shadow-lg scale-105' 
+                        : 'bg-white/80 text-pink-500 hover:bg-pink-100 shadow'
+                    }`}
+                  >
+                    {galeria.label}
+                  </a>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Loading state */
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full mb-4"></div>
+              <p className="text-pink-400 text-lg">Carregando galerias...</p>
             </div>
-          ))}
+          )}
         </div>
       </section>
       {/* Balão de incentivo ao WhatsApp */}

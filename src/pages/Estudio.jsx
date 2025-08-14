@@ -4,6 +4,7 @@ import { FaHeart, FaUserCircle } from 'react-icons/fa';
 import { CONTATO } from '../components/ContatoInfo.jsx';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
+import { loadGalleryImages } from '../localAssetsLoader';
 
 const DEPOIMENTOS = [
   {
@@ -20,22 +21,64 @@ const DEPOIMENTOS = [
   },
 ];
 
-// Carrega fotos de destaque do backend
-function useDestaques() {
+// Carrega fotos das galerias usando sistema híbrido
+function useImagensEstudio() {
   const [fotos, setFotos] = useState([]);
+  const [fotoAtual, setFotoAtual] = useState(0);
+  
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL;
-    fetch(`${apiUrl}/galeria/destaques`)
-      .then(res => res.json())
-      .then(data => setFotos((data.images || []).slice(0, 9))) // pega até 9
-      .catch(() => setFotos([]));
+    async function carregarImagens() {
+      console.log('🎨 Carregando imagens para página Estúdio...');
+      
+      const todasImagens = [];
+      const galerias = ['casamentos', 'femininos', 'infantil', 'noivas', 'pre-weding'];
+      
+      // Carrega algumas imagens de cada galeria
+      for (const galeria of galerias) {
+        try {
+          const imagens = await loadGalleryImages(galeria);
+          if (imagens && imagens.length > 0) {
+            // Pega até 2 imagens aleatórias de cada galeria
+            const imagensAleatorias = imagens
+              .sort(() => Math.random() - 0.5)
+              .slice(0, 2);
+            todasImagens.push(...imagensAleatorias);
+          }
+        } catch (error) {
+          console.warn(`Erro ao carregar galeria ${galeria}:`, error);
+        }
+      }
+      
+      // Embaralha todas e pega até 12 para o grid
+      const imagensFinais = todasImagens
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 12);
+      
+      setFotos(imagensFinais);
+      console.log(`✅ ${imagensFinais.length} imagens carregadas para Estúdio`);
+    }
+    
+    carregarImagens();
   }, []);
-  return fotos;
+  
+  // Rotaciona a imagem de fundo a cada 6 segundos
+  useEffect(() => {
+    if (fotos.length <= 1) return;
+    
+    const timer = setInterval(() => {
+      setFotoAtual(prev => (prev + 1) % fotos.length);
+    }, 6000);
+    
+    return () => clearInterval(timer);
+  }, [fotos]);
+  
+  return { fotos, fotoAtual };
 }
 
 export default function Estudio() {
   const [depoIndex, setDepoIndex] = React.useState(0);
-  const destaques = useDestaques();
+  const { fotos: imagensEstudio, fotoAtual } = useImagensEstudio();
+  
   React.useEffect(() => {
     const timer = setInterval(() => {
       setDepoIndex(i => (i + 1) % DEPOIMENTOS.length);
@@ -51,9 +94,9 @@ export default function Estudio() {
           background: 'linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%)',
           opacity: 0.7,
         }} />
-        {destaques.length > 0 && (
-          <div className="w-full h-full min-h-screen absolute inset-0" style={{
-            backgroundImage: `url(${destaques[0]?.url || destaques[0]})`,
+        {imagensEstudio.length > 0 && (
+          <div className="w-full h-full min-h-screen absolute inset-0 transition-all duration-1000" style={{
+            backgroundImage: `url(${imagensEstudio[fotoAtual]?.url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'blur(32px) brightness(0.7)',
@@ -102,16 +145,16 @@ export default function Estudio() {
               </a>
             </motion.div>
             {/* Grid de fotos, mapa e depoimentos */}
-            {destaques.length > 0 && (
+            {imagensEstudio.length > 0 && (
               <div className="flex-1 flex flex-col justify-center w-full">
                 <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 max-w-7xl mx-auto">
-                  {(Array.isArray(destaques) ? destaques : []).slice(0, 8).map((foto, i) => (
-                    <div className="relative" key={i}>
+                  {imagensEstudio.slice(0, 8).map((foto, i) => (
+                    <div className="relative" key={`estudio-${i}`}>
                       <SafeImageWithBlur
-                        src={foto?.url || foto}
-                        fallback={typeof foto === 'string' ? `/images/estudio/${foto}` : '/images/estudio/fallback.avif'}
-                        alt={`Destaque ${i + 1}`}
-                        className="rounded-lg shadow-md w-full h-48 object-cover opacity-80 transition duration-500"
+                        src={foto?.url}
+                        fallback="/images/fallback.avif"
+                        alt={`Imagem Estúdio ${i + 1}`}
+                        className="rounded-lg shadow-md w-full h-48 object-cover opacity-80 transition duration-500 hover:opacity-100 hover:scale-105"
                       />
                       <div className="absolute inset-0 z-20 pointer-events-none select-none">
                         {[...Array(3)].map((_, j) => (

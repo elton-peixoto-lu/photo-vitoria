@@ -10,6 +10,7 @@ import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
 import { LOGO_URL } from '../constants';
 import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUtils';
+import { loadGalleryImages } from '../localAssetsLoader';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
@@ -24,27 +25,22 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   const sliderRef = useRef();
   const [paused, setPaused] = useState(false);
 
-  // Fetch das fotos (sempre igual)
+  // Fetch das fotos usando sistema híbrido (local + API fallback)
   useEffect(() => {
     if (fotos.length > 0) setPrevFotos(fotos);
     setLoading(true);
     setFadeOut(true);
     clearTimeout(fadeTimeout.current);
     fadeTimeout.current = setTimeout(() => setFadeOut(false), 200);
-    // Tenta usar o cache primeiro
-    const cache = getGaleriaCache(pasta);
-    if (cache) {
-      setFotos(cache);
-      setLoading(false);
-      return;
-    }
-    const apiUrl = import.meta.env.VITE_API_URL;
-    fetch(`${apiUrl}/galeria/${encodeURIComponent(pasta)}`)
-      .then(res => res.json())
-      .then(data => {
-        const imagens = data.images || [];
-        setFotos(imagens);
-        setGaleriaCache(pasta, imagens);
+    
+    // Carrega imagens usando o sistema híbrido
+    loadGalleryImages(pasta)
+      .then(imagens => {
+        setFotos(imagens || []);
+      })
+      .catch(error => {
+        console.error('Erro ao carregar imagens:', error);
+        setFotos([]);
       })
       .finally(() => setLoading(false));
   }, [pasta]);

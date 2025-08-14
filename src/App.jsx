@@ -15,6 +15,15 @@ import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import CookieBanner from './components/CookieBanner';
+import SystemMonitor from './components/SystemMonitor';
+import { loadGalleryImages } from './localAssetsLoader';
+
+// Importa utilitários de teste em desenvolvimento
+if (import.meta.env.DEV) {
+  import('./utils/testHybridSystem.js').then(() => {
+    console.log('🧪 Utilitários de teste carregados - veja console para comandos disponíveis');
+  });
+}
 
 const MENU = [
   { label: 'Home', path: '/', icon: <FaHome size={18} /> },
@@ -67,14 +76,12 @@ const MENU_TITLES = {
   },
 };
 
-// Cache simples para preload das galerias
-const galeriaCache = {};
+// Preload das galerias usando sistema híbrido
 function preloadGaleria(pasta) {
-  if (galeriaCache[pasta]) return;
-  const apiUrl = import.meta.env.VITE_API_URL;
-  fetch(`${apiUrl}/galeria/${encodeURIComponent(pasta)}`)
-    .then(res => res.json())
-    .then(fotos => { galeriaCache[pasta] = fotos; });
+  // Executa preload de forma assíncrona usando o sistema híbrido
+  loadGalleryImages(pasta).catch(error => {
+    console.warn(`Erro no preload da galeria ${pasta}:`, error);
+  });
 }
 
 function Logo() {
@@ -283,6 +290,10 @@ export default function App() {
           Instalar app
         </button>
       )}
+      
+      {/* Monitor do sistema (apenas em desenvolvimento) */}
+      <SystemMonitor isVisible={import.meta.env.DEV} />
+      
     </BrowserRouter>
   );
 }

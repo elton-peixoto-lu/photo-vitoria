@@ -4,6 +4,7 @@ import { FaSearch } from 'react-icons/fa';
 import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
+import { loadGalleryImages } from '../localAssetsLoader';
 
 const ALBUNS = [
   { key: 'casamentos', label: 'Casamentos', folder: 'casamentos' },
@@ -21,15 +22,19 @@ export default function Galeria() {
   useEffect(() => {
     async function fetchAll() {
       setCarregando(true);
-      const apiUrl = import.meta.env.VITE_API_URL;
       const result = {};
+      
+      // Carrega imagens usando o sistema híbrido para cada álbum
       for (const album of ALBUNS) {
         try {
-          const res = await fetch(`${apiUrl}/galeria/${album.key}`);
-          const data = await res.json();
-          result[album.key] = data.images || [];
-        } catch { result[album.key] = []; }
+          const images = await loadGalleryImages(album.key);
+          result[album.key] = images || [];
+        } catch (error) {
+          console.error(`Erro ao carregar álbum ${album.key}:`, error);
+          result[album.key] = [];
+        }
       }
+      
       setFotosPorAlbum(result);
       setCarregando(false);
     }
