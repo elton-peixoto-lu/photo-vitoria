@@ -1,0 +1,20 @@
+{
+  "greeting": "✨ Bem-vindos ao Studio Vitória!",
+  "welcome_message": "📸 Transformamos momentos em memórias eternas",
+  "promocao_site_ativa": true,
+  "promocao_site_desconto": 10,
+  "promocao_site_titulo": "OFERTA ESPECIAL WEB",
+  "promocao_site_subtitulo": "Exclusiva para visitantes do site!",
+  "promocao_site_codigo": "SITE10",
+  "promocao_site_validade": "Válido até o final de Janeiro/2025",
+  "promocao_site_cor": "gradient-pink",
+  "manutencao_ativa": false,
+  "manutencao_mensagem": "🔧 Site em manutenção - voltamos em breve!",
+  "galeria_max_imagens": 50,
+  "galeria_qualidade": 85,
+  "feature_novas_galerias": true,
+  "feature_animacoes_avancadas": true,
+  "feature_promocoes_especiais": true,
+  "featured_gallery": "casamentos",
+  "max_images_home": 6
+}

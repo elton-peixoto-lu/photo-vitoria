@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+y#!/usr/bin/env node
 
 /**
  * Script de Sincronização de Imagens API → Local (ES Module)

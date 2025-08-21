@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const galeriaRoutes = require('./galeriaRoutes.cjs');
+const edgeConfigRoutes = require('./edgeConfigRoutes.cjs');
 
 const app = express();
 const allowedOrigins = [
@@ -22,6 +23,7 @@ app.use(cors({
   }
 }));
 app.use('/api/galeria', galeriaRoutes);
+app.use('/api/config', edgeConfigRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`)); 

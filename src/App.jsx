@@ -17,6 +17,9 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import CookieBanner from './components/CookieBanner';
 import SystemMonitor from './components/SystemMonitor';
 import { loadGalleryImages } from './localAssetsLoader';
+import { ConfigProvider, ConfigStatus } from './components/ConfigProvider';
+import DynamicBanner from './components/DynamicBanner';
+import PromocaoSite from './components/PromocaoSite';
 
 // Importa utilitários de teste em desenvolvimento
 if (import.meta.env.DEV) {
@@ -246,8 +249,10 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="flex min-h-screen">
+    <ConfigProvider>
+      <BrowserRouter>
+        <PromocaoSite />
+        <div className="flex min-h-screen">
         {/* Botão hambúrguer mobile */}
         <button
           className="fixed top-4 left-4 z-[100] p-2 rounded-md bg-white/90 shadow-lg border border-pink-100 text-pink-400 block md:hidden focus:outline-none"
@@ -294,6 +299,10 @@ export default function App() {
       {/* Monitor do sistema (apenas em desenvolvimento) */}
       <SystemMonitor isVisible={import.meta.env.DEV} />
       
+      {/* Status das configurações (apenas em desenvolvimento) */}
+      <ConfigStatus />
+      
     </BrowserRouter>
+    </ConfigProvider>
   );
 }
