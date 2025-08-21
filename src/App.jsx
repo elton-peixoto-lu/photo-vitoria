@@ -26,6 +26,9 @@ if (import.meta.env.DEV) {
   import('./utils/testHybridSystem.js').then(() => {
     console.log('🧪 Utilitários de teste carregados - veja console para comandos disponíveis');
   });
+  import('./utils/testWhatsApp.js').then(() => {
+    console.log('📱 Utilitários do WhatsApp carregados - digite testWhatsApp() no console');
+  });
 }
 
 const MENU = [

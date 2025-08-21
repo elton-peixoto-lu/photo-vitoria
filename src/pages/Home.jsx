@@ -5,6 +5,7 @@ import SafeImageWithBlur from '../components/ImageWithBlur';
 import { FaImages } from 'react-icons/fa';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
+import { gerarUrlWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 
 // export default function Home() {
 //   return null;
@@ -270,7 +271,7 @@ export default function Home() {
       {/* Balão de incentivo ao WhatsApp */}
       <div className="w-full flex justify-center mb-4 z-20">
         <a
-          href="https://wa.me/5511975184864?text=Ol%C3%A1%2C%20vim%20pelo%20site%2C%20pode%20me%20ajudar%3F"
+          href={gerarUrlWhatsApp(MENSAGENS_WHATSAPP.home)}
           target="_blank"
           rel="noopener noreferrer"
           className="relative bg-gradient-to-r from-pink-100 via-yellow-50 to-pink-50 border border-pink-200 rounded-2xl shadow-lg px-6 py-3 flex items-center gap-3 hover:scale-105 transition-all duration-300 group"

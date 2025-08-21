@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getConfig } from '../utils/edgeConfig';
 import { FaGift, FaWhatsapp, FaTimes, FaPercent } from 'react-icons/fa';
-import { CONTATO } from '../components/ContatoInfo';
+import { CONTATO, BotaoWhatsapp } from '../components/ContatoInfo';
+import { abrirWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 
 /**
  * Banner de promoção específica para visitantes do site
@@ -54,10 +55,9 @@ export default function PromocaoSite() {
   }, []);
 
   // Função para abrir WhatsApp com a mensagem da promoção
-  const abrirWhatsApp = () => {
-    const mensagem = `Olá! Vi a promoção de ${promocao.desconto}% no site e gostaria de agendar um ensaio. Código: ${promocao.codigo} 📸✨`;
-    const url = `https://wa.me/${CONTATO.WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, '_blank');
+  const abrirWhatsAppPromocao = () => {
+    const mensagem = MENSAGENS_WHATSAPP.promocao(promocao.desconto, promocao.codigo);
+    abrirWhatsApp(mensagem);
   };
 
   // Não mostrar se não há promoção, foi fechado ou ainda carregando
@@ -121,7 +121,7 @@ export default function PromocaoSite() {
           {/* Botão de ação */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={abrirWhatsApp}
+              onClick={abrirWhatsAppPromocao}
               className="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-3 rounded-full shadow-lg flex items-center gap-2 transition-all duration-200 hover:scale-105"
             >
               <FaWhatsapp size={20} />
