@@ -5,7 +5,7 @@
 
 html {
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 body {
@@ -18,7 +18,7 @@ body {
   font-family: 'Inter', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: auto;
   position: relative;
 }
 
@@ -115,4 +115,46 @@ aside nav {
 aside nav a span {
   display: inline-block;
   max-width: 100%;
+}
+
+/* Barra de scroll horizontal para navegação */
+body, html {
+  overflow-x: auto;
+}
+
+/* Estilo da barra de scroll horizontal do body */
+body::-webkit-scrollbar {
+  height: 12px;
+}
+
+body::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%);
+  border-top: 1px solid rgba(219, 39, 119, 0.1);
+}
+
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #ec4899, #f472b6);
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #db2777, #ec4899);
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.3);
+}
+
+/* Firefox horizontal scrollbar */
+body {
+  scrollbar-width: auto;
+  scrollbar-color: #ec4899 rgba(255, 228, 239, 0.3);
+}
+
+/* Garantir que o conteúdo principal tenha width mínimo */
+.flex.min-h-screen {
+  min-width: 100%;
+}
+
+/* Container do conteúdo com scroll suave */
+#root {
+  scroll-behavior: smooth;
 }
