@@ -6,6 +6,7 @@ import { FaImages } from 'react-icons/fa';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
 import { gerarUrlWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
+import { useResponsive } from '../hooks/useResponsive';
 
 // export default function Home() {
 //   return null;
@@ -13,6 +14,7 @@ import { gerarUrlWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 
 export default function Home() {
   const [fotosDestaque, setFotosDestaque] = useState([]);
+  const { columnsForGallery, isMobile, isDesktop } = useResponsive();
 
   // Todas as galerias disponíveis
   const galerias = [
@@ -151,8 +153,11 @@ export default function Home() {
         <div className="w-full max-w-6xl mx-auto px-4">
           {fotosDestaque.length > 0 ? (
             <>
-              {/* 4 Miniaturas das galerias */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {/* Miniaturas das galerias - grid responsivo */}
+              <div 
+                className="grid gap-4 md:gap-6"
+                style={{ gridTemplateColumns: `repeat(${Math.min(columnsForGallery, 4)}, 1fr)` }}
+              >
                 {get4ImagensDestaque().map((foto, i) => (
                   <a
                     key={`miniatura-${foto?.galeria}-${i}`}

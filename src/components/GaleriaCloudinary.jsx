@@ -11,6 +11,7 @@ import React from 'react';
 import { LOGO_URL } from '../constants';
 import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUtils';
 import { loadGalleryImages } from '../localAssetsLoader';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
@@ -24,6 +25,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   const [showActions, setShowActions] = useState(false);
   const sliderRef = useRef();
   const [paused, setPaused] = useState(false);
+  const { isMobile: isMobileResponsive, shouldAutoplayCarousel, prefersReducedMotion } = useResponsive();
 
   // Fetch das fotos usando sistema híbrido (local + API fallback)
   useEffect(() => {

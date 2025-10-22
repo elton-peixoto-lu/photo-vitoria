@@ -5,6 +5,7 @@ import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../component
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
+import { useResponsive } from '../hooks/useResponsive';
 
 const ALBUNS = [
   { key: 'casamentos', label: 'Casamentos', folder: 'casamentos' },
@@ -18,6 +19,7 @@ export default function Galeria() {
   const [fotosPorAlbum, setFotosPorAlbum] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [modal, setModal] = useState({ album: null, index: null });
+  const { columnsForGallery, isMobile } = useResponsive();
 
   useEffect(() => {
     async function fetchAll() {
@@ -121,7 +123,8 @@ export default function Galeria() {
                 <p className="text-pink-300 text-center">Nenhuma foto encontrada ou erro ao carregar.</p>
               ) : (
                 <div
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 w-full"
+                  className="grid gap-4 md:gap-6 w-full"
+                  style={{ gridTemplateColumns: `repeat(${columnsForGallery}, 1fr)` }}
                 >
                   {safeFotos(album.key).map((foto, idx) => {
                     const url = typeof foto === 'string' ? foto : foto.url;

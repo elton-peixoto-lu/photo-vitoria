@@ -5,6 +5,7 @@ import { CONTATO, BotaoInstagram, BotaoWhatsapp, BotaoEmail } from '../component
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
+import { useResponsive } from '../hooks/useResponsive';
 
 // Hook para carregar imagens da galeria usando sistema híbrido
 function useImagensContato() {

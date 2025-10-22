@@ -6,6 +6,7 @@ import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
 import ServicosSection from '../components/ServicosSection';
+import { useResponsive } from '../hooks/useResponsive';
 
 const DEPOIMENTOS = [
   {
