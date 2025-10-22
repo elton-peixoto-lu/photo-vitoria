@@ -5,7 +5,7 @@ import { CONTATO } from '../components/ContatoInfo';
 
 export default function Lgpd() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] px-4 py-16 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] px-4 py-16 relative md:ml-40">
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none flex flex-col opacity-10">
         {[...Array(2)].map((_, row) => (
           <div key={row} className="flex flex-1 w-full justify-center items-center">

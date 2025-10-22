@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function Obrigado() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] px-4 py-16 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] px-4 py-16 relative md:ml-40">
       {/* Fundo decorativo com logo em marca d'água */}
       <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none flex flex-col opacity-10">
         {[...Array(3)].map((_, row) => (
