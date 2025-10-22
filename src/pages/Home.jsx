@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import GaleriaCloudinary from '../components/GaleriaCloudinary';
 import { CONTATO } from '../components/ContatoInfo';
 import SafeImageWithBlur from '../components/ImageWithBlur';
@@ -13,8 +13,6 @@ import { gerarUrlWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 
 export default function Home() {
   const [fotosDestaque, setFotosDestaque] = useState([]);
-  const [galeriaAtual, setGaleriaAtual] = useState(0);
-  const intervalRef = useRef();
 
   // Todas as galerias disponíveis
   const galerias = [
@@ -63,17 +61,6 @@ export default function Home() {
     carregarImagensDestaque();
   }, []);
 
-  // Rotaciona as imagens de destaque a cada 4 segundos
-  useEffect(() => {
-    if (fotosDestaque.length === 0) return;
-    
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setGaleriaAtual(prev => (prev + 1) % fotosDestaque.length);
-    }, 4000);
-    
-    return () => clearInterval(intervalRef.current);
-  }, [fotosDestaque]);
 
   // Função para obter sempre 4 imagens para exibir (completa com repetições se necessário)
   function get4ImagensDestaque() {
@@ -164,53 +151,13 @@ export default function Home() {
         <div className="w-full max-w-6xl mx-auto px-4">
           {fotosDestaque.length > 0 ? (
             <>
-              {/* Imagem principal da galeria atual - SEMPRE INTEIRA */}
-              <div className="mb-8">
-                <div className="relative w-full bg-gradient-to-br from-pink-50 to-yellow-50 rounded-2xl overflow-hidden shadow-2xl group border border-pink-200">
-                  {/* Container com aspect ratio adaptável para mostrar imagem inteira */}
-                  <div className="relative w-full" style={{ 
-                    minHeight: '300px',
-                    maxHeight: '500px',
-                    height: 'clamp(300px, 40vh, 500px)' 
-                  }}>
-                    <SafeImageWithBlur
-                      src={fotosDestaque[galeriaAtual]?.url}
-                      fallback="/images/fallback.avif"
-                      alt={`${fotosDestaque[galeriaAtual]?.galeriaLabel} - Destaque`}
-                      className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                      style={{ backgroundColor: '#fefefe' }}
-                    />
-                    
-                    {/* Overlay com info da galeria */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="absolute bottom-6 left-6 right-6">
-                        <h3 className="text-xl md:text-3xl font-bold text-white mb-2">
-                          {fotosDestaque[galeriaAtual]?.galeriaLabel}
-                        </h3>
-                        <a
-                          href={fotosDestaque[galeriaAtual]?.galeriaUrl}
-                          className="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-full font-medium transition-all duration-300 transform hover:scale-105 text-sm md:text-base"
-                        >
-                          <FaImages className="text-base md:text-lg" />
-                          Ver Galeria Completa
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 4 Miniaturas fixas das galerias */}
+              {/* 4 Miniaturas das galerias */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {get4ImagensDestaque().map((foto, i) => (
                   <a
                     key={`miniatura-${foto?.galeria}-${i}`}
                     href={foto?.galeriaUrl || `/galeria-${foto?.galeria}`}
-                    className={`group relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 block ${
-                      fotosDestaque[galeriaAtual]?.galeria === foto?.galeria
-                        ? 'border-pink-500 ring-2 ring-pink-300' 
-                        : 'border-white/50'
-                    }`}
+                    className="group relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 border-white/50 block"
                   >
                     {/* Container da miniatura - também mostra imagem inteira */}
                     <div className="relative w-full aspect-[4/5] bg-gradient-to-br from-gray-50 to-gray-100">
@@ -230,29 +177,18 @@ export default function Home() {
                           </p>
                         </div>
                       </div>
-                      
-                      {/* Indicador ativo */}
-                      {fotosDestaque[galeriaAtual]?.galeria === foto?.galeria && (
-                        <div className="absolute top-2 right-2">
-                          <div className="w-3 h-3 bg-pink-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-                        </div>
-                      )}
                     </div>
                   </a>
                 ))}
               </div>
               
-              {/* Indicadores das galerias (botões de navegação) */}
+              {/* Labels das categorias (botões de navegação) */}
               <div className="flex flex-wrap justify-center gap-2 md:gap-3 mt-8">
-                {galerias.map((galeria, index) => (
+                {galerias.map((galeria) => (
                   <a
                     key={galeria.key}
                     href={galeria.url}
-                    className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 no-underline ${
-                      index === galeriaAtual 
-                        ? 'bg-pink-500 text-white shadow-lg scale-105' 
-                        : 'bg-white/80 text-pink-500 hover:bg-pink-100 shadow'
-                    }`}
+                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 no-underline bg-white/80 text-pink-500 hover:bg-pink-500 hover:text-white hover:shadow-lg hover:scale-105 shadow"
                   >
                     {galeria.label}
                   </a>
