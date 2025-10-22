@@ -77,7 +77,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col w-full md:ml-40">
+    <div className="relative min-h-screen flex flex-col w-full">
       {/* Botão flutuante para Galeria no mobile */}
       <a
         href="/galeria"

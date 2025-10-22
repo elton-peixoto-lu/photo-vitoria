@@ -10,7 +10,7 @@ import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
-import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaCrown, FaRing } from 'react-icons/fa';
+import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaCrown, FaRing, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -20,6 +20,7 @@ import { loadGalleryImages } from './localAssetsLoader';
 import { ConfigProvider, ConfigStatus } from './components/ConfigProvider';
 import DynamicBanner from './components/DynamicBanner';
 import PromocaoSite from './components/PromocaoSite';
+import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
 // Importa utilitários de teste em desenvolvimento
 if (import.meta.env.DEV) {
@@ -90,13 +91,13 @@ function preloadGaleria(pasta) {
   });
 }
 
-function Logo() {
+function Logo({ collapsed = false }) {
   return (
     <div className="flex flex-col items-center mb-10 mt-6 select-none">
       <img
         src={LOGO_URL}
         alt="Logo Fotos da Vitória"
-        className="w-32 h-auto mb-2 drop-shadow"
+        className={`${collapsed ? 'w-10' : 'w-32'} h-auto mb-2 drop-shadow transition-all duration-300`}
       />
     </div>
   );
@@ -177,26 +178,46 @@ function Sidebar({ mobile = false, open = false, onClose }) {
       </>
     );
   }
-  // Desktop
+  // Desktop - Sidebar colapsável
+  const { isOpen, sidebarWidth } = useSidebar();
+  
   return (
     <motion.aside
       initial={{ opacity: 0, x: -40 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 1.2, type: 'spring' }}
-      className="bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 w-40 h-screen fixed left-0 top-0 flex flex-col px-2 py-4 shadow-2xl border-r border-[#f3e8ff] z-40 hidden md:flex"
+      animate={{ 
+        opacity: 1, 
+        x: 0,
+        width: sidebarWidth 
+      }}
+      transition={{ duration: 0.3, type: 'spring', stiffness: 100 }}
+      className="bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 h-screen fixed left-0 top-0 flex flex-col py-4 shadow-2xl border-r border-[#f3e8ff] z-40 hidden md:flex overflow-hidden"
+      style={{ width: `${sidebarWidth}px` }}
     >
-      <Logo />
-      <nav className="flex-1 flex flex-col gap-0.5">
+      <div className={`px-2 ${!isOpen ? 'flex justify-center' : ''}`}>
+        <Logo collapsed={!isOpen} />
+      </div>
+      
+      <nav className={`flex-1 flex flex-col gap-0.5 mt-2 ${!isOpen ? 'items-center px-1' : 'px-2'}`}>
         {MENU.map(item => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2 justify-start py-1.5 px-2 rounded-md font-medium transition-all duration-300
-              ${location.pathname === item.path
+            className={`flex items-center gap-2 py-1.5 rounded-md font-medium transition-all duration-300 ${
+              !isOpen ? 'justify-center px-2' : 'justify-start px-2'
+            } ${
+              location.pathname === item.path
                 ? 'bg-gradient-to-r from-[#fbc2eb] via-[#fbeffb] to-[#a5b4fc] text-[#a21caf] shadow-lg border border-[#f3e8ff] scale-105'
-                : 'bg-transparent text-gray-500 hover:text-[#a78bfa]'}
-            `}
-            style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 600, fontSize: '0.98rem', boxShadow: location.pathname === item.path ? '0 4px 24px #fbc2eb33' : undefined, height: '2.2rem', minHeight: '2.2rem' }}
+                : 'bg-transparent text-gray-500 hover:text-[#a78bfa]'
+            }`}
+            style={{ 
+              fontFamily: 'Montserrat, Inter, sans-serif', 
+              fontWeight: 600, 
+              fontSize: !isOpen ? '1.2rem' : '0.98rem', 
+              boxShadow: location.pathname === item.path ? '0 4px 24px #fbc2eb33' : undefined, 
+              height: '2.2rem', 
+              minHeight: '2.2rem',
+              minWidth: !isOpen ? '2.5rem' : 'auto'
+            }}
             onMouseEnter={() => {
               if (item.path.startsWith('/galeria-')) {
                 const pasta = item.path.replace('/galeria-', '');
@@ -205,24 +226,57 @@ function Sidebar({ mobile = false, open = false, onClose }) {
             }}
             title={item.label || 'Galeria'}
           >
-            {item.icon && <span className="mr-1.5">{item.icon}</span>}
-            {item.label && <span>{item.label}</span>}
+            {item.icon && <span className={!isOpen ? '' : 'mr-1.5'}>{item.icon}</span>}
+            {isOpen && item.label && <span className="whitespace-nowrap overflow-hidden">{item.label}</span>}
           </Link>
         ))}
       </nav>
-      <a
-        href={CONTATO.instagram.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-6 mb-2 px-6 py-3 bg-pink-500 text-white font-bold rounded-full shadow hover:bg-pink-600 transition text-lg text-center flex items-center justify-center gap-2"
-        style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 700, letterSpacing: '0.04em' }}
-      >
-        <FaInstagram size={22} /> Veja mais
-      </a>
-      <a href={CONTATO.whatsapp.url} target="_blank" rel="noopener noreferrer" className="mt-10 flex items-center gap-2 text-green-400 hover:text-green-300 text-sm">
-        <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M12.004 2.003c-5.523 0-9.997 4.474-9.997 9.997 0 1.762.464 3.484 1.345 4.997l-1.409 5.168a1 1 0 0 0 1.225 1.225l5.168-1.409a9.963 9.963 0 0 0 4.997 1.345c5.523 0 9.997-4.474 9.997-9.997s-4.474-9.997-9.997-9.997zm0 18.001a7.96 7.96 0 0 1-4.07-1.144l-.29-.172-3.067.837.822-3.016-.188-.309a7.963 7.963 0 1 1 6.793 3.804zm4.387-5.409c-.24-.12-1.418-.7-1.637-.779-.219-.08-.379-.12-.539.12-.16.239-.619.779-.759.939-.14.16-.279.18-.519.06-.24-.12-1.014-.373-1.933-1.19-.715-.637-1.197-1.426-1.338-1.666-.14-.24-.015-.369.105-.489.108-.107.24-.279.36-.419.12-.14.16-.239.24-.399.08-.16.04-.299-.02-.419-.06-.12-.539-1.299-.739-1.779-.195-.468-.393-.405-.539-.413l-.459-.008c-.16 0-.419.06-.639.299-.219.239-.839.819-.839 1.999 0 1.18.859 2.319.979 2.479.12.16 1.689 2.579 4.099 3.519.574.197 1.021.314 1.37.403.575.146 1.099.126 1.513.077.461-.055 1.418-.579 1.618-1.139.2-.56.2-1.04.14-1.139-.06-.1-.22-.16-.46-.28z"/></svg>
-        WhatsApp
-      </a>
+      
+      {isOpen && (
+        <>
+          <a
+            href={CONTATO.instagram.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 mb-2 mx-2 px-6 py-3 bg-pink-500 text-white font-bold rounded-full shadow hover:bg-pink-600 transition text-lg text-center flex items-center justify-center gap-2"
+            style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 700, letterSpacing: '0.04em' }}
+          >
+            <FaInstagram size={22} /> Veja mais
+          </a>
+          <a 
+            href={CONTATO.whatsapp.url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="mt-10 mx-2 flex items-center gap-2 text-green-400 hover:text-green-300 text-sm justify-center"
+          >
+            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M12.004 2.003c-5.523 0-9.997 4.474-9.997 9.997 0 1.762.464 3.484 1.345 4.997l-1.409 5.168a1 1 0 0 0 1.225 1.225l5.168-1.409a9.963 9.963 0 0 0 4.997 1.345c5.523 0 9.997-4.474 9.997-9.997s-4.474-9.997-9.997-9.997zm0 18.001a7.96 7.96 0 0 1-4.07-1.144l-.29-.172-3.067.837.822-3.016-.188-.309a7.963 7.963 0 1 1 6.793 3.804zm4.387-5.409c-.24-.12-1.418-.7-1.637-.779-.219-.08-.379-.12-.539.12-.16.239-.619.779-.759.939-.14.16-.279.18-.519.06-.24-.12-1.014-.373-1.933-1.19-.715-.637-1.197-1.426-1.338-1.666-.14-.24-.015-.369.105-.489.108-.107.24-.279.36-.419.12-.14.16-.239.24-.399.08-.16.04-.299-.02-.419-.06-.12-.539-1.299-.739-1.779-.195-.468-.393-.405-.539-.413l-.459-.008c-.16 0-.419.06-.639.299-.219.239-.839.819-.839 1.999 0 1.18.859 2.319.979 2.479.12.16 1.689 2.579 4.099 3.519.574.197 1.021.314 1.37.403.575.146 1.099.126 1.513.077.461-.055 1.418-.579 1.618-1.139.2-.56.2-1.04.14-1.139-.06-.1-.22-.16-.46-.28z"/></svg>
+            WhatsApp
+          </a>
+        </>
+      )}
+      
+      {!isOpen && (
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <a
+            href={CONTATO.instagram.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
+            title="Instagram"
+          >
+            <FaInstagram size={18} />
+          </a>
+          <a 
+            href={CONTATO.whatsapp.url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 text-white shadow hover:bg-green-600 transition"
+            title="WhatsApp"
+          >
+            <FaWhatsapp size={18} />
+          </a>
+        </div>
+      )}
     </motion.aside>
   );
 }
@@ -252,10 +306,29 @@ export default function App() {
   };
 
   return (
-    <ConfigProvider>
-      <BrowserRouter>
-        <PromocaoSite />
-        <div className="flex min-h-screen">
+    <SidebarProvider>
+      <ConfigProvider>
+        <BrowserRouter>
+          <AppContent 
+            menuOpen={menuOpen} 
+            setMenuOpen={setMenuOpen} 
+            showInstall={showInstall}
+            handleInstallClick={handleInstallClick}
+          />
+        </BrowserRouter>
+      </ConfigProvider>
+    </SidebarProvider>
+  );
+}
+
+// Componente interno que usa o context da sidebar
+function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) {
+  const { isOpen, toggle, sidebarWidth } = useSidebar();
+  
+  return (
+    <>
+      <PromocaoSite />
+      <div className="flex min-h-screen">
         {/* Botão hambúrguer mobile */}
         <button
           className="fixed top-4 left-4 z-[100] p-2 rounded-md bg-white/90 shadow-lg border border-pink-100 text-pink-400 block md:hidden focus:outline-none"
@@ -264,11 +337,32 @@ export default function App() {
         >
           <FaBars size={24} />
         </button>
+        
+        {/* Botão toggle sidebar desktop */}
+        <button
+          onClick={toggle}
+          className="fixed top-4 z-[100] p-2 rounded-full bg-pink-500 text-white shadow-lg hover:bg-pink-600 transition-all duration-300 hidden md:block"
+          style={{ 
+            left: `${sidebarWidth - 16}px`,
+            transition: 'left 0.3s ease'
+          }}
+          aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
+          title={isOpen ? "Fechar menu" : "Abrir menu"}
+        >
+          {isOpen ? <FaChevronLeft size={16} /> : <FaChevronRight size={16} />}
+        </button>
+        
         {/* Sidebar mobile (drawer) */}
         <Sidebar mobile open={menuOpen} onClose={() => setMenuOpen(false)} />
         {/* Sidebar desktop */}
         <Sidebar />
-        <div className="flex-1 flex flex-col min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] md:ml-40">
+        
+        <div 
+          className="flex-1 flex flex-col min-h-screen bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] transition-all duration-300"
+          style={{ 
+            marginLeft: window.innerWidth >= 768 ? `${sidebarWidth}px` : '0'
+          }}
+        >
           <div className="flex-1 flex flex-col">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -307,8 +401,6 @@ export default function App() {
       
       {/* Banner de cookies (LGPD) */}
       <CookieBanner />
-      
-    </BrowserRouter>
-    </ConfigProvider>
+    </>
   );
 }

@@ -75,7 +75,7 @@ export default function Contato() {
   const navigate = window.location ? (path => window.location.assign(path)) : () => {};
 
   return (
-    <div className="relative min-h-screen flex flex-col w-full md:ml-40">
+    <div className="relative min-h-screen flex flex-col w-full">
       {/* Fundo gradiente + blur de imagem */}
       <div className="absolute inset-0 z-0 w-full h-full min-h-screen">
         <div className="w-full h-full min-h-screen absolute inset-0" style={{
