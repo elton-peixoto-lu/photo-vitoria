@@ -87,13 +87,13 @@ export default function Home() {
         <FaImages />
       </a>
       {/* Fundo blur absoluto com uma das fotos de destaque */}
-      {fotosDestaque[galeriaAtual] && (
+      {fotosDestaque.length > 0 && fotosDestaque[0] && (
         <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
           <div
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${fotosDestaque[galeriaAtual]?.url})`,
+              backgroundImage: `url(${fotosDestaque[0]?.url})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(32px) brightness(0.7)',

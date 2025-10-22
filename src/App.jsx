@@ -305,6 +305,9 @@ export default function App() {
       {/* Status das configurações (apenas em desenvolvimento) */}
       <ConfigStatus />
       
+      {/* Banner de cookies (LGPD) */}
+      <CookieBanner />
+      
     </BrowserRouter>
     </ConfigProvider>
   );
