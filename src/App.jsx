@@ -197,26 +197,26 @@ function Sidebar({ mobile = false, open = false, onClose }) {
         <Logo collapsed={!isOpen} />
       </div>
       
-      <nav className={`flex-1 flex flex-col gap-0.5 mt-2 ${!isOpen ? 'items-center px-1' : 'px-2'}`}>
+      <nav className={`flex-1 flex flex-col gap-0.5 mt-2 overflow-y-auto overflow-x-hidden ${!isOpen ? 'items-center px-1' : 'px-1'}`} style={{ paddingRight: isOpen ? '4px' : undefined }}>
         {MENU.map(item => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2 py-1.5 rounded-md font-medium transition-all duration-300 ${
+            className={`flex items-center gap-1.5 py-2 rounded-md font-medium transition-all duration-300 ${
               !isOpen ? 'justify-center px-2' : 'justify-start px-2'
             } ${
               location.pathname === item.path
-                ? 'bg-gradient-to-r from-[#fbc2eb] via-[#fbeffb] to-[#a5b4fc] text-[#a21caf] shadow-lg border border-[#f3e8ff] scale-105'
-                : 'bg-transparent text-gray-500 hover:text-[#a78bfa]'
+                ? 'bg-gradient-to-r from-[#fbc2eb] via-[#fbeffb] to-[#a5b4fc] text-[#a21caf] shadow-lg border border-[#f3e8ff]'
+                : 'bg-transparent text-gray-500 hover:text-[#a78bfa] hover:bg-gray-50'
             }`}
             style={{ 
               fontFamily: 'Montserrat, Inter, sans-serif', 
               fontWeight: 600, 
-              fontSize: !isOpen ? '1.2rem' : '0.98rem', 
+              fontSize: !isOpen ? '1.2rem' : '0.8rem', 
               boxShadow: location.pathname === item.path ? '0 4px 24px #fbc2eb33' : undefined, 
-              height: '2.2rem', 
-              minHeight: '2.2rem',
-              minWidth: !isOpen ? '2.5rem' : 'auto'
+              minHeight: '2rem',
+              minWidth: !isOpen ? '2.5rem' : 'auto',
+              lineHeight: '1.2'
             }}
             onMouseEnter={() => {
               if (item.path.startsWith('/galeria-')) {
@@ -226,33 +226,33 @@ function Sidebar({ mobile = false, open = false, onClose }) {
             }}
             title={item.label || 'Galeria'}
           >
-            {item.icon && <span className={!isOpen ? '' : 'mr-1.5'}>{item.icon}</span>}
-            {isOpen && item.label && <span className="whitespace-nowrap overflow-hidden">{item.label}</span>}
+            {item.icon && <span className={!isOpen ? '' : 'mr-1.5 flex-shrink-0'}>{item.icon}</span>}
+            {isOpen && item.label && <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>}
           </Link>
         ))}
       </nav>
       
       {isOpen && (
-        <>
+        <div className="flex flex-col px-2 pb-2">
           <a
             href={CONTATO.instagram.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 mb-2 mx-2 px-6 py-3 bg-pink-500 text-white font-bold rounded-full shadow hover:bg-pink-600 transition text-lg text-center flex items-center justify-center gap-2"
-            style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 700, letterSpacing: '0.04em' }}
+            className="mt-6 mb-2 px-4 py-2.5 bg-pink-500 text-white font-bold rounded-full shadow hover:bg-pink-600 transition text-sm text-center flex items-center justify-center gap-2 whitespace-nowrap"
+            style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 700 }}
           >
-            <FaInstagram size={22} /> Veja mais
+            <FaInstagram size={18} /> Veja mais
           </a>
           <a 
             href={CONTATO.whatsapp.url} 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="mt-10 mx-2 flex items-center gap-2 text-green-400 hover:text-green-300 text-sm justify-center"
+            className="mt-8 flex items-center gap-2 text-green-400 hover:text-green-300 text-xs justify-center whitespace-nowrap"
           >
-            <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M12.004 2.003c-5.523 0-9.997 4.474-9.997 9.997 0 1.762.464 3.484 1.345 4.997l-1.409 5.168a1 1 0 0 0 1.225 1.225l5.168-1.409a9.963 9.963 0 0 0 4.997 1.345c5.523 0 9.997-4.474 9.997-9.997s-4.474-9.997-9.997-9.997zm0 18.001a7.96 7.96 0 0 1-4.07-1.144l-.29-.172-3.067.837.822-3.016-.188-.309a7.963 7.963 0 1 1 6.793 3.804zm4.387-5.409c-.24-.12-1.418-.7-1.637-.779-.219-.08-.379-.12-.539.12-.16.239-.619.779-.759.939-.14.16-.279.18-.519.06-.24-.12-1.014-.373-1.933-1.19-.715-.637-1.197-1.426-1.338-1.666-.14-.24-.015-.369.105-.489.108-.107.24-.279.36-.419.12-.14.16-.239.24-.399.08-.16.04-.299-.02-.419-.06-.12-.539-1.299-.739-1.779-.195-.468-.393-.405-.539-.413l-.459-.008c-.16 0-.419.06-.639.299-.219.239-.839.819-.839 1.999 0 1.18.859 2.319.979 2.479.12.16 1.689 2.579 4.099 3.519.574.197 1.021.314 1.37.403.575.146 1.099.126 1.513.077.461-.055 1.418-.579 1.618-1.139.2-.56.2-1.04.14-1.139-.06-.1-.22-.16-.46-.28z"/></svg>
+            <FaWhatsapp size={18} />
             WhatsApp
           </a>
-        </>
+        </div>
       )}
       
       {!isOpen && (

@@ -33,7 +33,7 @@ export function SidebarProvider({ children }) {
   const close = () => setIsOpen(false);
 
   // Largura da sidebar baseada no estado
-  const sidebarWidth = isOpen ? 160 : 60; // 160px aberta, 60px fechada
+  const sidebarWidth = isOpen ? 180 : 60; // 180px aberta, 60px fechada
 
   return (
     <SidebarContext.Provider value={{ isOpen, toggle, open, close, sidebarWidth }}>

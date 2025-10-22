@@ -86,3 +86,33 @@ section {
   margin-right: auto;
   box-sizing: border-box;
 }
+
+/* Estilo da barra de scroll da sidebar */
+aside nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+aside nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside nav::-webkit-scrollbar-thumb {
+  background: rgba(219, 39, 119, 0.3);
+  border-radius: 3px;
+}
+
+aside nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(219, 39, 119, 0.5);
+}
+
+/* Firefox scrollbar */
+aside nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(219, 39, 119, 0.3) transparent;
+}
+
+/* Prevenir quebra de texto no menu */
+aside nav a span {
+  display: inline-block;
+  max-width: 100%;
+}
