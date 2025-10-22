@@ -5,6 +5,7 @@ import { CONTATO } from '../components/ContatoInfo.jsx';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
+import ServicosSection from '../components/ServicosSection';
 
 const DEPOIMENTOS = [
   {
@@ -209,6 +210,11 @@ export default function Estudio() {
             )}
           </div>
         </div>
+      </div>
+      
+      {/* Seção de Serviços */}
+      <div className="relative z-10 bg-gradient-to-b from-white/90 to-gray-50/90">
+        <ServicosSection />
       </div>
     </div>
   );

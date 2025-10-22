@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaEnvelope } from 'react-icons/fa';
 import { LOGO_URL } from '../constants';
 import { CONTATO } from '../components/ContatoInfo';
 
@@ -66,7 +67,7 @@ export default function Lgpd() {
             <li>Solicitar portabilidade ou anonimização.</li>
             <li>Revogar o consentimento a qualquer momento.</li>
           </ul>
-          <p>Para exercer seus direitos, entre em contato pelo e-mail <a href={`mailto:${CONTATO.email.address}`} className="underline text-pink-500">{CONTATO.email.address}</a>.</p>
+          <p>Para exercer seus direitos, entre em contato pelo <a href={`mailto:${CONTATO.email.address}`} className="inline-flex items-center gap-2 underline text-pink-500 hover:text-pink-600 transition-colors" title={CONTATO.email.address}><FaEnvelope className="text-lg" /> e-mail</a>.</p>
 
           <h2 className="text-lg font-bold text-pink-400 mt-6">7. Retenção dos dados</h2>
           <p>Os dados são mantidos apenas pelo tempo necessário para cumprir as finalidades informadas ou obrigações legais.</p>
@@ -78,7 +79,7 @@ export default function Lgpd() {
           <p>Esta política pode ser atualizada a qualquer momento. Recomendamos revisá-la periodicamente.</p>
 
           <h2 className="text-lg font-bold text-pink-400 mt-6">10. Contato</h2>
-          <p>Em caso de dúvidas ou solicitações sobre privacidade e proteção de dados, envie um e-mail para <a href={`mailto:${CONTATO.email.address}`} className="underline text-pink-500">{CONTATO.email.address}</a>.</p>
+          <p>Em caso de dúvidas ou solicitações sobre privacidade e proteção de dados, entre em contato pelo <a href={`mailto:${CONTATO.email.address}`} className="inline-flex items-center gap-2 underline text-pink-500 hover:text-pink-600 transition-colors" title={CONTATO.email.address}><FaEnvelope className="text-lg" /> e-mail</a>.</p>
         </div>
       </div>
     </div>
