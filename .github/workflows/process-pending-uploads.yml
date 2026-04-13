@@ -1,0 +1,58 @@
+name: Processar fotos pendentes
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'uploads/pendentes/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  process-uploads:
+    name: Otimizar fotos e atualizar mapa local
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout do PR
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout manual
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Processar fotos pendentes
+        run: npm run process:uploads
+
+      - name: Comitar arquivos processados
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Nada para comitar."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/images/galeria src/localAssetsLoader.js uploads/pendentes
+          git commit -m "Process pending gallery uploads"
+          git push
