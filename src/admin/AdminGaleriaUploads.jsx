@@ -113,12 +113,12 @@ export default function AdminGaleriaUploads() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Falha ao criar Pull Request');
+      if (!response.ok) throw new Error(data.error || 'Falha ao enviar fotos');
 
       setPrUrl(data.pullRequestUrl);
       setFiles([]);
       event.target.reset();
-      setStatus('Pull Request criado. O processamento das fotos vai rodar no GitHub Actions.');
+      setStatus('Envio concluido! As fotos agora entram em processamento automatico e aparecem no site em seguida.');
     } catch (error) {
       setStatus(error?.message || 'Erro ao enviar fotos.');
     } finally {
@@ -161,7 +161,7 @@ export default function AdminGaleriaUploads() {
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-pink-600">Admin de fotos</h1>
-            <p className="mt-2 text-sm text-gray-600">Envie fotos e acompanhe o Pull Request criado automaticamente.</p>
+            <p className="mt-2 text-sm text-gray-600">Envie fotos para a galeria. O sistema processa tudo automaticamente.</p>
           </div>
           <button
             type="button"
@@ -217,7 +217,7 @@ export default function AdminGaleriaUploads() {
             disabled={submitting}
             className="w-full rounded-md bg-pink-500 px-5 py-3 font-bold text-white hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            {submitting ? 'Enviando...' : 'Criar Pull Request'}
+            {submitting ? 'Enviando...' : 'Enviar fotos para galeria'}
           </button>
         </form>
 
@@ -232,7 +232,7 @@ export default function AdminGaleriaUploads() {
             rel="noopener noreferrer"
             className="mt-4 inline-flex rounded-md bg-gray-900 px-5 py-3 text-sm font-bold text-white hover:bg-gray-700"
           >
-            Abrir Pull Request
+            Ver detalhes tecnicos do envio
           </a>
         )}
       </section>
