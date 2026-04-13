@@ -4,13 +4,12 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { FaHeart, FaRegHeart, FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 import BaloesAnimados from './BaloesAnimados';
-import { getGaleriaCache, setGaleriaCache } from '../cacheGalerias';
 import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
 import { LOGO_URL } from '../constants';
 import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUtils';
-import { loadGalleryImages } from '../localAssetsLoader';
+import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
 
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
@@ -38,7 +37,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     // Carrega imagens usando o sistema híbrido
     loadGalleryImages(pasta)
       .then(imagens => {
-        setFotos(imagens || []);
+        setFotos(filterRenderableGalleryImages(imagens || [], pasta));
       })
       .catch(error => {
         console.error('Erro ao carregar imagens:', error);
@@ -140,12 +139,15 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     return (
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
         {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
-          <div key={i} className="w-full flex flex-col items-center justify-center">
+          <div key={foto?.public_id || foto?.url || i} className="w-full flex flex-col items-center justify-center">
             <img
-              src={getCloudinaryOptimizedUrl(foto.url)}
+              src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
               alt={`Foto ${i + 1}`}
               className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white border-2 border-lime-400"
               draggable={false}
+              onError={(event) => {
+                event.currentTarget.src = getGalleryFallbackUrl(pasta);
+              }}
             />
             <div className="flex gap-3 mt-2 justify-center">
               <ActionButtons contatos={CONTATO} className="text-2xl" />
@@ -160,13 +162,16 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     return (
       <>
         {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
-          <div key={i} className="relative w-full h-64 flex items-center justify-center">
+          <div key={foto?.public_id || foto?.url || i} className="relative w-full h-64 flex items-center justify-center">
             <img
-              src={getCloudinaryOptimizedUrl(foto.url)}
+              src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
               alt={`Foto ${i + 1}`}
               className="rounded-lg shadow-md w-full h-full object-cover"
               draggable={false}
               style={{ background: '#fff' }}
+              onError={(event) => {
+                event.currentTarget.src = getGalleryFallbackUrl(pasta);
+              }}
             />
           </div>
         ))}
@@ -189,7 +194,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${fotos[currentSlide || 0].url})`,
+              backgroundImage: `url(${resolveGalleryImageUrl(fotos[currentSlide || 0]) || getGalleryFallbackUrl(pasta)})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(32px) brightness(0.7)',
@@ -210,13 +215,13 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
           >
             {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
               <div
-                key={i}
+                key={foto?.public_id || foto?.url || i}
                 className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
                 tabIndex={0}
               >
                 {/* Blur up: imagem borrada de fundo */}
                 <img
-                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(foto.url))}
+                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta)))}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
                   style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
@@ -225,12 +230,16 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 />
                 {/* Imagem real com fade */}
                 <img
-                  src={getCloudinaryOptimizedUrl(foto.url)}
+                  src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
                   alt={`Foto ${i + 1}`}
                   className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
                   style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
                   onContextMenu={e => e.preventDefault()}
                   onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
+                  onError={(event) => {
+                    event.currentTarget.src = getGalleryFallbackUrl(pasta);
+                    setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
+                  }}
                   draggable={false}
                 />
                 {/* Botões de ação: abaixo da imagem no mobile, centralizados sobre a foto no desktop */}

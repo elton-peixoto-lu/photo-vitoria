@@ -1,5 +1,5 @@
 // Sistema de carregamento híbrido: assets locais + API fallback com circuit breaker
-import { getGaleriaCache, setGaleriaCache } from './cacheGalerias';
+import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 
 // Mapeamento das imagens locais por pasta
 const LOCAL_IMAGES_MAP = {
@@ -84,6 +84,92 @@ const LOCAL_IMAGES_MAP = {
   ]
 };
 
+function normalizeLegacyFamily(filename) {
+  return filename
+    .replace(/\.avif$/i, '')
+    .replace(/_[a-z0-9]{6,}$/i, '')
+    .toLowerCase();
+}
+
+function compareLegacyFamilyPreference(leftName, rightName) {
+  const leftHasLegacySuffix = /_[a-z0-9]{6,}\.avif$/i.test(leftName);
+  const rightHasLegacySuffix = /_[a-z0-9]{6,}\.avif$/i.test(rightName);
+
+  if (leftHasLegacySuffix !== rightHasLegacySuffix) {
+    return leftHasLegacySuffix ? -1 : 1;
+  }
+
+  if (leftName.length !== rightName.length) {
+    return rightName.length - leftName.length;
+  }
+
+  return leftName.localeCompare(rightName);
+}
+
+function dedupeLegacyLocalFiles(filenames = []) {
+  const familyMap = new Map();
+
+  filenames.forEach((filename) => {
+    if (!filename) return;
+    const familyKey = normalizeLegacyFamily(filename);
+    const currentBest = familyMap.get(familyKey);
+
+    if (!currentBest || compareLegacyFamilyPreference(filename, currentBest) < 0) {
+      familyMap.set(familyKey, filename);
+    }
+  });
+
+  return [...familyMap.values()].sort((leftName, rightName) => leftName.localeCompare(rightName));
+}
+
+function getLocalGallerySignature(pasta) {
+  return dedupeLegacyLocalFiles(LOCAL_IMAGES_MAP[pasta] || []).join('|');
+}
+
+export function resolveGalleryImageUrl(image) {
+  if (typeof image === 'string') {
+    return image;
+  }
+
+  if (typeof image?.url === 'string') {
+    return image.url;
+  }
+
+  return '';
+}
+
+export function getGalleryFallbackUrl(pasta) {
+  return `/images/fallback.avif?gallery=${encodeURIComponent(pasta)}`;
+}
+
+export function filterRenderableGalleryImages(images = [], pasta = 'galeria') {
+  const seenUrls = new Set();
+
+  return images.filter((image) => {
+    const url = resolveGalleryImageUrl(image);
+    if (!url || seenUrls.has(url)) {
+      return false;
+    }
+
+    seenUrls.add(url);
+    return true;
+  }).map((image, index) => {
+    if (typeof image === 'string') {
+      return {
+        url: image,
+        thumb: image,
+        public_id: `safe_${pasta}_${index}`,
+      };
+    }
+
+    return {
+      ...image,
+      url: resolveGalleryImageUrl(image),
+      public_id: image?.public_id || `safe_${pasta}_${index}`,
+    };
+  });
+}
+
 // Circuit Breaker para controlar fallback para API
 class CircuitBreaker {
   constructor(failureThreshold = 3, timeout = 60000) {
@@ -135,7 +221,7 @@ const apiCircuitBreaker = new CircuitBreaker(3, 30000); // 3 falhas, 30s timeout
 export function loadLocalImages(pasta) {
   console.log(`🏠 Carregando imagens locais para pasta: ${pasta}`);
   
-  const localImages = LOCAL_IMAGES_MAP[pasta];
+  const localImages = dedupeLegacyLocalFiles(LOCAL_IMAGES_MAP[pasta]);
   if (!localImages || !Array.isArray(localImages)) {
     console.warn(`❌ Pasta '${pasta}' não encontrada no mapeamento local`);
     return [];
@@ -176,40 +262,50 @@ async function loadFromAPI(pasta) {
 // Função principal híbrida com fallback
 export async function loadGalleryImages(pasta) {
   console.log(`🔄 Iniciando carregamento híbrido para pasta: ${pasta}`);
+  const cacheSignature = getLocalGallerySignature(pasta);
   
   // Verifica cache primeiro
-  const cachedImages = getGaleriaCache(pasta);
+  const cachedImages = getGaleriaCache(pasta, cacheSignature);
   if (cachedImages && cachedImages.length > 0) {
     console.log(`💾 Imagens encontradas no cache para pasta: ${pasta}`);
-    return cachedImages;
+    return filterRenderableGalleryImages(cachedImages, pasta);
   }
 
   try {
-    // Estratégia 1: Tenta carregar imagens locais primeiro
-    const localImages = loadLocalImages(pasta);
-    
-    if (localImages && localImages.length > 0) {
-      console.log(`✅ ${localImages.length} imagens locais carregadas para pasta: ${pasta}`);
-      
-      // Valida se as imagens locais existem realmente
-      const validatedImages = await validateLocalImages(localImages);
-      
-      if (validatedImages.length > 0) {
-        setGaleriaCache(pasta, validatedImages);
-        return validatedImages;
-      } else {
-        console.warn(`⚠️ Nenhuma imagem local válida encontrada para pasta: ${pasta}`);
+    // Por padrão, respeita o fluxo atual do projeto: assets locais primeiro.
+    // Para forçar API primeiro (e refletir uploads imediatos sem redeploy),
+    // defina VITE_LOCAL_ASSETS_FIRST=false.
+    const preferLocal = import.meta.env.VITE_LOCAL_ASSETS_FIRST !== 'false';
+
+    // Estratégia 1: API primeiro apenas quando configurado explicitamente.
+    if (!preferLocal) {
+      const apiImages = await loadFromAPI(pasta);
+      if (apiImages && apiImages.length > 0) {
+        const safeApiImages = filterRenderableGalleryImages(apiImages, pasta);
+        setGaleriaCache(pasta, safeApiImages, cacheSignature);
+        return safeApiImages;
       }
     }
 
-    // Estratégia 2: Fallback para API
-    console.log(`🔄 Tentando fallback para API para pasta: ${pasta}`);
+    // Estratégia 2: Local (padrão do projeto).
+    const localImages = loadLocalImages(pasta);
+    if (localImages && localImages.length > 0) {
+      const validatedImages = await validateLocalImages(localImages);
+      if (validatedImages.length > 0) {
+        const safeLocalImages = filterRenderableGalleryImages(validatedImages, pasta);
+        setGaleriaCache(pasta, safeLocalImages, cacheSignature);
+        return safeLocalImages;
+      }
+    }
+
+    // Estratégia 3: Fallback para API (se preferLocal) ou último recurso
     const apiImages = await loadFromAPI(pasta);
     
     if (apiImages && apiImages.length > 0) {
       console.log(`✅ ${apiImages.length} imagens carregadas via API para pasta: ${pasta}`);
-      setGaleriaCache(pasta, apiImages);
-      return apiImages;
+      const safeApiImages = filterRenderableGalleryImages(apiImages, pasta);
+      setGaleriaCache(pasta, safeApiImages, cacheSignature);
+      return safeApiImages;
     }
 
     console.warn(`⚠️ Nenhuma imagem encontrada via API para pasta: ${pasta}`);
@@ -222,7 +318,7 @@ export async function loadGalleryImages(pasta) {
     const localImages = loadLocalImages(pasta);
     if (localImages && localImages.length > 0) {
       console.log(`🆘 Usando imagens locais como último recurso para pasta: ${pasta}`);
-      return localImages;
+      return filterRenderableGalleryImages(localImages, pasta);
     }
     
     return [];
@@ -253,7 +349,7 @@ async function validateLocalImages(images) {
   }
   
   console.log(`✅ ${validImages.length}/${images.length} imagens locais validadas`);
-  return validImages;
+  return filterRenderableGalleryImages(validImages);
 }
 
 // Função para obter estatísticas do circuit breaker

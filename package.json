@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test:uploads": "node --test scripts/processPendingUploads.test.mjs",
+    "test:uploads": "node --test scripts/processPendingUploads.test.mjs scripts/localAssetsLoader.test.mjs",
     "preview": "vite preview",
     "server": "node server/index.cjs",
     "admin-api": "node server/adminGalleryPrServer.mjs",
