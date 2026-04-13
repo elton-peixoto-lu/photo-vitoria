@@ -104,6 +104,24 @@ function compareFilePreference(leftName, rightName) {
   return leftName.localeCompare(rightName);
 }
 
+function normalizeLegacyFamily(name) {
+  return name
+    .replace(/\.avif$/i, '')
+    .replace(/_[a-z0-9]{6,}$/i, '')
+    .toLowerCase();
+}
+
+function compareLegacyFamilyPreference(leftName, rightName) {
+  const leftHasLegacySuffix = /_[a-z0-9]{6,}\.avif$/i.test(leftName);
+  const rightHasLegacySuffix = /_[a-z0-9]{6,}\.avif$/i.test(rightName);
+
+  if (leftHasLegacySuffix !== rightHasLegacySuffix) {
+    return leftHasLegacySuffix ? -1 : 1;
+  }
+
+  return compareFilePreference(leftName, rightName);
+}
+
 export async function processPendingFolder(folder, config) {
   const pendingFolder = path.join(config.pendingDir, folder);
   const outputFolder = path.join(config.publicDir, folder);
@@ -189,6 +207,37 @@ export async function dedupeOutputFolder(folder, config) {
       await fs.rm(path.join(outputFolder, duplicateName));
       removed++;
       console.log(`[${folder}] duplicada removida: ${duplicateName}`);
+    }
+  }
+
+  const remainingEntries = await fs.readdir(outputFolder, { withFileTypes: true });
+  const familyToFiles = new Map();
+
+  for (const entry of remainingEntries) {
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.avif') {
+      continue;
+    }
+
+    const familyKey = normalizeLegacyFamily(entry.name);
+    if (!familyToFiles.has(familyKey)) {
+      familyToFiles.set(familyKey, []);
+    }
+
+    familyToFiles.get(familyKey).push(entry.name);
+  }
+
+  for (const names of familyToFiles.values()) {
+    if (names.length < 2) {
+      continue;
+    }
+
+    const orderedNames = [...names].sort(compareLegacyFamilyPreference);
+    const [, ...duplicates] = orderedNames;
+
+    for (const duplicateName of duplicates) {
+      await fs.rm(path.join(outputFolder, duplicateName));
+      removed++;
+      console.log(`[${folder}] duplicada por familia removida: ${duplicateName}`);
     }
   }
 
