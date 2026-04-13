@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Keycloak from 'keycloak-js';
+import { FaFolderOpen } from 'react-icons/fa';
 
 const FOLDERS = [
   { value: 'casamentos', label: 'Casamentos' },
@@ -173,14 +174,17 @@ export default function AdminGaleriaUploads() {
 
         <form onSubmit={handleSubmit} className="space-y-6 rounded-md border border-gray-200 p-5 shadow-sm">
           <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700">Galeria</label>
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <FaFolderOpen className="text-pink-500" />
+              Galeria
+            </label>
             <select
               value={folder}
               onChange={(event) => setFolder(event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-pink-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-800 focus:border-pink-500 focus:outline-none"
             >
               {FOLDERS.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
+                <option key={item.value} value={item.value}>{`📁 ${item.label}`}</option>
               ))}
             </select>
           </div>
@@ -192,7 +196,7 @@ export default function AdminGaleriaUploads() {
               multiple
               accept=".jpg,.jpeg,.png,.webp,.avif,.tif,.tiff,image/jpeg,image/png,image/webp,image/avif,image/tiff"
               onChange={(event) => setFiles(Array.from(event.target.files || []))}
-              className="w-full rounded-md border border-dashed border-gray-300 px-4 py-5 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-pink-500 file:px-4 file:py-2 file:font-semibold file:text-white"
+              className="w-full rounded-md border border-dashed border-gray-300 bg-white px-4 py-5 text-sm text-gray-700 file:mr-4 file:rounded-md file:border-0 file:bg-pink-500 file:px-4 file:py-2 file:font-semibold file:text-white"
             />
             <p className="mt-2 text-xs text-gray-500">Limite atual: 20 fotos e 10MB por envio.</p>
           </div>
