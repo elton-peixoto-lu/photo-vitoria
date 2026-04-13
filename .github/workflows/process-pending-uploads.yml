@@ -24,13 +24,13 @@ jobs:
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout manual
         if: github.event_name != 'pull_request'
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Preparar Node.js
         uses: actions/setup-node@v4
@@ -40,6 +40,9 @@ jobs:
 
       - name: Instalar dependencias
         run: npm ci
+
+      - name: Testar fluxo de processamento
+        run: npm run test:uploads
 
       - name: Processar fotos pendentes
         run: npm run process:uploads
@@ -58,13 +61,13 @@ jobs:
           git commit -m "Process pending gallery uploads"
           git push
 
-      - name: Fazer merge automatico do upload
+      - name: Habilitar auto-merge apos checks verdes
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
         run: |
           gh pr merge "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
+            --auto \
             --merge \
-            --delete-branch \
-            --admin
+            --delete-branch

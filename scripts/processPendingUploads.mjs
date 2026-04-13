@@ -10,16 +10,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.join(__dirname, '..');
 
-const CONFIG = {
+export const DEFAULT_CONFIG = {
   pendingDir: path.join(ROOT_DIR, 'uploads', 'pendentes'),
   publicDir: path.join(ROOT_DIR, 'public', 'images', 'galeria'),
   loaderFile: path.join(ROOT_DIR, 'src', 'localAssetsLoader.js'),
   maxWidth: 1200,
   maxHeight: 1800,
   quality: 85,
+  folders: ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'],
 };
 
-const FOLDERS = ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'];
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
 
 async function pathExists(filePath) {
@@ -31,11 +31,11 @@ async function pathExists(filePath) {
   }
 }
 
-async function ensurePendingFolders() {
-  await fs.mkdir(CONFIG.pendingDir, { recursive: true });
+export async function ensurePendingFolders(config) {
+  await fs.mkdir(config.pendingDir, { recursive: true });
 
-  for (const folder of FOLDERS) {
-    const folderPath = path.join(CONFIG.pendingDir, folder);
+  for (const folder of config.folders) {
+    const folderPath = path.join(config.pendingDir, folder);
     await fs.mkdir(folderPath, { recursive: true });
     await fs.writeFile(path.join(folderPath, '.gitkeep'), '');
   }
@@ -63,7 +63,7 @@ async function listImageFiles(folderPath) {
   }
 
   await walk(folderPath);
-  return files.sort((a, b) => a.localeCompare(b));
+  return files.sort((leftPath, rightPath) => leftPath.localeCompare(rightPath));
 }
 
 function slugify(filePath) {
@@ -104,8 +104,54 @@ function compareFilePreference(leftName, rightName) {
   return leftName.localeCompare(rightName);
 }
 
-async function dedupeOutputFolder(folder) {
-  const outputFolder = path.join(CONFIG.publicDir, folder);
+export async function processPendingFolder(folder, config) {
+  const pendingFolder = path.join(config.pendingDir, folder);
+  const outputFolder = path.join(config.publicDir, folder);
+  const inputFiles = await listImageFiles(pendingFolder);
+
+  if (inputFiles.length === 0) {
+    console.log(`[${folder}] sem fotos pendentes`);
+    return { processed: 0, skipped: 0 };
+  }
+
+  await fs.mkdir(outputFolder, { recursive: true });
+
+  let processed = 0;
+  let skipped = 0;
+
+  for (const inputFile of inputFiles) {
+    const { buffer, fileName } = await createOutputName(inputFile);
+    const outputPath = path.join(outputFolder, fileName);
+
+    if (await pathExists(outputPath)) {
+      skipped++;
+      await fs.rm(inputFile);
+      console.log(`[${folder}] ja existia: ${fileName}`);
+      continue;
+    }
+
+    await sharp(buffer)
+      .rotate()
+      .resize(config.maxWidth, config.maxHeight, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .avif({
+        quality: config.quality,
+        effort: 4,
+      })
+      .toFile(outputPath);
+
+    processed++;
+    await fs.rm(inputFile);
+    console.log(`[${folder}] processada: ${path.basename(inputFile)} -> ${fileName}`);
+  }
+
+  return { processed, skipped };
+}
+
+export async function dedupeOutputFolder(folder, config) {
+  const outputFolder = path.join(config.publicDir, folder);
   if (!(await pathExists(outputFolder))) {
     return 0;
   }
@@ -149,57 +195,11 @@ async function dedupeOutputFolder(folder) {
   return removed;
 }
 
-async function processPendingFolder(folder) {
-  const pendingFolder = path.join(CONFIG.pendingDir, folder);
-  const outputFolder = path.join(CONFIG.publicDir, folder);
-  const inputFiles = await listImageFiles(pendingFolder);
-
-  if (inputFiles.length === 0) {
-    console.log(`[${folder}] sem fotos pendentes`);
-    return { processed: 0, skipped: 0 };
-  }
-
-  await fs.mkdir(outputFolder, { recursive: true });
-
-  let processed = 0;
-  let skipped = 0;
-
-  for (const inputFile of inputFiles) {
-    const { buffer, fileName } = await createOutputName(inputFile);
-    const outputPath = path.join(outputFolder, fileName);
-
-    if (await pathExists(outputPath)) {
-      skipped++;
-      await fs.rm(inputFile);
-      console.log(`[${folder}] ja existia: ${fileName}`);
-      continue;
-    }
-
-    await sharp(buffer)
-      .rotate()
-      .resize(CONFIG.maxWidth, CONFIG.maxHeight, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .avif({
-        quality: CONFIG.quality,
-        effort: 4,
-      })
-      .toFile(outputPath);
-
-    processed++;
-    await fs.rm(inputFile);
-    console.log(`[${folder}] processada: ${path.basename(inputFile)} -> ${fileName}`);
-  }
-
-  return { processed, skipped };
-}
-
-async function buildLocalMapping() {
+async function buildLocalMapping(config) {
   const mapping = {};
 
-  for (const folder of FOLDERS) {
-    const folderPath = path.join(CONFIG.publicDir, folder);
+  for (const folder of config.folders) {
+    const folderPath = path.join(config.publicDir, folder);
     if (!(await pathExists(folderPath))) {
       mapping[folder] = [];
       continue;
@@ -209,51 +209,64 @@ async function buildLocalMapping() {
     mapping[folder] = entries
       .filter((entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === '.avif')
       .map((entry) => entry.name)
-      .sort((a, b) => a.localeCompare(b));
+      .sort((leftName, rightName) => leftName.localeCompare(rightName));
   }
 
   return mapping;
 }
 
-async function updateLocalMapping() {
-  const content = await fs.readFile(CONFIG.loaderFile, 'utf8');
-  const mapping = await buildLocalMapping();
+export async function updateLocalMapping(config) {
+  const content = await fs.readFile(config.loaderFile, 'utf8');
+  const mapping = await buildLocalMapping(config);
   const mappingCode = `const LOCAL_IMAGES_MAP = ${JSON.stringify(mapping, null, 2)};`;
   const updatedContent = content.replace(/const LOCAL_IMAGES_MAP = \{[\s\S]*?\};/, mappingCode);
 
   if (updatedContent === content) {
     console.log('Mapeamento local ja estava atualizado');
-    return;
+    return false;
   }
 
   if (!updatedContent.includes(mappingCode)) {
     throw new Error('Nao foi possivel atualizar LOCAL_IMAGES_MAP');
   }
 
-  await fs.writeFile(CONFIG.loaderFile, updatedContent, 'utf8');
+  await fs.writeFile(config.loaderFile, updatedContent, 'utf8');
   console.log('Mapeamento local atualizado');
+  return true;
 }
 
-async function main() {
-  await ensurePendingFolders();
+export async function runProcessPendingUploads(config = DEFAULT_CONFIG) {
+  await ensurePendingFolders(config);
 
   let totalProcessed = 0;
   let totalSkipped = 0;
   let totalRemovedDuplicates = 0;
 
-  for (const folder of FOLDERS) {
-    const result = await processPendingFolder(folder);
+  for (const folder of config.folders) {
+    const result = await processPendingFolder(folder, config);
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
-    totalRemovedDuplicates += await dedupeOutputFolder(folder);
+    totalRemovedDuplicates += await dedupeOutputFolder(folder, config);
   }
 
-  await updateLocalMapping();
+  await updateLocalMapping(config);
 
-  console.log(`Resumo: ${totalProcessed} processadas, ${totalSkipped} duplicadas ignoradas, ${totalRemovedDuplicates} duplicadas removidas`);
+  const summary = {
+    processed: totalProcessed,
+    skipped: totalSkipped,
+    removedDuplicates: totalRemovedDuplicates,
+  };
+
+  console.log(
+    `Resumo: ${summary.processed} processadas, ${summary.skipped} duplicadas ignoradas, ${summary.removedDuplicates} duplicadas removidas`,
+  );
+
+  return summary;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  runProcessPendingUploads().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
