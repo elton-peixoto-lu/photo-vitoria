@@ -71,7 +71,6 @@ const LOCAL_IMAGES_MAP = {
     "rja3zzdzzsnxwzhq35io_obvtcp.avif",
     "rw7uz3dx430i9laf5rp1_ui0bho.avif",
     "sq0ka0xetbvitnc5af3j_cumjeo.avif",
-    "sq0ka0xetbvitnc5af3j.avif",
     "umxtmulo4crn14w6wubs.avif",
     "vwjsug1444v951vqxwls_lxhhjs.avif",
     "vwjsug1444v951vqxwls.avif",
@@ -79,8 +78,6 @@ const LOCAL_IMAGES_MAP = {
     "wrzosyiycspvsguldqrd_z8j2ri.avif",
     "wrzosyiycspvsguldqrd.avif",
     "yfzfookalypyatfxegaz_vcenuj.avif",
-    "yfzfookalypyatfxegaz.avif",
-    "yk7ecoya8km2qcsstzgl.avif",
     "ymwnbfwvfnlpthilvsyv.avif",
     "yt4tf3whckrxefm48tfq.avif"
   ],
@@ -98,8 +95,7 @@ const LOCAL_IMAGES_MAP = {
     "xfzdkucp2xgwx0bfszto_jx2ixr.avif",
     "xfzdkucp2xgwx0bfszto.avif",
     "zlqk8kyrkg16jgfkgg25_jzy4ul.avif",
-    "zlqk8kyrkg16jgfkgg25.avif",
-    "zzlrug9ygaikimepy3yz.avif"
+    "zlqk8kyrkg16jgfkgg25.avif"
   ],
   "noivas": [
     "dvvackjvoomhqatvegzv_giumtp.avif",

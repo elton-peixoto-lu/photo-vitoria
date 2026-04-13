@@ -88,6 +88,67 @@ async function createOutputName(inputPath) {
   };
 }
 
+function compareFilePreference(leftName, rightName) {
+  const generatedPattern = /-[0-9a-f]{10}\.avif$/i;
+  const leftGenerated = generatedPattern.test(leftName);
+  const rightGenerated = generatedPattern.test(rightName);
+
+  if (leftGenerated !== rightGenerated) {
+    return leftGenerated ? -1 : 1;
+  }
+
+  if (leftName.length !== rightName.length) {
+    return rightName.length - leftName.length;
+  }
+
+  return leftName.localeCompare(rightName);
+}
+
+async function dedupeOutputFolder(folder) {
+  const outputFolder = path.join(CONFIG.publicDir, folder);
+  if (!(await pathExists(outputFolder))) {
+    return 0;
+  }
+
+  const entries = await fs.readdir(outputFolder, { withFileTypes: true });
+  const hashToFiles = new Map();
+
+  for (const entry of entries) {
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.avif') {
+      continue;
+    }
+
+    const filePath = path.join(outputFolder, entry.name);
+    const buffer = await fs.readFile(filePath);
+    const hash = crypto.createHash('sha1').update(buffer).digest('hex');
+
+    if (!hashToFiles.has(hash)) {
+      hashToFiles.set(hash, []);
+    }
+
+    hashToFiles.get(hash).push(entry.name);
+  }
+
+  let removed = 0;
+
+  for (const names of hashToFiles.values()) {
+    if (names.length < 2) {
+      continue;
+    }
+
+    const orderedNames = [...names].sort(compareFilePreference);
+    const [, ...duplicates] = orderedNames;
+
+    for (const duplicateName of duplicates) {
+      await fs.rm(path.join(outputFolder, duplicateName));
+      removed++;
+      console.log(`[${folder}] duplicada removida: ${duplicateName}`);
+    }
+  }
+
+  return removed;
+}
+
 async function processPendingFolder(folder) {
   const pendingFolder = path.join(CONFIG.pendingDir, folder);
   const outputFolder = path.join(CONFIG.publicDir, folder);
@@ -178,16 +239,18 @@ async function main() {
 
   let totalProcessed = 0;
   let totalSkipped = 0;
+  let totalRemovedDuplicates = 0;
 
   for (const folder of FOLDERS) {
     const result = await processPendingFolder(folder);
     totalProcessed += result.processed;
     totalSkipped += result.skipped;
+    totalRemovedDuplicates += await dedupeOutputFolder(folder);
   }
 
   await updateLocalMapping();
 
-  console.log(`Resumo: ${totalProcessed} processadas, ${totalSkipped} duplicadas ignoradas`);
+  console.log(`Resumo: ${totalProcessed} processadas, ${totalSkipped} duplicadas ignoradas, ${totalRemovedDuplicates} duplicadas removidas`);
 }
 
 main().catch((error) => {
