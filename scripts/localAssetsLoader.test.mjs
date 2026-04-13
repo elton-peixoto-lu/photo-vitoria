@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   filterRenderableGalleryImages,
   getGalleryFallbackUrl,
   loadLocalImages,
 } from '../src/localAssetsLoader.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const GALLERY_ROOT = path.join(__dirname, '..', 'public', 'images', 'galeria');
+const GALLERY_FOLDERS = ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'];
 
 function normalizeLegacyFamilyFromUrl(url) {
   return url
@@ -16,13 +24,37 @@ function normalizeLegacyFamilyFromUrl(url) {
     .toLowerCase();
 }
 
-test('loadLocalImages entrega apenas variantes canonicas por familia', () => {
-  const fotos = loadLocalImages('infantil');
-  const families = fotos.map((foto) => normalizeLegacyFamilyFromUrl(foto.url));
-  const uniqueFamilies = new Set(families);
+test('loadLocalImages entrega galerias coerentes com os arquivos publicados', () => {
+  for (const folder of GALLERY_FOLDERS) {
+    const fotos = loadLocalImages(folder);
+    const urls = fotos.map((foto) => foto.url);
+    const families = fotos.map((foto) => normalizeLegacyFamilyFromUrl(foto.url));
+    const uniqueUrls = new Set(urls);
+    const uniqueFamilies = new Set(families);
+    const publishedFiles = fs
+      .readdirSync(path.join(GALLERY_ROOT, folder))
+      .filter((file) => file.endsWith('.avif'))
+      .sort((left, right) => left.localeCompare(right))
+      .map((file) => `/images/galeria/${folder}/${file}`);
 
-  assert.equal(fotos.length, uniqueFamilies.size);
-  assert.equal(fotos.length, 9);
+    assert.ok(fotos.length > 0, `${folder} deveria ter fotos publicadas`);
+    assert.equal(
+      fotos.length,
+      publishedFiles.length,
+      `${folder} deveria refletir a quantidade real de arquivos publicados`,
+    );
+    assert.deepEqual(
+      [...urls].sort((left, right) => left.localeCompare(right)),
+      publishedFiles,
+      `${folder} deveria apontar exatamente para os arquivos publicados`,
+    );
+    assert.equal(fotos.length, uniqueUrls.size, `${folder} nao deveria repetir URLs`);
+    assert.equal(
+      fotos.length,
+      uniqueFamilies.size,
+      `${folder} nao deveria repetir familias legadas`,
+    );
+  }
 });
 
 test('filterRenderableGalleryImages remove urls vazias e duplicadas', () => {
