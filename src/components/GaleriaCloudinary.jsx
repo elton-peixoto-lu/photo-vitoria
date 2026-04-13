@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { FaHeart, FaRegHeart, FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaHeart, FaPause, FaPlay, FaRegHeart, FaInstagram, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 import BaloesAnimados from './BaloesAnimados';
 import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
@@ -67,6 +67,17 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   };
 
   const handleLike = i => setLiked(l => ({ ...l, [i]: !l[i] }));
+  const handlePrevSlide = () => {
+    sliderRef.current?.slickPrev?.();
+    setPaused(true);
+  };
+  const handleNextSlide = () => {
+    sliderRef.current?.slickNext?.();
+    setPaused(true);
+  };
+  const toggleCarouselPlayback = () => {
+    setPaused((currentPaused) => !currentPaused);
+  };
 
   let appendDots = undefined;
   if (!semSetasDots) {
@@ -206,73 +217,122 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
       {/* Carrossel centralizado acima do blur */}
       <div className="relative z-10 w-full max-w-full md:max-w-7xl h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen flex flex-col items-center justify-center px-2 md:px-0">
         {!loading && fotos.length > 0 && (
-          <Slider
-            ref={sliderRef}
-            {...settings}
-            autoplay={semSetasDots}
-            autoplaySpeed={3000}
-            className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
-          >
-            {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
-              <div
-                key={foto?.public_id || foto?.url || i}
-                className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
-                tabIndex={0}
-              >
-                {/* Blur up: imagem borrada de fundo */}
-                <img
-                  src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta)))}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
-                  style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
-                  aria-hidden="true"
-                  draggable={false}
-                />
-                {/* Imagem real com fade */}
-                <img
-                  src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
-                  alt={`Foto ${i + 1}`}
-                  className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
-                  style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
-                  onContextMenu={e => e.preventDefault()}
-                  onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
-                  onError={(event) => {
-                    event.currentTarget.src = getGalleryFallbackUrl(pasta);
-                    setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
-                  }}
-                  draggable={false}
-                />
-                {/* Botões de ação: abaixo da imagem no mobile, centralizados sobre a foto no desktop */}
-                <div className="flex gap-3 mt-3 md:mt-0 md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-30">
-                  <ActionButtons
-                    contatos={CONTATO}
-                    className="text-2xl md:text-3xl"
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={handlePrevSlide}
+              className="absolute left-3 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/85 p-3 text-pink-500 shadow-lg transition hover:bg-white hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-300"
+              aria-label="Foto anterior"
+            >
+              <FaChevronLeft className="text-xl md:text-2xl" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNextSlide}
+              className="absolute right-3 top-1/2 z-30 -translate-y-1/2 rounded-full bg-white/85 p-3 text-pink-500 shadow-lg transition hover:bg-white hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-300"
+              aria-label="Próxima foto"
+            >
+              <FaChevronRight className="text-xl md:text-2xl" />
+            </button>
+            <Slider
+              ref={sliderRef}
+              {...settings}
+              autoplay={semSetasDots}
+              autoplaySpeed={3000}
+              className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
+            >
+              {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
+                <div
+                  key={foto?.public_id || foto?.url || i}
+                  className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
+                  tabIndex={0}
+                >
+                  {/* Blur up: imagem borrada de fundo */}
+                  <img
+                    src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta)))}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
+                    style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
+                    aria-hidden="true"
+                    draggable={false}
                   />
-                </div>
-                {/* Marcas d'água visuais sobre a foto, espalhadas (desktop apenas) */}
-                <div className="absolute inset-0 z-20 pointer-events-none select-none hidden md:block">
-                  {[...Array(7)].map((_, j) => (
-                    <img
-                      key={j}
-                      src={LOGO_URL}
-                      alt="Marca d'água logo"
-                      className="absolute opacity-10 w-24 md:w-32"
-                      style={{
-                        top: `${10 + 12 * j}%`,
-                        left: `${j % 2 === 0 ? 5 : 60}%`,
-                        transform: `rotate(${j % 2 === 0 ? 8 : -12}deg)`
-                      }}
-                      draggable={false}
+                  {/* Imagem real com fade */}
+                  <img
+                    src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
+                    alt={`Foto ${i + 1}`}
+                    className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow border-2 border-lime-400 transition-opacity duration-700 bg-white"
+                    style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
+                    onContextMenu={e => e.preventDefault()}
+                    onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
+                    onError={(event) => {
+                      event.currentTarget.src = getGalleryFallbackUrl(pasta);
+                      setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
+                    }}
+                    draggable={false}
+                  />
+                  {/* Botões de ação: abaixo da imagem no mobile, centralizados sobre a foto no desktop */}
+                  <div className="flex gap-3 mt-3 md:mt-0 md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:z-30">
+                    <ActionButtons
+                      contatos={CONTATO}
+                      className="text-2xl md:text-3xl"
                     />
-                  ))}
+                  </div>
+                  {/* Marcas d'água visuais sobre a foto, espalhadas (desktop apenas) */}
+                  <div className="absolute inset-0 z-20 pointer-events-none select-none hidden md:block">
+                    {[...Array(7)].map((_, j) => (
+                      <img
+                        key={j}
+                        src={LOGO_URL}
+                        alt="Marca d'água logo"
+                        className="absolute opacity-10 w-24 md:w-32"
+                        style={{
+                          top: `${10 + 12 * j}%`,
+                          left: `${j % 2 === 0 ? 5 : 60}%`,
+                          transform: `rotate(${j % 2 === 0 ? 8 : -12}deg)`
+                        }}
+                        draggable={false}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </Slider>
+              ))}
+            </Slider>
+          </div>
         )}
         {/* Barra de tempo status embaixo do carrossel, colada */}
         {semSetasDots && fotos.length > 0 && (
-          <BarraTempo total={fotos.length} atual={currentSlide} />
+          <div className="mt-3 flex w-full max-w-2xl flex-col items-center gap-3 px-4">
+            <BarraTempo total={fotos.length} atual={currentSlide} />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePrevSlide}
+                className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-pink-500 shadow transition hover:bg-white"
+              >
+                <FaChevronLeft />
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={toggleCarouselPlayback}
+                className="flex items-center gap-2 rounded-full bg-pink-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-pink-600"
+              >
+                {paused ? <FaPlay /> : <FaPause />}
+                {paused ? 'Retomar' : 'Pausar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleNextSlide}
+                className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-pink-500 shadow transition hover:bg-white"
+              >
+                Próxima
+                <FaChevronRight />
+              </button>
+            </div>
+            <div className="rounded-full bg-white/75 px-3 py-1 text-xs font-medium text-pink-500 shadow">
+              Foto {Math.min(currentSlide + 1, fotos.length)} de {fotos.length}
+            </div>
+          </div>
         )}
         {loading && <div className="text-2xl text-gray-500">Carregando...</div>}
         {!loading && fotos.length === 0 && <div className="text-2xl text-gray-500">Nenhuma foto encontrada.</div>}
