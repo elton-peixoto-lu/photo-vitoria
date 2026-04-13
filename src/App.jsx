@@ -5,6 +5,7 @@ import './App.css';
 import Contato from './pages/Contato';
 import Estudio from './pages/Estudio';
 import AdminPromocoes from './admin/AdminPromocoes';
+import AdminGaleriaUploads from './admin/AdminGaleriaUploads';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
@@ -375,6 +376,7 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
               <Route path="/estudio" element={<Estudio />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/admin" element={<AdminPromocoes />} />
+              <Route path="/admin/galeria" element={<AdminGaleriaUploads />} />
               <Route path="/obrigado" element={<Obrigado />} />
               <Route path="/lgpd" element={<Lgpd />} />
             </Routes>
