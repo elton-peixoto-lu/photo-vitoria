@@ -31,11 +31,11 @@ export default function AdminGaleriaUploads() {
   const [submitting, setSubmitting] = useState(false);
 
   const keycloakConfig = useMemo(() => ({
-    url: import.meta.env.VITE_KEYCLOAK_URL,
-    realm: import.meta.env.VITE_KEYCLOAK_REALM,
-    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
+    url: import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak-ff24d6d8.35-212-226-35.sslip.io',
+    realm: import.meta.env.VITE_KEYCLOAK_REALM || 'photo-vitoria',
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'photo-vitoria-admin',
   }), []);
-  const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL;
+  const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
 
   const isConfigured = Boolean(keycloakConfig.url && keycloakConfig.realm && keycloakConfig.clientId && adminApiUrl);
   const totalMb = files.reduce((total, file) => total + file.size, 0) / 1024 / 1024;
