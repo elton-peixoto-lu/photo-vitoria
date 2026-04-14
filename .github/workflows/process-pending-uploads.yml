@@ -69,12 +69,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
         run: |
-          if gh pr merge "${{ github.event.pull_request.number }}" \
+          pr_number="${{ github.event.pull_request.number }}"
+
+          if gh pr merge "$pr_number" \
             --repo "${{ github.repository }}" \
             --auto \
             --merge \
             --delete-branch; then
             echo "Auto-merge habilitado com sucesso."
-          else
-            echo "::warning::Auto-merge nao esta habilitado neste repositorio. O PR continuara aberto para merge manual."
+            exit 0
           fi
+
+          echo "::warning::Nao foi possivel habilitar auto-merge. Tentando merge direto (admin) para publicar automaticamente."
+
+          if gh pr merge "$pr_number" \
+            --repo "${{ github.repository }}" \
+            --admin \
+            --merge \
+            --delete-branch; then
+            echo "Merge direto concluido."
+            exit 0
+          fi
+
+          echo "::warning::Nao foi possivel fazer merge automatico. O PR continuara aberto para merge manual."
