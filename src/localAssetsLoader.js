@@ -6,6 +6,7 @@ const LOCAL_IMAGES_MAP = {
   "casamentos": [
     "1776124425330-vlf-0171-casamentos-b284eaae-7ce6153def.avif",
     "1776165301876-vlf-0020-c2a975e7-ede7c093ed.avif",
+    "1776166867286-vlf-0207-casamentos-07f00abc-daac513640.avif",
     "a5xt20fdzr3ho2uu7cxu_gnisla.avif",
     "ap1iuoatx0cberzj1jpz_v0jjih.avif",
     "bepi5wam17akiju45ukk_vlzvpy.avif",
