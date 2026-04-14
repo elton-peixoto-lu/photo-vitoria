@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y ca-certificates curl gnupg jq git
+
+install -m 0755 -d /etc/apt/keyrings
+if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+  curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod a+r /etc/apt/keyrings/docker.gpg
+fi
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+mkdir -p /opt/photo-vitoria-keycloak
+cd /opt/photo-vitoria-keycloak
+umask 077
+
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
+fetch_secret() {
+  local secret_id="$1"
+  local token
+  token="$(curl -fsS -H 'Metadata-Flavor: Google' \
+    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' | jq -r '.access_token')"
+
+  curl -fsS -H "Authorization: Bearer $${token}" \
+    "https://secretmanager.googleapis.com/v1/projects/${project_id}/secrets/$${secret_id}/versions/latest:access" \
+    | jq -r '.payload.data' \
+    | base64 -d
+}
+
+KC_BOOTSTRAP_ADMIN_PASSWORD_VALUE="$(fetch_secret '${keycloak_admin_password_secret_id}')"
+POSTGRES_PASSWORD_VALUE="$(fetch_secret '${keycloak_postgres_password_secret_id}')"
+TURNSTILE_SECRET_KEY_VALUE=""
+if [ -n "${turnstile_secret_key_secret_id}" ]; then
+  TURNSTILE_SECRET_KEY_VALUE="$(fetch_secret '${turnstile_secret_key_secret_id}')"
+fi
+
+# Build custom Keycloak image (theme + provider Turnstile) once.
+if ! docker image inspect photo-vitoria-keycloak-custom:26.2 >/dev/null 2>&1; then
+  rm -rf /opt/photo-vitoria-src
+  git clone --depth 1 https://github.com/elton-peixoto-lu/photo-vitoria.git /opt/photo-vitoria-src
+  docker build -t photo-vitoria-keycloak-custom:26.2 -f /opt/photo-vitoria-src/infra/gcp/keycloak/Dockerfile.keycloak /opt/photo-vitoria-src
+fi
+
+cat > .env <<EOF
+KC_BOOTSTRAP_ADMIN_USERNAME=${keycloak_admin_user}
+KC_BOOTSTRAP_ADMIN_PASSWORD=$${KC_BOOTSTRAP_ADMIN_PASSWORD_VALUE}
+KC_HOSTNAME=${keycloak_hostname}
+KC_REALM=${keycloak_realm}
+KC_CLIENT_ID=${keycloak_client_id}
+POSTGRES_PASSWORD=$${POSTGRES_PASSWORD_VALUE}
+TURNSTILE_SITE_KEY=${turnstile_site_key}
+TURNSTILE_SECRET_KEY=$${TURNSTILE_SECRET_KEY_VALUE}
+EOF
+chmod 600 .env
+
+cat > compose.yml <<'EOF'
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: $${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: photo-vitoria-keycloak-custom:26.2
+    restart: unless-stopped
+    command:
+      - start-dev
+      - --hostname=$${KC_HOSTNAME}
+      - --proxy-headers=xforwarded
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: $${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: $${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_CACHE: local
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: $${POSTGRES_PASSWORD}
+      KC_HOSTNAME: $${KC_HOSTNAME}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "false"
+      JAVA_OPTS_KC_HEAP: "-XX:InitialRAMPercentage=20 -XX:MaxRAMPercentage=55"
+      TURNSTILE_SITE_KEY: $${TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: $${TURNSTILE_SECRET_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - keycloak
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+EOF
+
+cat > Caddyfile <<'EOF'
+{
+  email ${admin_email}
+}
+
+${keycloak_hostname} {
+  reverse_proxy keycloak:8080
+}
+EOF
+
+docker compose pull
+docker compose up -d
+
+for _ in $(seq 1 60); do
+  if docker exec photo-vitoria-keycloak-keycloak-1 /bin/bash -lc 'echo > /dev/tcp/127.0.0.1/8080' >/dev/null 2>&1; then
+    break
+  fi
+
+  sleep 5
+done
+
+docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://127.0.0.1:8080 \
+  --realm master \
+  --user "${keycloak_admin_user}" \
+  --password "$${KC_BOOTSTRAP_ADMIN_PASSWORD_VALUE}"
+
+if ! docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh get realms/${keycloak_realm} >/dev/null 2>&1; then
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh create realms \
+    -s realm=${keycloak_realm} \
+    -s enabled=true \
+    -s loginTheme=photo-vitoria
+else
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh update realms/${keycloak_realm} \
+    -s loginTheme=photo-vitoria
+fi
+
+if ! docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh get roles/photo-admin -r ${keycloak_realm} >/dev/null 2>&1; then
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh create roles -r ${keycloak_realm} \
+    -s name=photo-admin \
+    -s description='Pode acessar o portal admin da galeria'
+fi
+
+if ! docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh get clients -r ${keycloak_realm} -q clientId=${keycloak_client_id} | grep -q '"clientId"'; then
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh create clients -r ${keycloak_realm} \
+    -s clientId=${keycloak_client_id} \
+    -s name='Photo Vitoria Admin' \
+    -s enabled=true \
+    -s publicClient=true \
+    -s standardFlowEnabled=true \
+    -s directAccessGrantsEnabled=false \
+    -s implicitFlowEnabled=false \
+    -s 'redirectUris=["http://localhost:5173/*","https://photo-vitoria.vercel.app/*","https://estudiovitoriafreitas.com.br/*","https://www.estudiovitoriafreitas.com.br/*"]' \
+    -s 'webOrigins=["http://localhost:5173","https://photo-vitoria.vercel.app","https://estudiovitoriafreitas.com.br","https://www.estudiovitoriafreitas.com.br"]' \
+    -s 'attributes."pkce.code.challenge.method"=S256' \
+    -s 'attributes."post.logout.redirect.uris"=+'
+fi
+
+if ! docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh get users -r ${keycloak_realm} -q username=cliente | grep -q '"username"'; then
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh create users -r ${keycloak_realm} \
+    -s username=cliente \
+    -s enabled=true \
+    -s emailVerified=true
+
+  CLIENTE_ID="$$(docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh get users -r ${keycloak_realm} -q username=cliente --fields id --format csv | tail -n 1)"
+
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh set-password -r ${keycloak_realm} \
+    --userid "$${CLIENTE_ID}" \
+    --new-password "$${KC_BOOTSTRAP_ADMIN_PASSWORD_VALUE}" \
+    --temporary
+
+  docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh add-roles -r ${keycloak_realm} \
+    --uusername cliente \
+    --rolename photo-admin
+fi
+
+unset KC_BOOTSTRAP_ADMIN_PASSWORD_VALUE POSTGRES_PASSWORD_VALUE TURNSTILE_SECRET_KEY_VALUE

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getConfig } from '../utils/edgeConfig';
-import { FaCamera, FaHeart, FaBaby, FaUsers, FaBuilding, FaCrown, FaRing } from 'react-icons/fa';
+import { PiHeartLight, PiBabyLight, PiCrownLight, PiBuildingsLight, PiCameraLight, PiSparkleLight } from 'react-icons/pi';
 
 /**
  * Seção de Serviços com transições carregando e bullet points
@@ -28,15 +28,15 @@ export default function ServicosSection() {
           {
             id: 'casamentos',
             titulo: 'Casamentos',
-            emoji: '💒',
-            icon: <FaRing size={24} />,
+            emoji: '',
+            icon: <PiHeartLight size={32} strokeWidth={4} />,
             descricao: 'Registros únicos do seu grande dia',
             items: [
               '📸 Cerimônia completa',
               '🎉 Festa e recepção', 
               '💑 Ensaio dos noivos',
               '📷 Making of da noiva',
-              '🚰 Desentupimento de momentos emocionantes', // Emoji de desentupir
+              '✨ Registros emocionantes e autênticos',
               '✨ Edição profissional incluída'
             ],
             preco: 'A partir de R$ 1.500',
@@ -45,15 +45,15 @@ export default function ServicosSection() {
           {
             id: 'infantil',
             titulo: 'Ensaios Infantis',
-            emoji: '👶',
-            icon: <FaBaby size={24} />,
+            emoji: '',
+            icon: <PiBabyLight size={32} strokeWidth={4} />,
             descricao: 'Momentos preciosos da infância',
             items: [
               '🍼 Newborn (0-15 dias)',
               '👶 Acompanhamento mensal',
               '🎂 Smash the cake',
               '👨‍👩‍👧‍👦 Ensaio em família',
-              '🚰 Desentupimento de sorrisos tímidos',
+              '⭐ Sorrisos e momentos espontâneos',
               '🎨 Cenários lúdicos'
             ],
             preco: 'A partir de R$ 300',
@@ -62,15 +62,15 @@ export default function ServicosSection() {
           {
             id: 'femininos',
             titulo: 'Ensaios Femininos',
-            emoji: '👗',
-            icon: <FaCrown size={24} />,
+            emoji: '',
+            icon: <PiSparkleLight size={32} strokeWidth={4} />,
             descricao: 'Sua beleza em foco',
             items: [
-              '💄 Maquiagem profissional',
-              '👗 Várias produções',
+              '💄 Maquiagem com parceiros (opcional)',
+              '👗 Várias produções focadas no seu estilo',
               '📸 Estúdio e externo',
-              '🌟 Autoestima em alta',
-              '🚰 Desentupimento da sua confiança',
+              '🌟 Autoestima em alta e valorização',
+              '✨ Direção de poses para ressaltar seu melhor',
               '💎 Resultado impecável'
             ],
             preco: 'A partir de R$ 250',
@@ -79,16 +79,16 @@ export default function ServicosSection() {
           {
             id: 'corporativo',
             titulo: 'Ensaios Corporativos',
-            emoji: '👔',
-            icon: <FaBuilding size={24} />,
+            emoji: '',
+            icon: <PiBuildingsLight size={32} strokeWidth={4} />,
             descricao: 'Profissionalismo em imagens',
             items: [
               '💼 Headshots executivos',
-              '🏢 Fotos para LinkedIn',
-              '📱 Redes sociais profissionais',
-              '👥 Equipes e empresas',
-              '🚰 Desentupimento do seu potencial',
-              '🎯 Imagem profissional'
+              '🏢 Fotos para LinkedIn e sites',
+              '📱 Conteúdo para redes sociais',
+              '👥 Equipes e eventos empresariais',
+              '🚀 Destaque o potencial da sua marca',
+              '🎯 Imagem profissional forte'
             ],
             preco: 'A partir de R$ 200',
             destaque: false
@@ -106,10 +106,11 @@ export default function ServicosSection() {
         // Fallback em caso de erro
         setServicos([{
           id: 'erro',
-          titulo: 'Serviços Indisponíveis',
-          emoji: '🚰',
-          descricao: 'Estamos desentupindo nossos serviços...',
-          items: ['🔧 Voltamos em breve!']
+          titulo: 'Serviços em Atualização',
+          emoji: '',
+          icon: <PiCameraLight size={32} />,
+          descricao: 'Estamos preparando novidades para você...',
+          items: ['✨ Voltamos em breve!']
         }]);
       } finally {
         setLoading(false);
@@ -148,11 +149,11 @@ export default function ServicosSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-            Nossos Serviços 🚰
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 font-sans">
+            Nossos Serviços
           </h2>
-          <p className="text-xl text-gray-600">
-            Desentupindo momentos únicos para eternizar suas memórias
+          <p className="text-xl text-gray-600 font-sans">
+            Capturando momentos únicos para eternizar suas memórias com sensibilidade.
           </p>
         </motion.div>
 
@@ -221,7 +222,7 @@ function LoadingServicos() {
             <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
             <div className="w-4 h-4 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
-          <p className="text-gray-600 mt-2">🚰 Desentupindo nossos serviços...</p>
+          <p className="text-gray-600 mt-2 hover:text-pink-600 font-sans">Preparando nosso portfólio incrível de serviços...</p>
         </div>
       </div>
     </section>

@@ -1,0 +1,18 @@
+project_id = "fotovitoria"
+region     = "us-central1"
+
+image = "us-central1-docker.pkg.dev/fotovitoria/photo-vitoria/admin-api:latest"
+
+admin_allowed_origins = "https://photo-vitoria.vercel.app,https://estudiovitoriafreitas.com.br"
+
+keycloak_issuer        = "https://keycloak-ff24d6d8.35-212-226-35.sslip.io/realms/photo-vitoria"
+keycloak_client_id     = "photo-vitoria-admin"
+keycloak_allowed_roles = "photo-admin"
+
+github_repo         = "elton-peixoto-lu/photo-vitoria"
+github_base_branch  = "master"
+github_upload_token = "github_pat_xxx"
+
+# Opcional: habilite se quiser budget gerenciado por Terraform.
+# billing_account = "XXXXXX-XXXXXX-XXXXXX"
+monthly_budget_amount = 5

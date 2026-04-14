@@ -4,7 +4,7 @@ import { FaSearch } from 'react-icons/fa';
 import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
-import { loadGalleryImages } from '../localAssetsLoader';
+import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
 
 const ALBUNS = [
@@ -30,7 +30,7 @@ export default function Galeria() {
       for (const album of ALBUNS) {
         try {
           const images = await loadGalleryImages(album.key);
-          result[album.key] = images || [];
+          result[album.key] = filterRenderableGalleryImages(images || [], album.key);
         } catch (error) {
           console.error(`Erro ao carregar álbum ${album.key}:`, error);
           result[album.key] = [];
@@ -90,10 +90,10 @@ export default function Galeria() {
       {/* Bloco principal centralizado */}
       <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
         {/* Botões de contato fixos no topo */}
-        <div className="w-full flex flex-wrap justify-center gap-4 mb-8 mt-4 z-20 min-h-[56px]">
-          <BotaoWhatsapp className="flex-1 min-w-[180px] min-h-[48px] max-w-xs px-6 py-3 rounded-lg bg-green-500 text-white text-lg font-bold shadow-lg hover:bg-green-600 transition-all justify-center font-sans" />
-          <BotaoEmail className="hidden md:flex flex-1 min-w-[180px] min-h-[48px] max-w-xs px-6 py-3 rounded-lg bg-pink-400 text-white text-lg font-bold shadow-lg hover:bg-pink-500 transition-all justify-center font-sans" />
-          <BotaoInstagram className="flex-1 min-w-[180px] min-h-[48px] max-w-xs px-6 py-3 rounded-lg bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-400 text-white text-lg font-bold shadow-lg hover:from-yellow-400 hover:to-pink-500 transition-all justify-center font-sans" />
+        <div className="w-full flex flex-wrap justify-center gap-3 mb-8 mt-6 z-20">
+          <BotaoWhatsapp />
+          <BotaoEmail />
+          <BotaoInstagram />
         </div>
         <div className="w-full max-w-7xl flex-1 flex flex-col items-center justify-center px-4 md:px-8">
           {/* Grids por álbum */}
@@ -106,7 +106,7 @@ export default function Galeria() {
                     {safeFotos(album.key).slice(0, 3).map((foto, idx) => (
                       <div key={idx} style={{
                         flex: 1,
-                        backgroundImage: `url(${typeof foto === 'string' ? foto : foto.url})`,
+                        backgroundImage: `url(${resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(album.key)})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         filter: 'blur(24px) brightness(0.7)',
@@ -127,7 +127,7 @@ export default function Galeria() {
                   style={{ gridTemplateColumns: `repeat(${columnsForGallery}, 1fr)` }}
                 >
                   {safeFotos(album.key).map((foto, idx) => {
-                    const url = typeof foto === 'string' ? foto : foto.url;
+                    const url = resolveGalleryImageUrl(foto);
                     const nome = typeof foto === 'string' ? `Foto ${idx + 1}` : (foto.nome || `Foto ${idx + 1}`);
                     return (
                       <button
@@ -138,7 +138,7 @@ export default function Galeria() {
                       >
                         <SafeImageWithBlur
                           src={url}
-                          fallback={typeof url === 'string' ? `/images/galeria/${album.key}/${url}` : `/images/galeria/${album.key}/fallback.avif`}
+                          fallback={getGalleryFallbackUrl(album.key)}
                           alt={nome}
                           className="object-cover w-full h-full group-hover:brightness-90 transition"
                           loading="lazy"
@@ -169,15 +169,9 @@ export default function Galeria() {
             <div className="rounded-2xl shadow-2xl bg-white/90 p-2 flex items-center justify-center max-h-[85vh] w-full transition-all duration-300 relative max-w-xs sm:max-w-2xl md:max-w-3xl mx-auto">
               <SafeImageWithBlur
                 src={
-                  safeFotos(modal.album)[modal.index]?.url ||
-                  safeFotos(modal.album)[modal.index] ||
-                  ''
+                  resolveGalleryImageUrl(safeFotos(modal.album)[modal.index]) || ''
                 }
-                fallback={
-                  typeof safeFotos(modal.album)[modal.index]?.url === 'string'
-                    ? `/images/galeria/${modal.album}/${safeFotos(modal.album)[modal.index]?.url}`
-                    : `/images/galeria/${modal.album}/fallback.avif`
-                }
+                fallback={getGalleryFallbackUrl(modal.album)}
                 alt={`Foto ${modal.index + 1}`}
                 className="rounded-2xl shadow max-h-[80vh] max-w-full object-contain bg-white transition-all duration-300"
                 style={{ userSelect: 'none' }}
@@ -191,4 +185,3 @@ export default function Galeria() {
     </div>
   );
 } 
-

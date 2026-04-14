@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test:uploads": "node --test scripts/processPendingUploads.test.mjs scripts/localAssetsLoader.test.mjs",
     "preview": "vite preview",
     "server": "node server/index.cjs",
+    "admin-api": "node server/adminGalleryPrServer.mjs",
     "sync:images": "node scripts/syncImages.mjs",
     "sync:images:force": "node scripts/syncImages.mjs --force",
     "sync:images:web": "node scripts/syncWebInterface.mjs",
+    "process:uploads": "node scripts/processPendingUploads.mjs",
     "sync:test": "node scripts/test.mjs"
   },
   "dependencies": {
@@ -29,6 +32,7 @@
     "firebase": "^11.8.1",
     "firebase-admin": "^13.4.0",
     "framer-motion": "^12.15.0",
+    "keycloak-js": "^26.2.3",
     "pg": "^8.16.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

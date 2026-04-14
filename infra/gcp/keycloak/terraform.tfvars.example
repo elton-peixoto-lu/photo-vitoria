@@ -1,0 +1,16 @@
+project_id  = "fotovitoria"
+region      = "us-west1"
+zone        = "us-west1-a"
+admin_email = "pluizelton@gmail.com"
+machine_type = "e2-small"
+
+keycloak_realm     = "photo-vitoria"
+keycloak_client_id = "photo-vitoria-admin"
+
+# Cloudflare Turnstile
+turnstile_site_key = "0x0000000000000000000000000000000AA" # exemplo
+# Crie o secret no Secret Manager e coloque aqui o secret_id (nao o resource id)
+turnstile_secret_key_secret_id = "photo-vitoria-turnstile-secret"
+
+# Se quiser SSH, coloque seu IP publico /32. Vazio bloqueia SSH externo.
+allowed_ssh_cidrs = []

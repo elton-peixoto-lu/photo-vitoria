@@ -5,12 +5,14 @@ import './App.css';
 import Contato from './pages/Contato';
 import Estudio from './pages/Estudio';
 import AdminPromocoes from './admin/AdminPromocoes';
+import AdminGaleriaUploads from './admin/AdminGaleriaUploads';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
-import { FaImages, FaBaby, FaHeart, FaVenus, FaCameraRetro, FaCamera, FaEnvelope, FaInstagram, FaHome, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaCrown, FaRing, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaInstagram, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight } from 'react-icons/pi';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -33,15 +35,15 @@ if (import.meta.env.DEV) {
 }
 
 const MENU = [
-  { label: 'Home', path: '/', icon: <FaHome size={18} /> },
-  { label: 'Galeria', path: '/galeria', icon: <FaImages size={22} /> },
-  { label: 'Infantil', path: '/galeria-infantil', icon: <FaBaby size={18} /> },
-  { label: 'Casamentos', path: '/galeria-casamentos', icon: <FaHeart size={18} /> },
-  { label: 'Femininos', path: '/galeria-femininos', icon: <FaVenus size={18} /> },
-  { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <FaCameraRetro size={18} /> },
-  { label: 'Noivas', path: '/galeria-noivas', icon: <FaCrown size={20} /> },
-  { label: 'Estúdio', path: '/estudio', icon: <FaCamera size={18} /> },
-  { label: 'Contato', path: '/contato', icon: <FaEnvelope size={18} /> },
+  { label: 'Home', path: '/', icon: <PiHouseLight size={20} /> },
+  { label: 'Galeria', path: '/galeria', icon: <PiImagesLight size={22} /> },
+  { label: 'Infantil', path: '/galeria-infantil', icon: <PiBabyLight size={20} /> },
+  { label: 'Casamentos', path: '/galeria-casamentos', icon: <PiHeartLight size={20} /> },
+  { label: 'Femininos', path: '/galeria-femininos', icon: <PiFlowerLotusLight size={20} /> },
+  { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <PiCameraLight size={20} /> },
+  { label: 'Noivas', path: '/galeria-noivas', icon: <PiCrownLight size={22} /> },
+  { label: 'Estúdio', path: '/estudio', icon: <PiCameraLight size={20} /> },
+  { label: 'Contato', path: '/contato', icon: <PiEnvelopeSimpleLight size={20} /> },
 ];
 
 const MENU_TITLES = {
@@ -197,83 +199,107 @@ function Sidebar({ mobile = false, open = false, onClose }) {
         <Logo collapsed={!isOpen} />
       </div>
       
-      <nav className={`flex-1 flex flex-col gap-0.5 mt-2 overflow-y-auto overflow-x-hidden ${!isOpen ? 'items-center px-1' : 'px-1'}`} style={{ paddingRight: isOpen ? '4px' : undefined }}>
-        {MENU.map(item => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex items-center gap-1.5 py-2 rounded-md font-medium transition-all duration-300 ${
-              !isOpen ? 'justify-center px-2' : 'justify-start px-2'
-            } ${
-              location.pathname === item.path
-                ? 'bg-gradient-to-r from-[#fbc2eb] via-[#fbeffb] to-[#a5b4fc] text-[#a21caf] shadow-lg border border-[#f3e8ff]'
-                : 'bg-transparent text-gray-500 hover:text-[#a78bfa] hover:bg-gray-50'
-            }`}
-            style={{ 
-              fontFamily: 'Montserrat, Inter, sans-serif', 
-              fontWeight: 600, 
-              fontSize: !isOpen ? '1.2rem' : '0.8rem', 
-              boxShadow: location.pathname === item.path ? '0 4px 24px #fbc2eb33' : undefined, 
-              minHeight: '2rem',
-              minWidth: !isOpen ? '2.5rem' : 'auto',
-              lineHeight: '1.2'
-            }}
-            onMouseEnter={() => {
-              if (item.path.startsWith('/galeria-')) {
-                const pasta = item.path.replace('/galeria-', '');
-                preloadGaleria(pasta);
-              }
-            }}
-            title={item.label || 'Galeria'}
-          >
-            {item.icon && <span className={!isOpen ? '' : 'mr-1.5 flex-shrink-0'}>{item.icon}</span>}
-            {isOpen && item.label && <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>}
-          </Link>
-        ))}
+      <nav className={`flex-1 flex flex-col mt-4 overflow-y-auto overflow-x-hidden ${!isOpen ? 'items-center gap-1 px-1' : 'gap-0 px-0'}`}>
+        {MENU.map(item => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`group flex items-center transition-all duration-300 ${
+                !isOpen ? 'justify-center w-11 h-11 mx-auto rounded-xl' : 'py-2.5 pl-5 pr-3'
+              } ${
+                isActive
+                  ? !isOpen
+                    ? 'bg-pink-50 text-pink-600'
+                    : 'text-pink-600'
+                  : !isOpen
+                    ? 'text-gray-400 hover:bg-pink-50/60 hover:text-pink-500'
+                    : 'text-gray-400 hover:text-gray-700'
+              }`}
+              style={{
+                borderLeft: isOpen ? (isActive ? '2px solid #db2777' : '2px solid transparent') : undefined,
+              }}
+              onMouseEnter={() => {
+                if (item.path.startsWith('/galeria-')) {
+                  preloadGaleria(item.path.replace('/galeria-', ''));
+                }
+              }}
+              title={item.label || 'Menu'}
+            >
+              {/* Icon */}
+              <span
+                className={`flex-shrink-0 transition-all duration-300 ${
+                  !isOpen ? 'text-[1.3rem]' : 'text-[1.05rem]'
+                } ${
+                  isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+                }`}
+              >
+                {item.icon}
+              </span>
+              {/* Label — only when expanded */}
+              {isOpen && (
+                <span
+                  className="ml-3 whitespace-nowrap overflow-hidden text-ellipsis"
+                  style={{
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontWeight: isActive ? 600 : 400,
+                    fontSize: '0.72rem',
+                    letterSpacing: '0.09em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {item.label}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
       
-      {isOpen && (
-        <div className="flex flex-col px-2 pb-2">
+      {/* Bottom CTAs */}
+      {isOpen ? (
+        <div className="flex flex-col px-5 pb-6 pt-4 border-t border-pink-100/60" style={{ gap: '0.6rem' }}>
           <a
             href={CONTATO.instagram.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 mb-2 px-4 py-2.5 bg-pink-500 text-white font-bold rounded-full shadow hover:bg-pink-600 transition text-sm text-center flex items-center justify-center gap-2 whitespace-nowrap"
-            style={{ fontFamily: 'Montserrat, Inter, sans-serif', fontWeight: 700 }}
+            className="group flex items-center justify-center gap-2 rounded-lg border border-pink-200 py-2.5 text-pink-500 hover:border-pink-400 hover:text-pink-600 transition-all duration-300"
+            style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 600, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
           >
-            <FaInstagram size={18} /> Veja mais
+            <FaInstagram size={14} className="opacity-80 group-hover:opacity-100 transition" />
+            Instagram
           </a>
-          <a 
-            href={CONTATO.whatsapp.url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="mt-8 flex items-center gap-2 text-green-400 hover:text-green-300 text-xs justify-center whitespace-nowrap"
+          <a
+            href={CONTATO.whatsapp.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center justify-center gap-2 rounded-lg border border-green-200 py-2.5 text-green-600 hover:border-green-400 hover:text-green-700 transition-all duration-300"
+            style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 600, fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
           >
-            <FaWhatsapp size={18} />
+            <FaWhatsapp size={14} className="opacity-80 group-hover:opacity-100 transition" />
             WhatsApp
           </a>
         </div>
-      )}
-      
-      {!isOpen && (
-        <div className="flex flex-col items-center gap-3 mb-4">
+      ) : (
+        <div className="flex flex-col items-center gap-2.5 pb-5 pt-3 border-t border-pink-100/60">
           <a
             href={CONTATO.instagram.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-pink-500 text-white shadow hover:bg-pink-600 transition"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-pink-200 text-pink-400 hover:border-pink-400 hover:text-pink-600 transition-all duration-300"
             title="Instagram"
           >
-            <FaInstagram size={18} />
+            <FaInstagram size={15} />
           </a>
-          <a 
-            href={CONTATO.whatsapp.url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-green-500 text-white shadow hover:bg-green-600 transition"
+          <a
+            href={CONTATO.whatsapp.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-200 text-green-500 hover:border-green-400 hover:text-green-700 transition-all duration-300"
             title="WhatsApp"
           >
-            <FaWhatsapp size={18} />
+            <FaWhatsapp size={15} />
           </a>
         </div>
       )}
@@ -375,6 +401,7 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
               <Route path="/estudio" element={<Estudio />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/admin" element={<AdminPromocoes />} />
+              <Route path="/admin/galeria" element={<AdminGaleriaUploads />} />
               <Route path="/obrigado" element={<Obrigado />} />
               <Route path="/lgpd" element={<Lgpd />} />
             </Routes>

@@ -1,0 +1,19 @@
+#
+# Custom Keycloak image for photo-vitoria:
+# - Adds login theme with Cloudflare Turnstile widget
+# - Adds an Authentication SPI provider that validates Turnstile server-side
+#
+# Build context: repository root
+#
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
+WORKDIR /workspace
+COPY infra/gcp/keycloak/providers/turnstile-authenticator ./turnstile-authenticator
+RUN cd turnstile-authenticator && mvn -q -DskipTests package
+
+FROM quay.io/keycloak/keycloak:26.2
+COPY --from=builder /workspace/turnstile-authenticator/target/turnstile-authenticator-1.0.0.jar /opt/keycloak/providers/turnstile-authenticator.jar
+COPY infra/gcp/keycloak/themes/photo-vitoria /opt/keycloak/themes/photo-vitoria
+
+# Necessario para registrar providers e otimizar a imagem (Quarkus build step)
+RUN /opt/keycloak/bin/kc.sh build
+
