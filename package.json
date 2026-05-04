@@ -41,6 +41,7 @@
     "react-pageflip": "^2.0.3",
     "react-router-dom": "^7.6.1",
     "react-slick": "^0.30.3",
+    "resend": "^6.12.2",
     "sharp": "^0.33.5",
     "slick-carousel": "^1.8.1",
     "usehooks-ts": "^3.1.1",
