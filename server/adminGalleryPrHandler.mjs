@@ -21,6 +21,33 @@ async function verifyFirebaseToken(token) {
   }
 }
 
+async function verifyTurnstileToken(token, remoteIp) {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    throw new Error('TURNSTILE_SECRET_KEY nao configurada');
+  }
+
+  const form = new URLSearchParams();
+  form.set('secret', secret);
+  form.set('response', token);
+  if (remoteIp) form.set('remoteip', remoteIp);
+
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form
+  });
+
+  if (!response.ok) {
+    throw new Error('Falha na validacao do Turnstile');
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error('Desafio de seguranca invalido');
+  }
+}
+
 const ALLOWED_FOLDERS = new Set(['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas']);
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
 const MAX_FILES = 50;
@@ -170,5 +197,23 @@ export default async function handler(req, res) {
     const message = error?.message || 'Erro inesperado';
     const statusCode = message.includes('Token') || message.includes('Usuario sem permissao') ? 401 : 400;
     return json(res, statusCode, { error: message });
+  }
+}
+
+export async function turnstileVerifyHandler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return json(res, 405, { error: 'Method not allowed' });
+  }
+
+  try {
+    const body = await getJsonBody(req);
+    const token = body?.token;
+    if (!token) return json(res, 400, { error: 'Token ausente' });
+
+    await verifyTurnstileToken(token, req.headers['x-forwarded-for'] || req.socket?.remoteAddress);
+    return json(res, 200, { ok: true });
+  } catch (error) {
+    return json(res, 403, { error: error?.message || 'Falha na validacao de seguranca' });
   }
 }

@@ -30,12 +30,12 @@ O frontend ficará disponível em http://localhost:5173 (ou porta definida pelo 
 
 ## Como subir fotos (recomendado)
 
-## Portal admin com Keycloak e GCP
+## Portal admin com Firebase Auth e GCP
 
 Tambem existe uma tela para abstrair o GitHub da cliente:
 
 - URL: `/admin/galeria`
-- Login: Keycloak
+- Login: Firebase Auth (Email/Senha)
 - Saida: Pull Request criado automaticamente no GitHub (a cliente nao precisa usar GitHub)
 - Backend: GCP Cloud Run
 - URL do backend admin: `https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app`
@@ -47,25 +47,28 @@ Guia para a usuaria (sem termos tecnicos):
 Arquitetura e desenho do fluxo:
 
 - `docs/ARQUITETURA.md`
-- Segurança (Turnstile no login do Keycloak): `docs/SEGURANCA-TURNSTILE-KEYCLOAK.md`
+- Segurança: Turnstile validado server-side antes do login
 
 Fluxo interno:
 
-1. A cliente faz login pelo Keycloak.
-2. A tela envia as fotos para `/api/admin/gallery-pr` com o token do Keycloak.
-3. O servico Cloud Run valida o JWT no Keycloak.
+1. A cliente faz login com Firebase Auth.
+2. A tela valida Turnstile no backend admin.
+3. A tela envia as fotos para `/api/admin/gallery-pr` com token do Firebase.
+4. O servico Cloud Run valida o JWT com Firebase Admin SDK.
 4. O servico cria uma branch, envia as fotos para `uploads/pendentes/{galeria}/` e abre o Pull Request.
 5. O workflow `.github/workflows/process-pending-uploads.yml` processa o PR e publica as fotos otimizadas.
 
 Variaveis necessarias no deploy:
 
 - `VITE_ADMIN_API_URL`
-- `VITE_KEYCLOAK_URL`
-- `VITE_KEYCLOAK_REALM`
-- `VITE_KEYCLOAK_CLIENT_ID`
-- `KEYCLOAK_ISSUER`
-- `KEYCLOAK_CLIENT_ID`
-- `KEYCLOAK_ALLOWED_ROLES` (opcional)
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_TURNSTILE_SITE_KEY`
+- `TURNSTILE_SECRET_KEY`
 - `GITHUB_REPO`
 - `GITHUB_BASE_BRANCH`
 - `GITHUB_UPLOAD_TOKEN`

@@ -1,5 +1,5 @@
 import express from 'express';
-import galleryPrHandler from './adminGalleryPrHandler.mjs';
+import galleryPrHandler, { turnstileVerifyHandler } from './adminGalleryPrHandler.mjs';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -36,6 +36,7 @@ app.get('/', health);
 app.get('/healthz', health);
 
 app.post('/api/admin/gallery-pr', galleryPrHandler);
+app.post('/api/admin/turnstile-verify', turnstileVerifyHandler);
 
 app.listen(port, () => {
   console.log(`Admin gallery API listening on ${port}`);
