@@ -34,6 +34,32 @@ jobs:
           token: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
           persist-credentials: false
 
+      - name: Validar escopo do PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
+        run: |
+          set -euo pipefail
+          pr_number="${{ github.event.pull_request.number }}"
+          changed_files=$(gh pr view "$pr_number" --repo "${{ github.repository }}" --json files --jq '.files[].path')
+
+          if [ -z "$changed_files" ]; then
+            echo "::error::PR sem arquivos alterados."
+            exit 1
+          fi
+
+          while IFS= read -r file; do
+            case "$file" in
+              uploads/pendentes/*) ;;
+              *)
+                echo "::error::Arquivo fora do escopo permitido: $file"
+                exit 1
+                ;;
+            esac
+          done <<EOF
+          $changed_files
+          EOF
+
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
@@ -80,15 +106,4 @@ jobs:
             exit 0
           fi
 
-          echo "::warning::Nao foi possivel habilitar auto-merge. Tentando merge direto (admin) para publicar automaticamente."
-
-          if gh pr merge "$pr_number" \
-            --repo "${{ github.repository }}" \
-            --admin \
-            --merge \
-            --delete-branch; then
-            echo "Merge direto concluido."
-            exit 0
-          fi
-
-          echo "::warning::Nao foi possivel fazer merge automatico. O PR continuara aberto para merge manual."
+          echo "::warning::Nao foi possivel habilitar auto-merge. O PR continuara aberto para merge manual."

@@ -1,6 +1,6 @@
 # Portfólio Fotográfico - Vitoria
 
-Site em React + Vite hospedado na Vercel.
+Site em React + Vite. O deploy atual ainda responde pela Vercel, mas o repositório agora inclui a base para migracao do frontend para GCP com `Cloud Storage + CDN + HTTPS Load Balancer + Cloud Armor`.
 
 As fotos publicadas ficam no repositório em `public/images/galeria/<galeria>/` e o site usa um mapa local em `src/localAssetsLoader.js`.
 
@@ -58,6 +58,14 @@ Fluxo interno:
 4. O servico cria uma branch, envia as fotos para `uploads/pendentes/{galeria}/` e abre o Pull Request.
 5. O workflow `.github/workflows/process-pending-uploads.yml` processa o PR e publica as fotos otimizadas.
 
+Travas de seguranca do portal:
+
+- apenas e-mails listados em `ADMIN_ALLOWED_EMAILS` podem criar PR
+- o usuario Firebase precisa ter e-mail verificado
+- o backend aceita apenas galerias, extensoes e mime types permitidos
+- o workflow recusa PR com arquivos fora de `uploads/pendentes/**`
+- o workflow nao faz mais merge administrativo forcado
+
 Variaveis necessarias no deploy:
 
 - `VITE_ADMIN_API_URL`
@@ -69,6 +77,7 @@ Variaveis necessarias no deploy:
 - `VITE_FIREBASE_APP_ID`
 - `VITE_TURNSTILE_SITE_KEY`
 - `TURNSTILE_SECRET_KEY`
+- `ADMIN_ALLOWED_EMAILS`
 - `GITHUB_REPO`
 - `GITHUB_BASE_BRANCH`
 - `GITHUB_UPLOAD_TOKEN`
@@ -193,3 +202,27 @@ Assim, qualquer rota será servida pelo React Router, evitando erros 404 ao aces
 Se for migrar para outro serviço (Netlify, Firebase, etc), consulte a documentação para configurar o rewrite/catch-all equivalente.
 
 ---
+
+## Migracao do frontend para GCP
+
+Infra pronta no repositório:
+
+- `infra/gcp/frontend-spa/`
+- workflow `.github/workflows/deploy-frontend-gcp.yml`
+
+Objetivo:
+
+- remover dependência da Vercel
+- manter as imagens no Git
+- manter o fluxo atual de PR/processamento
+- servir o `dist/` do React via `Cloud Storage + Cloud CDN + HTTPS Load Balancer + Cloud Armor`
+
+Fluxo sugerido:
+
+1. aplicar `infra/gcp/frontend-spa`
+2. apontar DNS do dominio para o IP global do load balancer
+3. ajustar `GCS_BUCKET` no workflow para o bucket real
+4. dar permissão ao `GCP_SA_KEY` para publicar no bucket
+5. validar o site em paralelo antes de desligar a Vercel
+
+O `admin-api` continua no `Cloud Run`.

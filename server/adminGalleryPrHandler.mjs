@@ -10,13 +10,27 @@ if (!admin.apps.length) {
 async function verifyFirebaseToken(token) {
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    
-    // Opcional: Verificar se o e-mail está na lista de administradores permitidos
-    // Para simplificar, permitimos qualquer usuário autenticado por enquanto,
-    // já que o login no front-end já restringe quem pode entrar.
+
+    const normalizedEmail = String(decodedToken.email || '').trim().toLowerCase();
+    const allowedEmails = String(process.env.ADMIN_ALLOWED_EMAILS || '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (!normalizedEmail || decodedToken.email_verified !== true) {
+      throw new Error('Usuario sem permissao');
+    }
+
+    if (allowedEmails.length > 0 && !allowedEmails.includes(normalizedEmail)) {
+      throw new Error('Usuario sem permissao');
+    }
+
     return decodedToken;
   } catch (error) {
     console.error('Erro ao verificar token do Firebase:', error);
+    if (error?.message === 'Usuario sem permissao') {
+      throw error;
+    }
     throw new Error('Sessão inválida ou expirada');
   }
 }
@@ -50,6 +64,14 @@ async function verifyTurnstileToken(token, remoteIp) {
 
 const ALLOWED_FOLDERS = new Set(['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas']);
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+  'image/tiff',
+  'image/x-tiff',
+]);
 const MAX_FILES = 50;
 const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 
@@ -69,6 +91,10 @@ async function getJsonBody(req) {
 }
 
 function sanitizeFileName(fileName) {
+  if (typeof fileName !== 'string' || !fileName.includes('.')) {
+    throw new Error('Nome de arquivo invalido');
+  }
+
   const extension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
   if (!ALLOWED_EXTENSIONS.has(extension)) {
     throw new Error(`Formato nao permitido: ${fileName}`);
@@ -124,7 +150,15 @@ function validatePayload(body) {
   let totalBytes = 0;
   for (const file of files) {
     if (!file.name || !file.contentBase64) throw new Error('Arquivo invalido');
+    if (typeof file.contentBase64 !== 'string' || !/^[A-Za-z0-9+/=\r\n]+$/.test(file.contentBase64)) {
+      throw new Error(`Conteudo base64 invalido: ${file.name || 'arquivo'}`);
+    }
+    if (file.type && !ALLOWED_MIME_TYPES.has(String(file.type).toLowerCase())) {
+      throw new Error(`Mime type nao permitido: ${file.name}`);
+    }
+
     const bytes = Buffer.byteLength(file.contentBase64, 'base64');
+    if (bytes <= 0) throw new Error(`Arquivo vazio: ${file.name}`);
     totalBytes += bytes;
     sanitizeFileName(file.name);
   }
@@ -160,6 +194,8 @@ async function createGalleryPullRequest({ folder, files, userName }) {
     base: baseBranch,
     body: [
       `Upload enviado pelo portal admin por ${userName || 'usuario autenticado'}.`,
+      '',
+      `Escopo permitido: uploads/pendentes/${folder}/`,
       '',
       'O workflow de fotos pendentes deve processar os arquivos deste PR.',
     ].join('\n'),
