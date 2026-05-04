@@ -44,14 +44,13 @@ export default function AdminGaleriaUploads() {
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
-  const turnstileSiteKey = isLocalDev ? '1x00000000000000000000AA' : import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const turnstileSiteKey = isLocalDev
+    ? '1x00000000000000000000AA'
+    : import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAC9eV3XaW-3g_hmC';
 
   const isConfigured = useMemo(() => {
     return Boolean(
-      import.meta.env.VITE_FIREBASE_API_KEY &&
-      import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
-      import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-      import.meta.env.VITE_FIREBASE_APP_ID &&
+      auth &&
       adminApiUrl &&
       turnstileSiteKey
     );
