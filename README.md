@@ -1,6 +1,9 @@
 # Portfólio Fotográfico - Vitoria
 
-Site em React + Vite. O deploy atual ainda responde pela Vercel, mas o repositório agora inclui a base para migracao do frontend para GCP com `Cloud Storage + CDN + HTTPS Load Balancer + Cloud Armor`.
+Site em React + Vite. A esteira foi separada assim:
+
+- `master`: producao no GCP com `Cloud Storage + CDN + HTTPS Load Balancer`
+- `staging`: homologacao na Vercel
 
 As fotos publicadas ficam no repositório em `public/images/galeria/<galeria>/` e o site usa um mapa local em `src/localAssetsLoader.js`.
 
@@ -183,11 +186,11 @@ Arquitetura detalhada (com diagramas Mermaid): `docs/ARQUITETURA.md`
 
 ---
 
-## Fazer Deploy SPA (Single Page Application) no Vercel
+## Deploy SPA na Vercel (somente staging)
 
-Este projeto é uma aplicação React (SPA). Para garantir que todas as rotas funcionem corretamente ao acessar URLs diretamente (ex: /obrigado, /galeria, /lgpd), é necessário configurar o Vercel para redirecionar todas as rotas para o index.html.
+Este projeto continua usando a Vercel apenas para staging. A branch `staging` publica pela workflow `.github/workflows/deploy-frontend-vercel-staging.yml`, e o `vercel.json` ignora builds de qualquer branch diferente de `staging`.
 
-Adicione o arquivo `vercel.json` na raiz do projeto com o seguinte conteúdo:
+O `vercel.json` fica assim:
 
 ```json
 {
@@ -212,7 +215,7 @@ Infra pronta no repositório:
 
 Objetivo:
 
-- remover dependência da Vercel
+- remover a Vercel da producao
 - manter as imagens no Git
 - manter o fluxo atual de PR/processamento
 - servir o `dist/` do React via `Cloud Storage + Cloud CDN + HTTPS Load Balancer + Cloud Armor`
@@ -223,6 +226,6 @@ Fluxo sugerido:
 2. apontar DNS do dominio para o IP global do load balancer
 3. ajustar `GCS_BUCKET` no workflow para o bucket real
 4. dar permissão ao `GCP_SA_KEY` para publicar no bucket
-5. validar o site em paralelo antes de desligar a Vercel
+5. manter a Vercel apenas como staging
 
 O `admin-api` continua no `Cloud Run`.
