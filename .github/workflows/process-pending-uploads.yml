@@ -95,7 +95,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
         run: |
+          set -euo pipefail
           pr_number="${{ github.event.pull_request.number }}"
+          head_ref="${{ github.event.pull_request.head.ref }}"
 
           if gh pr merge "$pr_number" \
             --repo "${{ github.repository }}" \
@@ -106,4 +108,15 @@ jobs:
             exit 0
           fi
 
-          echo "::warning::Nao foi possivel habilitar auto-merge. O PR continuara aberto para merge manual."
+          case "$head_ref" in
+            gallery-upload/*)
+              echo "::warning::Auto-merge indisponivel. Executando merge direto apenas para branch segura do portal."
+              gh pr merge "$pr_number" \
+                --repo "${{ github.repository }}" \
+                --merge \
+                --delete-branch
+              ;;
+            *)
+              echo "::warning::Nao foi possivel habilitar auto-merge. O PR continuara aberto para merge manual."
+              ;;
+          esac

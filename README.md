@@ -64,7 +64,7 @@ Travas de seguranca do portal:
 - o usuario Firebase precisa ter e-mail verificado
 - o backend aceita apenas galerias, extensoes e mime types permitidos
 - o workflow recusa PR com arquivos fora de `uploads/pendentes/**`
-- o workflow nao faz mais merge administrativo forcado
+- o workflow faz merge automatico apenas para branches seguras do portal (`gallery-upload/**`)
 
 Variaveis necessarias no deploy:
 
