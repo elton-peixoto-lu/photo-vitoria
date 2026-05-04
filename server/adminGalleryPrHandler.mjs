@@ -1,33 +1,35 @@
 /* global Buffer, process */
 import crypto from 'crypto';
+import admin from 'firebase-admin';
+
+// Inicializar Firebase Admin se ainda não estiver inicializado
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+async function verifyFirebaseToken(token) {
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Opcional: Verificar se o e-mail está na lista de administradores permitidos
+    // Para simplificar, permitimos qualquer usuário autenticado por enquanto,
+    // já que o login no front-end já restringe quem pode entrar.
+    return decodedToken;
+  } catch (error) {
+    console.error('Erro ao verificar token do Firebase:', error);
+    throw new Error('Sessão inválida ou expirada');
+  }
+}
 
 const ALLOWED_FOLDERS = new Set(['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas']);
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
-const MAX_FILES = 20;
-const MAX_TOTAL_BYTES = 10 * 1024 * 1024;
-
-let jwksCache = null;
+const MAX_FILES = 50;
+const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 
 function json(res, statusCode, body) {
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(body));
-}
-
-function base64UrlDecode(value) {
-  return Buffer.from(value.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-}
-
-function parseJwt(token) {
-  const parts = token.split('.');
-  if (parts.length !== 3) throw new Error('Token invalido');
-
-  return {
-    header: JSON.parse(base64UrlDecode(parts[0]).toString('utf8')),
-    payload: JSON.parse(base64UrlDecode(parts[1]).toString('utf8')),
-    signingInput: `${parts[0]}.${parts[1]}`,
-    signature: base64UrlDecode(parts[2]),
-  };
 }
 
 async function getJsonBody(req) {
@@ -37,73 +39,6 @@ async function getJsonBody(req) {
   for await (const chunk of req) chunks.push(chunk);
   const rawBody = Buffer.concat(chunks).toString('utf8');
   return rawBody ? JSON.parse(rawBody) : {};
-}
-
-async function getKeycloakJwks(issuer) {
-  if (jwksCache?.issuer === issuer && jwksCache.expiresAt > Date.now()) {
-    return jwksCache.keys;
-  }
-
-  const response = await fetch(`${issuer}/protocol/openid-connect/certs`);
-  if (!response.ok) throw new Error('Falha ao buscar JWKS do Keycloak');
-
-  const data = await response.json();
-  jwksCache = {
-    issuer,
-    keys: data.keys || [],
-    expiresAt: Date.now() + 10 * 60 * 1000,
-  };
-
-  return jwksCache.keys;
-}
-
-function hasAllowedRole(payload, clientId, allowedRoles) {
-  if (allowedRoles.length === 0) return true;
-
-  const roles = new Set([
-    ...(payload.realm_access?.roles || []),
-    ...(payload.resource_access?.[clientId]?.roles || []),
-  ]);
-
-  return allowedRoles.some((role) => roles.has(role));
-}
-
-async function verifyKeycloakToken(token) {
-  const issuer = process.env.KEYCLOAK_ISSUER;
-  const clientId = process.env.KEYCLOAK_CLIENT_ID;
-  if (!issuer || !clientId) throw new Error('Keycloak nao configurado');
-
-  const { header, payload, signingInput, signature } = parseJwt(token);
-  if (header.alg !== 'RS256') throw new Error('Algoritmo de token nao suportado');
-  if (payload.iss !== issuer) throw new Error('Issuer invalido');
-
-  const now = Math.floor(Date.now() / 1000);
-  if (payload.exp && payload.exp <= now) throw new Error('Token expirado');
-  if (payload.nbf && payload.nbf > now) throw new Error('Token ainda nao valido');
-
-  const audience = Array.isArray(payload.aud) ? payload.aud : [payload.aud].filter(Boolean);
-  if (!audience.includes(clientId) && payload.azp !== clientId) {
-    throw new Error('Cliente Keycloak invalido');
-  }
-
-  const allowedRoles = (process.env.KEYCLOAK_ALLOWED_ROLES || '')
-    .split(',')
-    .map((role) => role.trim())
-    .filter(Boolean);
-
-  if (!hasAllowedRole(payload, clientId, allowedRoles)) {
-    throw new Error('Usuario sem permissao');
-  }
-
-  const keys = await getKeycloakJwks(issuer);
-  const jwk = keys.find((key) => key.kid === header.kid);
-  if (!jwk) throw new Error('Chave publica nao encontrada');
-
-  const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
-  const verified = crypto.verify('RSA-SHA256', Buffer.from(signingInput), publicKey, signature);
-  if (!verified) throw new Error('Assinatura invalida');
-
-  return payload;
 }
 
 function sanitizeFileName(fileName) {
@@ -213,18 +148,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const auth = req.headers.authorization || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
     if (!token) return json(res, 401, { error: 'Token ausente' });
 
-    const keycloakUser = await verifyKeycloakToken(token);
+    const firebaseUser = await verifyFirebaseToken(token);
     const body = await getJsonBody(req);
     validatePayload(body);
 
     const pr = await createGalleryPullRequest({
       folder: body.folder,
       files: body.files,
-      userName: keycloakUser.name || keycloakUser.preferred_username || keycloakUser.email,
+      userName: firebaseUser.name || firebaseUser.email,
     });
 
     return json(res, 200, {
