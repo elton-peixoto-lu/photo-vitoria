@@ -1,0 +1,9 @@
+project_id  = "fotovitoria"
+region      = "us-central1"
+site_name   = "photo-vitoria-site"
+bucket_name = "photo-vitoria-site-prod"
+
+main_domain = "estudiovitoriafreitas.com.br"
+additional_domains = [
+  "www.estudiovitoriafreitas.com.br"
+]
