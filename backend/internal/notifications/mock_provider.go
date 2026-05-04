@@ -1,0 +1,30 @@
+package notifications
+
+import (
+	"context"
+	"log/slog"
+)
+
+type MockProvider struct {
+	logger *slog.Logger
+}
+
+func NewMockProvider(logger *slog.Logger) *MockProvider {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	return &MockProvider{logger: logger}
+}
+
+func (m *MockProvider) SendAppointmentCreated(ctx context.Context, msg AppointmentCreatedMessage) error {
+	m.logger.Info("MockProvider: Sending appointment created notification",
+		"appointmentID", msg.AppointmentID,
+		"customerName", msg.CustomerName,
+		"customerPhone", msg.CustomerPhone,
+		"adminPhone", msg.AdminPhone,
+		"serviceType", msg.ServiceType,
+		"date", msg.Date.Format("2006-01-02"),
+		"startTime", msg.StartTime,
+	)
+	return nil
+}

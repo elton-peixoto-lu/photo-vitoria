@@ -4,6 +4,9 @@ import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 // Mapeamento das imagens locais por pasta
 const LOCAL_IMAGES_MAP = {
   "casamentos": [
+    "1776124425330-vlf-0171-casamentos-b284eaae-7ce6153def.avif",
+    "1776165301876-vlf-0020-c2a975e7-ede7c093ed.avif",
+    "1776166867286-vlf-0207-casamentos-07f00abc-daac513640.avif",
     "a5xt20fdzr3ho2uu7cxu_gnisla.avif",
     "ap1iuoatx0cberzj1jpz_v0jjih.avif",
     "bepi5wam17akiju45ukk_vlzvpy.avif",
@@ -23,6 +26,7 @@ const LOCAL_IMAGES_MAP = {
     "zb0m0fn2ekoksrpmrd8h_sdvinf.avif"
   ],
   "infantil": [
+    "1776120514588-infantis-vlf-0779-99d5d095-bd1f50e5c8.avif",
     "a9qjgpbbnzeqmfsxu9xw_g6h3cj.avif",
     "gvwi6jl6uej5s7jv8fxu_c15zg7.avif",
     "h3lfjzkohlzcavxahz6r_qp5dps.avif",

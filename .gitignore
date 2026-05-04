@@ -20,6 +20,10 @@ coverage/
 # Render/Vercel
 .vercel/
 .render/
+# Google Cloud Service Account (NUNCA subir no Git!)
+credentials.json
+backend/credentials.json
+
 # Outros
 *.log
 .vercel
