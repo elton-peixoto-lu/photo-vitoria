@@ -1,75 +1,144 @@
-# Portfólio Fotográfico - Vitoria
+# Photo Vitoria
 
-Site em React + Vite. A esteira foi separada assim:
+Frontend institucional e portal administrativo de upload para o acervo da Photo Vitoria.
 
-- `master`: producao no GCP com `Cloud Storage + CDN + HTTPS Load Balancer`
-- `staging`: homologacao na Vercel
+## Visao geral
 
-As fotos publicadas ficam no repositório em `public/images/galeria/<galeria>/` e o site usa um mapa local em `src/localAssetsLoader.js`.
+Este repositório concentra 3 responsabilidades:
 
-## Como rodar o projeto
+- site público em `React + Vite`
+- portal administrativo em `/admin/galeria`
+- pipeline GitOps de imagens com processamento automático via GitHub Actions
 
-### 1. Instale as dependências
+Hoje a operação está organizada assim:
+
+- `master`: produção no GCP
+- `staging`: homologação na Vercel
+- `admin-api`: backend do portal em `Cloud Run`
+- imagens publicadas: ainda versionadas no Git e servidas pelo frontend estático
+
+## Arquitetura atual
+
+### Produção
+
+- frontend estático em `Cloud Storage`
+- borda em `Cloud CDN + HTTPS Load Balancer`
+- backend admin em `Cloud Run`
+- autenticação do portal com `Firebase Auth (Google Sign-In)`
+- validação anti-bot com `Cloudflare Turnstile`
+
+### Homologação
+
+- branch `staging`
+- deploy na Vercel por workflow dedicado
+
+### Publicação de imagens
+
+1. Usuário autorizado acessa `/admin/galeria`
+2. Faz login com Google via Firebase
+3. Resolve o Turnstile
+4. Envia fotos para o `admin-api`
+5. O backend cria uma branch `gallery-upload/...` e abre um PR
+6. O workflow `process-pending-uploads.yml` otimiza os arquivos, atualiza o mapa local e tenta concluir o merge automaticamente
+7. O deploy do frontend publica a nova versão do site
+
+## Segurança do portal
+
+O fluxo administrativo já está endurecido com as seguintes travas:
+
+- allowlist por e-mail em `ADMIN_ALLOWED_EMAILS`
+- exigência de e-mail verificado no Firebase
+- validação server-side do Turnstile antes do login
+- validação de galeria, extensão, MIME type e base64 no backend
+- PR limitado a `uploads/pendentes/**`
+- auto-merge restrito a branches seguras do portal (`gallery-upload/**`)
+
+## Estado da migração para GCP
+
+### Concluído
+
+- frontend de produção provisionado no GCP
+- bucket público do site criado
+- `Cloud CDN` ativo
+- `HTTPS Load Balancer` ativo
+- deploy de `master` para GCS configurado em workflow
+- staging isolado na Vercel
+- `admin-api` em `Cloud Run`
+
+### Pendente
+
+- ativação do `Cloud Armor`
+- motivo atual: quota do projeto `fotovitoria` está com `SECURITY_POLICIES = 0`
+- migração futura das imagens para `Cloud Storage + Signed URLs`
+
+## Stack principal
+
+- `React 19`
+- `Vite`
+- `Firebase Auth`
+- `Firebase Admin SDK`
+- `Express`
+- `GitHub Actions`
+- `Google Cloud Run`
+- `Google Cloud Storage`
+- `Cloud CDN`
+- `Cloud Load Balancer`
+
+## Estrutura importante
+
+- `src/`: frontend público e portal admin
+- `server/`: backend Express e handlers do portal
+- `public/images/galeria/`: imagens publicadas no site
+- `uploads/pendentes/`: área temporária dos uploads antes do processamento
+- `.github/workflows/`: automações de deploy e pipeline de imagens
+- `infra/gcp/frontend-spa/`: Terraform da borda/frontend no GCP
+- `infra/gcp/admin-api/`: Terraform e apoio do backend admin
+- `docs/`: documentação complementar
+
+## Como rodar localmente
+
+### Pré-requisitos
+
+- Node.js 22+
+- npm
+
+### Instalação
 
 ```bash
 npm install
 ```
 
-### 2. Inicie o frontend React
+### Frontend
 
 ```bash
 npm run dev
 ```
-O frontend ficará disponível em http://localhost:5173 (ou porta definida pelo Vite).
 
-### 3. Acesse as galerias
+### Backend local opcional
 
-- `/galeria-infantil` → pasta "infantil" no Cloudinary
-- `/galeria-casamentos` → pasta "casamentos"
-- `/galeria-femininos` → pasta "femininos"
-- `/galeria-preweding` → pasta "pre-weding"
+```bash
+npm run server
+```
 
-> Observacao: as rotas acima exibem as galerias locais do repo. Existe um fallback opcional para API (ver "Modo API (opcional)" abaixo).
+### Admin API local opcional
 
-## Como subir fotos (recomendado)
+```bash
+npm run admin-api
+```
 
-## Portal admin com Firebase Auth e GCP
+## Scripts úteis
 
-Tambem existe uma tela para abstrair o GitHub da cliente:
+- `npm run dev`: sobe o frontend local
+- `npm run build`: gera o build de produção
+- `npm run preview`: sobe preview do build
+- `npm run server`: sobe a API Express local
+- `npm run admin-api`: sobe o backend do portal admin
+- `npm run process:uploads`: processa uploads pendentes localmente
+- `npm run test:uploads`: testa o pipeline de processamento
 
-- URL: `/admin/galeria`
-- Login: Firebase Auth (Email/Senha)
-- Saida: Pull Request criado automaticamente no GitHub (a cliente nao precisa usar GitHub)
-- Backend: GCP Cloud Run
-- URL do backend admin: `https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app`
+## Variáveis de ambiente
 
-Guia para a usuaria (sem termos tecnicos):
-
-- `docs/GUIA-PORTAL-ADMIN.md`
-
-Arquitetura e desenho do fluxo:
-
-- `docs/ARQUITETURA.md`
-- Segurança: Turnstile validado server-side antes do login
-
-Fluxo interno:
-
-1. A cliente faz login com Firebase Auth.
-2. A tela valida Turnstile no backend admin.
-3. A tela envia as fotos para `/api/admin/gallery-pr` com token do Firebase.
-4. O servico Cloud Run valida o JWT com Firebase Admin SDK.
-4. O servico cria uma branch, envia as fotos para `uploads/pendentes/{galeria}/` e abre o Pull Request.
-5. O workflow `.github/workflows/process-pending-uploads.yml` processa o PR e publica as fotos otimizadas.
-
-Travas de seguranca do portal:
-
-- apenas e-mails listados em `ADMIN_ALLOWED_EMAILS` podem criar PR
-- o usuario Firebase precisa ter e-mail verificado
-- o backend aceita apenas galerias, extensoes e mime types permitidos
-- o workflow recusa PR com arquivos fora de `uploads/pendentes/**`
-- o workflow faz merge automatico apenas para branches seguras do portal (`gallery-upload/**`)
-
-Variaveis necessarias no deploy:
+### Frontend
 
 - `VITE_ADMIN_API_URL`
 - `VITE_FIREBASE_API_KEY`
@@ -79,153 +148,73 @@ Variaveis necessarias no deploy:
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
 - `VITE_TURNSTILE_SITE_KEY`
+
+### Backend admin
+
 - `TURNSTILE_SECRET_KEY`
 - `ADMIN_ALLOWED_EMAILS`
 - `GITHUB_REPO`
 - `GITHUB_BASE_BRANCH`
 - `GITHUB_UPLOAD_TOKEN`
 
-Terraform do admin:
+## Deploys
 
-- `infra/gcp/admin-api/`
+### Produção
 
-Status GCP:
+Workflow:
+- `.github/workflows/deploy-frontend-gcp.yml`
 
-- Projeto: `fotovitoria`
-- Regiao: `us-central1`
-- Servico Cloud Run: `photo-vitoria-admin-api`
-- Budget mensal: USD 5
-- Healthcheck: `GET https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app/`
+Origem:
+- branch `master`
 
-> O portal hoje limita o lote a 20 fotos e 10MB por envio, porque os arquivos passam pelo Cloud Run antes de virarem PR. Para lotes grandes, o proximo passo e adicionar storage temporario (Cloud Storage) e deixar o GitHub Actions baixar as fotos.
+Destino:
+- bucket `photo-vitoria-site-prod`
+- borda GCP provisionada em `infra/gcp/frontend-spa/`
 
-### Pastas de entrada
+### Staging
 
-Suba as fotos brutas em uma destas pastas:
+Workflow:
+- `.github/workflows/deploy-frontend-vercel-staging.yml`
 
-- `uploads/pendentes/casamentos/`
-- `uploads/pendentes/infantil/`
-- `uploads/pendentes/femininos/`
-- `uploads/pendentes/pre-weding/`
-- `uploads/pendentes/noivas/`
+Origem:
+- branch `staging`
 
-### O que o robô faz no PR
+Destino:
+- projeto Vercel de homologação
 
-Ao abrir ou atualizar o Pull Request, o workflow `.github/workflows/process-pending-uploads.yml` roda `npm run process:uploads` e:
+### Portal / pipeline de imagens
 
-- converte JPG, PNG, WebP, AVIF, TIF e TIFF para AVIF;
-- salva em `public/images/galeria/{galeria}/`;
-- remove as fotos pendentes do PR;
-- atualiza `src/localAssetsLoader.js`;
-- comita o resultado de volta na branch do PR.
+Workflow:
+- `.github/workflows/process-pending-uploads.yml`
 
-### Uso local
+Responsabilidades:
+- validar escopo do PR
+- otimizar imagens
+- atualizar `src/localAssetsLoader.js`
+- limpar `uploads/pendentes/`
+- habilitar auto-merge quando o PR estiver no trilho seguro
 
-```bash
-npm run process:uploads
-```
+## Infraestrutura GCP relevante
 
-> O fluxo funciona melhor quando o PR vem de uma branch dentro do mesmo repositório, porque o GitHub Actions precisa permissão para comitar os arquivos processados na branch.
-> Na hora do merge, prefira `Squash and merge` para a branch principal receber apenas o resultado final otimizado.
+Projeto:
+- `fotovitoria`
 
----
+Região principal do backend:
+- `us-central1`
 
-Se tiver dúvidas ou quiser expandir para upload/admin, consulte o código ou peça ajuda!
+Serviço do portal:
+- `photo-vitoria-admin-api`
 
-## Modo API (opcional)
+Bucket do frontend:
+- `photo-vitoria-site-prod`
 
-O site e "local-first", mas pode usar uma API como fallback (por exemplo, para experimentar integracao com Cloudinary).
+## Próxima fase planejada
 
-- Backend local: `npm run server` (porta `4000`)
-- Variavel: `VITE_API_URL` (ex.: `http://localhost:4000/api`)
-- Controle: `VITE_LOCAL_ASSETS_FIRST=false` para tentar API primeiro
+A próxima evolução da arquitetura é retirar os binários de imagem do fluxo Git principal e mover uploads para `Cloud Storage` privado, com:
 
-Seguranca:
-- Nunca exponha `CLOUDINARY_API_SECRET` no frontend.
+- upload temporário em GCS
+- `Signed URLs`
+- processamento assíncrono
+- promoção para área pública após validação
 
----
-
-## Fundo decorativo com marcas d'água (logo)
-
-- As páginas **Contato** e **Estúdio** possuem um fundo decorativo com várias marcas d'água (logo) espalhadas, cobrindo toda a tela.
-- O efeito é feito com `<div>` e várias `<img>` posicionadas, com opacidade baixa, responsivo e sem atrapalhar o conteúdo.
-- O código do fundo está centralizado e padronizado, facilitando ajustes futuros (quantidade, imagem, opacidade, etc).
-
-### Vantagens
-- **Branding forte:** O logo aparece de forma sutil em todo o fundo, reforçando a identidade visual.
-- **Visual profissional:** O fundo decorativo dá um toque sofisticado e personalizado ao site.
-- **Consistência:** O mesmo padrão visual é aplicado em todas as páginas principais, mantendo a experiência imersiva.
-- **Fácil manutenção:** Para trocar o logo, quantidade ou estilo, basta alterar em um único local do código.
-
-## Contatos e botões padronizados e reutilizáveis
-
-- Todos os links de Instagram, WhatsApp e E-mail estão centralizados em um único arquivo (`src/components/ContatoInfo.jsx`).
-- Foram criados componentes de botão/link reutilizáveis: `<BotaoInstagram />`, `<BotaoWhatsapp />` e `<BotaoEmail />`.
-- Basta usar esses componentes em qualquer página para garantir consistência visual e facilidade de manutenção.
-- Para alterar o link, número ou e-mail, basta mudar em um só lugar e toda a aplicação será atualizada automaticamente.
-
-### Vantagens
-- **Manutenção fácil:** Atualize o contato em um só lugar e o site inteiro reflete a mudança.
-- **Consistência visual:** Todos os botões seguem o mesmo padrão de ícone, cor e acessibilidade.
-- **Reutilização:** Use os botões em qualquer página, com qualquer estilo, apenas passando a classe desejada.
-- **Código limpo:** Evita repetição de código e facilita futuras expansões (ex: adicionar Telegram, Facebook, etc).
-
-#### Exemplo de uso
-```jsx
-import { BotaoInstagram, BotaoWhatsapp, BotaoEmail } from './components/ContatoInfo.jsx';
-
-<BotaoInstagram className="minha-classe" />
-<BotaoWhatsapp className="outra-classe" />
-<BotaoEmail />
-```
-
-## System Design
-
-![System Design](./docs/system-design.png)
-Arquitetura detalhada (com diagramas Mermaid): `docs/ARQUITETURA.md`
-
----
-
-## Deploy SPA na Vercel (somente staging)
-
-Este projeto continua usando a Vercel apenas para staging. A branch `staging` publica pela workflow `.github/workflows/deploy-frontend-vercel-staging.yml`, e o `vercel.json` ignora builds de qualquer branch diferente de `staging`.
-
-O `vercel.json` fica assim:
-
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}
-```
-
-Assim, qualquer rota será servida pelo React Router, evitando erros 404 ao acessar links diretos.
-
-Se for migrar para outro serviço (Netlify, Firebase, etc), consulte a documentação para configurar o rewrite/catch-all equivalente.
-
----
-
-## Migracao do frontend para GCP
-
-Infra pronta no repositório:
-
-- `infra/gcp/frontend-spa/`
-- workflow `.github/workflows/deploy-frontend-gcp.yml`
-
-Objetivo:
-
-- remover a Vercel da producao
-- manter as imagens no Git
-- manter o fluxo atual de PR/processamento
-- servir o `dist/` do React via `Cloud Storage + Cloud CDN + HTTPS Load Balancer + Cloud Armor`
-
-Fluxo sugerido:
-
-1. aplicar `infra/gcp/frontend-spa`
-2. apontar DNS do dominio para o IP global do load balancer
-3. ajustar `GCS_BUCKET` no workflow para o bucket real
-4. dar permissão ao `GCP_SA_KEY` para publicar no bucket
-5. manter a Vercel apenas como staging
-
-O `admin-api` continua no `Cloud Run`.
+Até lá, o fluxo GitOps atual continua sendo a fonte de verdade para publicação das fotos no site.
