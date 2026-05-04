@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaFolderOpen } from 'react-icons/fa';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 const FOLDERS = [
   { value: 'casamentos', label: 'Casamentos' },
@@ -32,16 +32,19 @@ export default function AdminGaleriaUploads() {
 
   const [user, setUser] = useState(null);
   const [authState, setAuthState] = useState('loading');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const [turnstileError, setTurnstileError] = useState('');
 
   const turnstileRef = useRef(null);
   const turnstileWidgetIdRef = useRef(null);
+  const isLocalDev =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
-  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const turnstileSiteKey = isLocalDev ? '1x00000000000000000000AA' : import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const isConfigured = useMemo(() => {
     return Boolean(
@@ -78,13 +81,32 @@ export default function AdminGaleriaUploads() {
 
     function renderWidget() {
       if (!window.turnstile || !turnstileRef.current || turnstileWidgetIdRef.current) return;
+      setTurnstileError('');
       turnstileWidgetIdRef.current = window.turnstile.render(turnstileRef.current, {
         sitekey: turnstileSiteKey,
         theme: 'light',
-        callback: (token) => setTurnstileToken(token),
-        'expired-callback': () => setTurnstileToken(''),
-        'error-callback': () => setTurnstileToken('')
+        callback: (token) => {
+          setTurnstileToken(token);
+          setTurnstileReady(true);
+        },
+        'expired-callback': () => {
+          setTurnstileToken('');
+          setTurnstileReady(false);
+        },
+        'error-callback': () => {
+          setTurnstileToken('');
+          setTurnstileReady(false);
+          setTurnstileError(
+            isLocalDev
+              ? 'Captcha local indisponivel. Vou manter o login destravado no ambiente de desenvolvimento.'
+              : 'Turnstile bloqueado para este dominio. Libere o hostname no Cloudflare.'
+          );
+        }
       });
+
+      if (isLocalDev) {
+        setTurnstileReady(true);
+      }
     }
 
     if (!script) {
@@ -101,6 +123,10 @@ export default function AdminGaleriaUploads() {
   }, [isConfigured, turnstileSiteKey, user]);
 
   async function verifyTurnstileToken(token) {
+    if (import.meta.env.DEV && isLocalDev) {
+      return;
+    }
+
     const response = await fetch(`${adminApiUrl}/api/admin/turnstile-verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -123,7 +149,9 @@ export default function AdminGaleriaUploads() {
     setLoginLoading(true);
     try {
       await verifyTurnstileToken(turnstileToken);
-      await signInWithEmailAndPassword(auth, email, password);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
       setStatus('');
     } catch (error) {
       setStatus(error?.message || 'Falha no login.');
@@ -210,20 +238,37 @@ export default function AdminGaleriaUploads() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-[#fafafa] flex items-center justify-center p-6">
-        <div className="w-full max-w-[440px]">
+      <main className="min-h-screen bg-gradient-to-br from-[#fffaf7] via-[#fff1f6] to-[#f8f3ff] flex items-center justify-center p-6">
+        <div className="w-full max-w-[460px]">
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-light tracking-[0.2em] text-gray-900 uppercase mb-3">Photo Vitoria</h1>
-            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400">Portal Administrativo</p>
+            <div className="mb-5 inline-flex items-center rounded-full border border-[#f3d7e5] bg-white/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.35em] text-[#c35a86] shadow-sm">
+              Acesso restrito
+            </div>
+            <h1 className="text-4xl font-light tracking-[0.16em] text-[#7d3557] uppercase mb-3">Photo Vitoria</h1>
+            <p className="text-[11px] uppercase tracking-[0.32em] text-[#c294ab]">Portal Administrativo</p>
           </div>
-          <div className="bg-white border border-gray-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] p-10">
+
+          <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/85 p-10 shadow-[0_32px_80px_-24px_rgba(181,87,129,0.28)] backdrop-blur">
             <form onSubmit={handleLogin} className="space-y-6">
-              {status && <p className="text-xs text-red-600">{status}</p>}
-              <input type="email" required placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border-b border-gray-200 py-3 text-sm outline-none" />
-              <input type="password" required placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border-b border-gray-200 py-3 text-sm outline-none" />
-              <div className="flex justify-center"><div ref={turnstileRef} /></div>
-              <button type="submit" disabled={loginLoading} className="w-full bg-gray-900 text-white py-4 text-xs uppercase tracking-[0.4em] disabled:bg-gray-400">
-                {loginLoading ? 'Entrando...' : 'Entrar'}
+              {status && <p className="rounded-2xl border border-[#f6c8d9] bg-[#fff4f8] px-4 py-3 text-xs text-[#b64f78]">{status}</p>}
+
+              <div className="rounded-2xl border border-[#f2d9e4] bg-[#fffafb] px-5 py-4 text-sm text-[#7a3f5e]">
+                Entre com a conta Google autorizada para acessar o portal administrativo.
+              </div>
+
+              <div className="flex justify-center">
+                <div ref={turnstileRef} className="min-h-[70px]" />
+              </div>
+              {isLocalDev && <p className="text-xs text-amber-600">Ambiente local com Turnstile em modo de desenvolvimento.</p>}
+              {!turnstileReady && !turnstileError && <p className="text-xs text-gray-500">Carregando validação de segurança...</p>}
+              {turnstileError && <p className="text-xs text-red-600">{turnstileError}</p>}
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full rounded-2xl bg-gradient-to-r from-[#d63384] via-[#d94f8c] to-[#c65ad8] px-5 py-4 text-xs font-semibold uppercase tracking-[0.4em] text-white shadow-[0_18px_40px_-18px_rgba(214,51,132,0.9)] transition hover:scale-[1.01] hover:shadow-[0_24px_50px_-18px_rgba(214,51,132,0.95)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loginLoading ? 'Abrindo Google...' : 'Entrar com Google'}
               </button>
             </form>
           </div>

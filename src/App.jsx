@@ -21,8 +21,6 @@ import CookieBanner from './components/CookieBanner';
 import SystemMonitor from './components/SystemMonitor';
 import { loadGalleryImages } from './localAssetsLoader';
 import { ConfigProvider, ConfigStatus } from './components/ConfigProvider';
-import DynamicBanner from './components/DynamicBanner';
-import PromocaoSite from './components/PromocaoSite';
 import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
 // Importa utilitários de teste em desenvolvimento
@@ -351,11 +349,32 @@ export default function App() {
 
 // Componente interno que usa o context da sidebar
 function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) {
+  const location = useLocation();
   const { isOpen, toggle, sidebarWidth } = useSidebar();
+
+  if (location.pathname === '/admin/galeria') {
+    return (
+      <>
+        <div className="min-h-screen bg-[#fafafa]">
+          <div className="mx-auto max-w-6xl px-4 pt-4">
+            <Link
+              to="/"
+              className="inline-flex items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Ir para o site
+            </Link>
+          </div>
+          <Routes>
+            <Route path="/admin/galeria" element={<AdminGaleriaUploads />} />
+          </Routes>
+        </div>
+        <SpeedInsights />
+      </>
+    );
+  }
   
   return (
     <>
-      <PromocaoSite />
       <div className="flex min-h-screen">
         {/* Botão hambúrguer mobile */}
         <button
