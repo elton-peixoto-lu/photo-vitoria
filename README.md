@@ -1,5 +1,7 @@
 # Photo Vitoria
 
+![Status](https://img.shields.io/badge/status-active-success) ![Production](https://img.shields.io/badge/production-GCP-4285F4) ![Staging](https://img.shields.io/badge/staging-Vercel-black) ![Frontend](https://img.shields.io/badge/frontend-React%2019-61DAFB) ![Build](https://img.shields.io/badge/build-Vite%203-646CFF) ![Auth](https://img.shields.io/badge/auth-Firebase%20Google-FFCA28) ![Backend](https://img.shields.io/badge/backend-Cloud%20Run-34A853) ![Images](https://img.shields.io/badge/images-GitOps%20current-blueviolet)
+
 Frontend institucional e portal administrativo de upload para o acervo da Photo Vitoria.
 
 ## Visao geral
