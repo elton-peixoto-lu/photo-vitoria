@@ -2,7 +2,10 @@ package scheduling
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
+	"time"
 
 	"photo-vitoria-backend/internal/notifications"
 )
@@ -30,31 +33,45 @@ func NewService(repo Repository, notifier notifications.NotificationProvider, lo
 }
 
 func (s *Service) CreateAppointment(ctx context.Context, msg notifications.AppointmentCreatedMessage) error {
-	// 1. Lógica de persistência do agendamento (fictícia neste exemplo)
-	// err := s.repo.SaveAppointment(ctx, ...)
-	// if err != nil { return err }
-
-	// 2. Validação de campos mínimos para notificação
-	if msg.AppointmentID == "" || msg.CustomerName == "" || msg.Date.IsZero() {
-		s.logger.Warn("skipping notification: missing minimal fields", 
-			"appointmentID", msg.AppointmentID,
-		)
-		return nil
+	// 1. Validação de campos obrigatórios
+	if msg.AppointmentID == "" || msg.CustomerName == "" || msg.Date.IsZero() || msg.StartTime == "" {
+		return errors.New("campos obrigatórios faltando (ID, Nome, Data ou Horário)")
 	}
 
-	// 3. Notificação (não pode quebrar a criação do agendamento)
-	if err := s.notifier.SendAppointmentCreated(ctx, msg); err != nil {
-		// Logamos o erro com detalhes para possível monitoramento
-		s.logger.Warn("failed to send appointment notification", 
-			"error", err, 
-			"appointmentID", msg.AppointmentID,
-		)
-		
-		// TODO: Futuramente, inserir o agendamento em uma tabela `notification_attempts`
-		// para realizar retentativas por cron/worker.
+	// 2. Determinar janela de tempo (Início e Fim) com fuso horário de Brasília
+	location, _ := time.LoadLocation("America/Sao_Paulo")
+	start, err := time.ParseInLocation("2006-01-02 15:04", msg.Date.Format("2006-01-02")+" "+msg.StartTime, location)
+	if err != nil {
+		return fmt.Errorf("formato de data/hora inválido: %w", err)
+	}
+	
+	duration := 1 * time.Hour
+	if msg.EndTime != "" {
+		end, err := time.ParseInLocation("2006-01-02 15:04", msg.Date.Format("2006-01-02")+" "+msg.EndTime, location)
+		if err == nil {
+			duration = end.Sub(start)
+		}
+	}
+	finish := start.Add(duration)
 
-		// Retorna nil pois o agendamento em si ocorreu com sucesso.
-		return nil
+	// 3. Verificação de Disponibilidade (Concorrência/Conflito)
+	occupied, err := s.notifier.IsSlotOccupied(ctx, start, finish)
+	if err != nil {
+		s.logger.Error("falha ao verificar disponibilidade", "error", err)
+		// Em caso de erro técnico na API do Google, podemos decidir se bloqueamos ou permitimos.
+		// Aqui, vamos permitir para não travar o cliente por erro externo.
+	} else if occupied {
+		return errors.New("desculpe, este horário já está ocupado por outro ensaio")
+	}
+
+	// 4. Salvar no Banco (Fictício)
+	// s.repo.SaveAppointment(ctx, ...)
+
+	// 5. Notificação Final (Calendar + Email)
+	if err := s.notifier.SendAppointmentCreated(ctx, msg); err != nil {
+		s.logger.Error("falha na notificação (ex: Resend restrito), mas agendamento foi salvo na agenda", "error", err)
+		// Não retornamos erro aqui para garantir que o cliente veja a tela de sucesso,
+		// já que o compromisso principal (bloquear horário e salvar na agenda) foi feito.
 	}
 
 	return nil

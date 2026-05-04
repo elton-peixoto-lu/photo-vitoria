@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/resend/resend-go/v2"
 )
@@ -60,4 +61,12 @@ func (p *ResendProvider) SendAppointmentCreated(ctx context.Context, msg Appoint
 	p.logger.Info("e-mail de confirmação enviado com sucesso", "emailID", sent.Id, "to", msg.CustomerEmail)
 
 	return nil
+}
+
+func (p *ResendProvider) IsSlotOccupied(ctx context.Context, start, end time.Time) (bool, error) {
+	return false, nil
+}
+
+func (p *ResendProvider) GetBusySlots(ctx context.Context, date time.Time) ([]Slot, error) {
+	return []Slot{}, nil
 }

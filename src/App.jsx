@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 import Contato from './pages/Contato';
 import Estudio from './pages/Estudio';
+import Agendamento from './pages/Agendamento';
 import AdminPromocoes from './admin/AdminPromocoes';
 import AdminGaleriaUploads from './admin/AdminGaleriaUploads';
 import Home from './pages/Home';
@@ -12,7 +13,7 @@ import Galeria from './pages/Galeria';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
 import { FaInstagram, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight } from 'react-icons/pi';
+import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight, PiCalendarLight } from 'react-icons/pi';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -43,6 +44,7 @@ const MENU = [
   { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <PiCameraLight size={20} /> },
   { label: 'Noivas', path: '/galeria-noivas', icon: <PiCrownLight size={22} /> },
   { label: 'Estúdio', path: '/estudio', icon: <PiCameraLight size={20} /> },
+  { label: 'Agendar', path: '/agendar', icon: <PiCalendarLight size={20} /> },
   { label: 'Contato', path: '/contato', icon: <PiEnvelopeSimpleLight size={20} /> },
 ];
 
@@ -399,6 +401,7 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
               <Route path="/galeria-pre-weding" element={<GaleriaCloudinary pasta="pre-weding" semSetasDots={true} />} />
               <Route path="/galeria-noivas" element={<GaleriaCloudinary pasta="noivas" semSetasDots={true} />} />
               <Route path="/estudio" element={<Estudio />} />
+              <Route path="/agendar" element={<Agendamento />} />
               <Route path="/contato" element={<Contato />} />
               <Route path="/admin" element={<AdminPromocoes />} />
               <Route path="/admin/galeria" element={<AdminGaleriaUploads />} />

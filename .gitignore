@@ -35,3 +35,4 @@ backend/credentials.json
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+backend/main

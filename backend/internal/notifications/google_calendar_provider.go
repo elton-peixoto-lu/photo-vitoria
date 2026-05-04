@@ -31,7 +31,7 @@ func NewGoogleCalendarProvider(ctx context.Context, credentialsFile string, cale
 
 	srv, err := calendar.NewService(ctx,
 		option.WithCredentialsFile(credentialsFile),
-		option.WithScopes(calendar.CalendarEventsScope),
+		option.WithScopes(calendar.CalendarScope),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao inicializar cliente do Google Calendar: %w", err)
@@ -100,25 +100,10 @@ func (p *GoogleCalendarProvider) SendAppointmentCreated(ctx context.Context, msg
 	if msg.CustomerEmail != "" {
 		descBuilder.WriteString(fmt.Sprintf("📧 E-mail: %s\n", msg.CustomerEmail))
 	}
-	if msg.Notes != "" {
-		descBuilder.WriteString(fmt.Sprintf("\n📝 Observações:\n%s", msg.Notes))
-	}
-
-	// 3. Montar lista de convidados (attendees)
-	var attendees []*calendar.EventAttendee
-
-	// Adicionar o e-mail do cliente (se informado) — o Google vai enviar o convite para ele
-	if msg.CustomerEmail != "" {
-		attendees = append(attendees, &calendar.EventAttendee{
-			Email:       msg.CustomerEmail,
-			DisplayName: msg.CustomerName,
-		})
-	}
-
-	// 4. Montar o evento
+	// 4. Criar o objeto do evento (Sem attendees para evitar erro 403 da Service Account)
 	event := &calendar.Event{
 		Id:          generateEventID(msg.AppointmentID),
-		Summary:     fmt.Sprintf("Ensaio Fotográfico - %s", msg.CustomerName),
+		Summary:     fmt.Sprintf("Ensaio: %s - %s", msg.CustomerName, msg.ServiceType),
 		Description: descBuilder.String(),
 		Start: &calendar.EventDateTime{
 			DateTime: startDateTime,
@@ -128,7 +113,6 @@ func (p *GoogleCalendarProvider) SendAppointmentCreated(ctx context.Context, msg
 			DateTime: endDateTime,
 			TimeZone: "America/Sao_Paulo",
 		},
-		Attendees: attendees,
 		Reminders: &calendar.EventReminders{
 			UseDefault: false,
 			Overrides: []*calendar.EventReminder{
@@ -156,4 +140,49 @@ func (p *GoogleCalendarProvider) SendAppointmentCreated(ctx context.Context, msg
 	)
 
 	return nil
+}
+
+func (p *GoogleCalendarProvider) IsSlotOccupied(ctx context.Context, start, end time.Time) (bool, error) {
+	slots, err := p.GetBusySlots(ctx, start)
+	if err != nil {
+		return false, err
+	}
+	
+	for _, s := range slots {
+		// Verifica sobreposição
+		if start.Before(s.End) && s.Start.Before(end) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (p *GoogleCalendarProvider) GetBusySlots(ctx context.Context, date time.Time) ([]Slot, error) {
+	// Início e fim do dia
+	timeMin := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location()).Format(time.RFC3339)
+	timeMax := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 0, date.Location()).Format(time.RFC3339)
+
+	fbRequest := &calendar.FreeBusyRequest{
+		TimeMin: timeMin,
+		TimeMax: timeMax,
+		Items: []*calendar.FreeBusyRequestItem{
+			{Id: p.calendarID},
+		},
+	}
+
+	fbResponse, err := p.calendarService.Freebusy.Query(fbRequest).Context(ctx).Do()
+	if err != nil {
+		return nil, fmt.Errorf("erro ao consultar slots no Google: %w", err)
+	}
+
+	var result []Slot
+	for _, cal := range fbResponse.Calendars {
+		for _, b := range cal.Busy {
+			start, _ := time.Parse(time.RFC3339, b.Start)
+			end, _ := time.Parse(time.RFC3339, b.End)
+			result = append(result, Slot{Start: start, End: end})
+		}
+	}
+
+	return result, nil
 }

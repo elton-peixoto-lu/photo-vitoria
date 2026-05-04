@@ -3,6 +3,7 @@ package notifications
 import (
 	"context"
 	"log/slog"
+	"time"
 )
 
 type MockProvider struct {
@@ -27,4 +28,12 @@ func (m *MockProvider) SendAppointmentCreated(ctx context.Context, msg Appointme
 		"startTime", msg.StartTime,
 	)
 	return nil
+}
+
+func (m *MockProvider) IsSlotOccupied(ctx context.Context, start, end time.Time) (bool, error) {
+	return false, nil
+}
+
+func (m *MockProvider) GetBusySlots(ctx context.Context, date time.Time) ([]Slot, error) {
+	return []Slot{}, nil
 }
