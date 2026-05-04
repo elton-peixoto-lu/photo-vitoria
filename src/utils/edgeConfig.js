@@ -6,6 +6,10 @@ import { useState, useEffect } from 'react';
  * Como não temos middleware, usamos essas funções utilitárias
  */
 
+function hasEdgeConfig() {
+  return Boolean(import.meta.env.VITE_EDGE_CONFIG);
+}
+
 /**
  * Busca uma configuração específica do Edge Config
  * @param {string} key - Chave da configuração
@@ -13,6 +17,10 @@ import { useState, useEffect } from 'react';
  * @returns {Promise<any>} Valor da configuração
  */
 export async function getConfig(key, defaultValue = null) {
+  if (!hasEdgeConfig()) {
+    return defaultValue;
+  }
+
   try {
     const value = await get(key);
     return value !== undefined ? value : defaultValue;
@@ -27,6 +35,10 @@ export async function getConfig(key, defaultValue = null) {
  * @returns {Promise<Object>} Todas as configurações
  */
 export async function getAllConfigs() {
+  if (!hasEdgeConfig()) {
+    return {};
+  }
+
   try {
     const configs = await getAll();
     return configs || {};
@@ -40,6 +52,31 @@ export async function getAllConfigs() {
  * Busca configurações específicas para funcionalidades do site
  */
 export async function getSiteConfigs() {
+  if (!hasEdgeConfig()) {
+    return {
+      galeria: {
+        maxImagens: 50,
+        qualidadeImagem: 80,
+        habilitarPreload: true
+      },
+      sistema: {
+        circuitBreakerLimite: 3,
+        circuitBreakerTimeout: 30000,
+        tentativasMaximas: 3
+      },
+      conteudo: {
+        saudacao: 'Bem-vindo ao Photo Vitória!',
+        manutencao: false,
+        mensagemManutencao: 'Site em manutenção'
+      },
+      features: {
+        novasGalerias: false,
+        animacoesAvancadas: true,
+        analytics: true
+      }
+    };
+  }
+
   try {
     const configs = await getAll();
     return {
@@ -131,27 +168,6 @@ export function useEdgeConfig(key, defaultValue = null) {
   return { data, loading, error };
 }
 
-// Exemplo de uso para desenvolvedores
-console.log(`
-🔧 Edge Config Utils criado!
-
-Exemplos de uso:
-
-// 1. Buscar configuração específica
-const greeting = await getConfig('greeting', 'Olá!');
-
-// 2. Buscar todas as configurações do site
-const configs = await getSiteConfigs();
-
-// 3. Usar no React (componente funcional)
-import { useEdgeConfig } from '../utils/edgeConfig';
-const MyComponent = () => {
-  const { data: greeting, loading } = useEdgeConfig('greeting', 'Olá!');
-  return loading ? 'Carregando...' : <h1>{greeting}</h1>;
-};
-
-Para adicionar configurações no Vercel:
-1. Acesse: https://vercel.com/dashboard
-2. Vá no seu projeto > Storage > Edge Config
-3. Adicione chaves como: greeting, galeria_max_imagens, etc.
-`);
+if (import.meta.env.DEV && hasEdgeConfig()) {
+  console.log('Edge Config ativo para este ambiente.');
+}
