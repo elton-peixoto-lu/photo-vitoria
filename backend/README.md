@@ -74,12 +74,20 @@ go run main.go
 #### 3. Configurar variáveis de ambiente
 
 ```bash
-# Caminho para o arquivo JSON de credenciais da Service Account
+# Google Calendar
 export GOOGLE_CREDENTIALS_FILE=/caminho/para/credentials.json
-
-# ID da agenda do Google Calendar
 export GOOGLE_CALENDAR_ID=abc123@group.calendar.google.com
+
+# Resend Email
+export RESEND_API_KEY=re_123456789
+export RESEND_FROM=onboarding@resend.dev  # Em produção use seu domínio verificado
 ```
+
+## Feature: Notificações Compostas (Calendar + Email)
+
+O sistema utiliza um `MultiProvider`. Isso significa que, ao criar um agendamento:
+1. O evento é criado na agenda da fotógrafa.
+2. Um e-mail de confirmação profissional é enviado para a cliente via **Resend**.
 
 #### 4. Executar
 

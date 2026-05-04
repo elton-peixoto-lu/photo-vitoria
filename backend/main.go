@@ -22,27 +22,38 @@ func main() {
 	logger := slog.Default()
 	ctx := context.Background()
 
-	// 1. Determinar qual provider usar com base nas variáveis de ambiente
-	var notifier notifications.NotificationProvider
+	// 1. Instanciar os Providers Reais ou Mocks
+	var activeProviders []notifications.NotificationProvider
 
+	// Google Calendar
 	credentialsFile := os.Getenv("GOOGLE_CREDENTIALS_FILE")
 	calendarID := os.Getenv("GOOGLE_CALENDAR_ID")
-
 	if credentialsFile != "" && calendarID != "" {
-		// Modo Produção: Google Calendar real
-		provider, err := notifications.NewGoogleCalendarProvider(ctx, credentialsFile, calendarID, logger)
-		if err != nil {
-			logger.Error("falha ao inicializar Google Calendar provider, usando mock", "error", err)
-			notifier = notifications.NewMockProvider(logger)
+		calendarProvider, err := notifications.NewGoogleCalendarProvider(ctx, credentialsFile, calendarID, logger)
+		if err == nil {
+			activeProviders = append(activeProviders, calendarProvider)
+			logger.Info("Google Calendar provider inicializado")
 		} else {
-			notifier = provider
-			logger.Info("Google Calendar provider inicializado com sucesso")
+			logger.Error("falha ao inicializar Google Calendar", "error", err)
 		}
-	} else {
-		// Modo Desenvolvimento: Mock (apenas loga no console)
-		notifier = notifications.NewMockProvider(logger)
-		logger.Info("Usando MockProvider (defina GOOGLE_CREDENTIALS_FILE e GOOGLE_CALENDAR_ID para produção)")
 	}
+
+	// Resend Email
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	resendFrom := os.Getenv("RESEND_FROM") // ex: "onboarding@resend.dev" ou "seu@dominio.com"
+	if resendAPIKey != "" && resendFrom != "" {
+		resendProvider := notifications.NewResendProvider(resendAPIKey, resendFrom, logger)
+		activeProviders = append(activeProviders, resendProvider)
+		logger.Info("Resend Email provider inicializado")
+	}
+
+	// Se não houver nenhum real, usa Mock
+	if len(activeProviders) == 0 {
+		activeProviders = append(activeProviders, notifications.NewMockProvider(logger))
+		logger.Info("Usando MockProvider")
+	}
+
+	notifier = notifications.NewMultiProvider(activeProviders...)
 
 	// 2. Instanciar o repositório (Fake — substituir por Postgres futuramente)
 	repo := &DummyRepo{}
