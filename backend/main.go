@@ -95,7 +95,9 @@ func main() {
 
 		if err := service.CreateAppointment(r.Context(), msg); err != nil {
 			logger.Error("Erro ao criar agendamento", "error", err)
-			http.Error(w, "Erro interno ao processar agendamento", http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"status": "error", "message": err.Error()})
 			return
 		}
 

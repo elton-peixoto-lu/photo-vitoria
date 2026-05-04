@@ -39,7 +39,11 @@ func (s *Service) CreateAppointment(ctx context.Context, msg notifications.Appoi
 	}
 
 	// 2. Determinar janela de tempo (Início e Fim) com fuso horário de Brasília
-	location, _ := time.LoadLocation("America/Sao_Paulo")
+	location, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		s.logger.Warn("não foi possível carregar fuso horário America/Sao_Paulo, usando Local", "error", err)
+		location = time.Local
+	}
 	start, err := time.ParseInLocation("2006-01-02 15:04", msg.Date.Format("2006-01-02")+" "+msg.StartTime, location)
 	if err != nil {
 		return fmt.Errorf("formato de data/hora inválido: %w", err)

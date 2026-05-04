@@ -123,13 +123,17 @@ func (p *GoogleCalendarProvider) SendAppointmentCreated(ctx context.Context, msg
 		},
 	}
 
-	// 5. Inserir o evento — SendUpdates("all") faz o Google enviar o e-mail
-	// de confirmação/convite automaticamente para todos os attendees
+	// 5. Inserir o evento
 	createdEvent, err := p.calendarService.Events.Insert(p.calendarID, event).
 		SendUpdates("all").
 		Context(ctx).
 		Do()
 	if err != nil {
+		// Se o erro for 409 (Conflict), significa que o ID do evento já existe.
+		if strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "409") {
+			p.logger.Info("evento já existia no Google Calendar (idempotência)", "appointmentID", msg.AppointmentID)
+			return nil
+		}
 		return fmt.Errorf("erro ao criar evento no Google Calendar: %w", err)
 	}
 
@@ -149,8 +153,21 @@ func (p *GoogleCalendarProvider) IsSlotOccupied(ctx context.Context, start, end 
 	}
 	
 	for _, s := range slots {
-		// Verifica sobreposição
+		// Ignorar eventos de "Dia Inteiro" (Holidays)
+		duration := s.End.Sub(s.Start)
+		if duration >= 23*time.Hour && s.Start.Hour() == 0 && s.Start.Minute() == 0 {
+			p.logger.Debug("Ignorando slot de dia inteiro (provável feriado)", "start", s.Start, "duration", duration)
+			continue
+		}
+
+		// Verifica sobreposição real
 		if start.Before(s.End) && s.Start.Before(end) {
+			p.logger.Warn("CONFLITO DETECTADO", 
+				"solicitado_inicio", start, 
+				"solicitado_fim", end, 
+				"conflito_inicio", s.Start, 
+				"conflito_fim", s.End,
+			)
 			return true, nil
 		}
 	}
@@ -158,9 +175,14 @@ func (p *GoogleCalendarProvider) IsSlotOccupied(ctx context.Context, start, end 
 }
 
 func (p *GoogleCalendarProvider) GetBusySlots(ctx context.Context, date time.Time) ([]Slot, error) {
-	// Início e fim do dia
-	timeMin := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location()).Format(time.RFC3339)
-	timeMax := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 0, date.Location()).Format(time.RFC3339)
+	// Início e fim do dia (Garantir que usamos o fuso horário de Brasília na query)
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		loc = time.FixedZone("BRT", -3*3600)
+	}
+	
+	timeMin := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).Format(time.RFC3339)
+	timeMax := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 0, loc).Format(time.RFC3339)
 
 	fbRequest := &calendar.FreeBusyRequest{
 		TimeMin: timeMin,
@@ -178,11 +200,17 @@ func (p *GoogleCalendarProvider) GetBusySlots(ctx context.Context, date time.Tim
 	var result []Slot
 	for _, cal := range fbResponse.Calendars {
 		for _, b := range cal.Busy {
-			start, _ := time.Parse(time.RFC3339, b.Start)
-			end, _ := time.Parse(time.RFC3339, b.End)
-			result = append(result, Slot{Start: start, End: end})
+			start, errS := time.Parse(time.RFC3339, b.Start)
+			end, errE := time.Parse(time.RFC3339, b.End)
+			if errS == nil && errE == nil {
+				p.logger.Debug("Google retornou slot ocupado", "start", start, "end", end)
+				result = append(result, Slot{Start: start, End: end})
+			}
 		}
 	}
 
+	if len(result) > 0 {
+		p.logger.Info("Total de slots ocupados encontrados", "count", len(result), "date", date.Format("2006-01-02"))
+	}
 	return result, nil
 }
