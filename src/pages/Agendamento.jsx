@@ -32,7 +32,8 @@ export default function Agendamento() {
         // Converter horários do Google para formato HH:mm
         const busy = data.map(slot => {
           const d = new Date(slot.start);
-          return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+          // Usar o fuso horário local do navegador (Brasília) para bater com o que o usuário vê
+          return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         });
         setBusySlots(busy);
       } catch (err) {
