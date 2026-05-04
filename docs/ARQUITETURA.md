@@ -1,108 +1,139 @@
-# Arquitetura (Atual)
+# Arquitetura atual
 
-Este documento descreve como o portal admin publica fotos no site, sem a cliente precisar usar GitHub.
+Este documento descreve a arquitetura real do projeto hoje, depois da separação entre produção no GCP e staging na Vercel.
 
-## Visao geral
+## Resumo executivo
 
-- Site (Vercel) serve fotos locais versionadas em `public/images/galeria/...`.
-- Portal admin (rota `/admin/galeria`) autentica no Keycloak e envia fotos para o backend admin.
-- Backend admin (Cloud Run) valida o JWT e abre PR no GitHub com as fotos em `uploads/pendentes/<galeria>/`.
-- GitHub Actions processa e otimiza (AVIF), atualiza `src/localAssetsLoader.js` e publica ao entrar na `master`.
+- frontend público: `React + Vite`
+- produção: `Cloud Storage + Cloud CDN + HTTPS Load Balancer`
+- staging: `Vercel`
+- portal admin: rota `/admin/galeria`
+- autenticação do portal: `Firebase Auth` com login Google
+- proteção anti-bot: `Cloudflare Turnstile`
+- backend do portal: `Cloud Run`
+- publicação de imagens: `GitOps` via Pull Request + GitHub Actions
 
-## Desenho (Fluxo)
+## Fluxo atual de publicação de imagens
 
 ```mermaid
 flowchart LR
-  U[Cliente (Vitoria)] -->|1. Acessa| A[Portal Admin /admin/galeria (Vercel)]
-  A -->|2. Login| K[Keycloak (GCP)]
-  A -->|3. POST /api/admin/gallery-pr + JWT| CR[Backend Admin (Cloud Run)]
-  CR -->|4. GitHub API: cria branch + sobe pendentes| GH[GitHub Repo]
-  GH -->|5. PR aberto/atualizado| GA[GitHub Actions: process-pending-uploads]
-  GA -->|6. Converte para AVIF + atualiza mapa| GH
-  GH -->|7. Merge na master| V[Vercel Deploy (Site)]
-  V -->|8. Serve fotos| S[Site /galeria-*]
+  U[Usuaria autorizada] -->|1. Acessa /admin/galeria| A[Portal Admin]
+  A -->|2. Login Google| F[Firebase Auth]
+  A -->|3. Valida desafio| T[Cloudflare Turnstile]
+  A -->|4. POST /api/admin/gallery-pr| CR[Admin API no Cloud Run]
+  CR -->|5. Cria branch + PR| GH[GitHub]
+  GH -->|6. Dispara workflow| GA[GitHub Actions]
+  GA -->|7. Otimiza fotos + atualiza mapa local| GH
+  GH -->|8. Merge| PROD[Branch master]
+  PROD -->|9. Deploy estatico| GCP[Cloud Storage + CDN + LB]
 ```
 
-## Sequencia (Detalhada)
+## Sequência detalhada
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Cliente as Cliente
-  participant AdminUI as Portal Admin (Vercel)
-  participant Keycloak as Keycloak (GCP)
-  participant AdminAPI as Admin API (Cloud Run)
-  participant GitHub as GitHub (Repo)
+  participant User as Usuaria
+  participant Admin as Portal Admin
+  participant Firebase as Firebase Auth
+  participant Turnstile as Turnstile
+  participant API as Admin API
+  participant GitHub as GitHub
   participant Actions as GitHub Actions
-  participant Vercel as Vercel (Deploy)
+  participant GCP as Frontend GCP
 
-  Cliente->>AdminUI: Abre /admin/galeria
-  AdminUI->>Keycloak: Login (OIDC)
-  Keycloak-->>AdminUI: JWT (access token)
-  Cliente->>AdminUI: Escolhe galeria + seleciona fotos
-  AdminUI->>AdminAPI: POST /api/admin/gallery-pr (JWT + base64)
-  AdminAPI->>Keycloak: Valida JWT (issuer/aud/roles)
-  Keycloak-->>AdminAPI: OK
-  AdminAPI->>GitHub: Cria branch gallery-upload/<galeria>/<timestamp>
-  AdminAPI->>GitHub: PUT uploads/pendentes/<galeria>/<arquivo>
-  AdminAPI->>GitHub: Abre Pull Request
-  GitHub-->>AdminUI: URL/numero do PR
-  GitHub->>Actions: Dispara workflow no PR
-  Actions->>GitHub: Processa pendentes -> AVIF + atualiza src/localAssetsLoader.js
-  Actions->>GitHub: Commit na branch do PR
-  Actions->>GitHub: Merge (auto/admin fallback)
-  GitHub->>Vercel: Deploy da master
-  Vercel-->>Cliente: Foto aparece no site
+  User->>Admin: Abre /admin/galeria
+  Admin->>Turnstile: Resolve desafio
+  Admin->>Firebase: Login com Google
+  Firebase-->>Admin: ID token
+  User->>Admin: Escolhe galeria e fotos
+  Admin->>API: POST /api/admin/gallery-pr
+  API->>Firebase: Verifica token
+  Firebase-->>API: Token valido
+  API->>GitHub: Cria branch gallery-upload/...
+  API->>GitHub: Envia uploads/pendentes/<galeria>/...
+  API->>GitHub: Abre PR
+  GitHub->>Actions: Executa process-pending-uploads.yml
+  Actions->>GitHub: Gera AVIF + atualiza src/localAssetsLoader.js
+  Actions->>GitHub: Commita na branch do PR
+  Actions->>GitHub: Auto-merge quando permitido
+  GitHub->>GCP: Workflow publica build no bucket
+  GCP-->>User: Site atualizado
 ```
 
-## Componentes e responsabilidades
+## Componentes
 
-### 1) Portal Admin (Frontend)
+### Frontend público
 
-- Onde: rota `https://photo-vitoria.vercel.app/admin/galeria`
-- O que faz: coleta arquivos, pede login e chama a Admin API com JWT.
-- Codigo: `src/admin/AdminGaleriaUploads.jsx`
+- código em `src/`
+- build estático via `vite build`
+- deploy de produção para bucket GCS
+- deploy de staging na Vercel
 
-### 2) Keycloak (Auth)
+### Portal admin
 
-- O que faz: login e emissao de JWT.
-- Recomendado: usuarios com role `photo-admin`.
+- rota: `/admin/galeria`
+- arquivo principal: `src/admin/AdminGaleriaUploads.jsx`
+- login Google com Firebase
+- Turnstile validado no backend antes do login seguir
 
-### 3) Admin API (Cloud Run)
+### Admin API
 
-- Endpoint: `POST /api/admin/gallery-pr`
-- O que faz:
-  - valida JWT do Keycloak;
-  - valida limites e sanitiza nomes;
-  - cria branch no GitHub;
-  - envia fotos para `uploads/pendentes/<galeria>/`;
-  - abre PR e retorna o link.
-- Codigo: `server/adminGalleryPrServer.mjs`, `server/adminGalleryPrHandler.mjs`
+- runtime: `Cloud Run`
+- arquivo principal: `server/adminGalleryPrHandler.mjs`
+- responsabilidades:
+  - validar token Firebase
+  - aplicar allowlist de e-mails
+  - validar payload dos arquivos
+  - criar branch e Pull Request no GitHub
 
-### 4) Workflow GitHub Actions
+### Workflow de processamento
 
-- Arquivo: `.github/workflows/process-pending-uploads.yml`
-- O que faz:
-  - roda `npm run test:uploads`;
-  - roda `npm run process:uploads` (Sharp -> AVIF);
-  - atualiza `public/images/galeria/<galeria>/` e `src/localAssetsLoader.js`;
-  - comita na branch do PR;
-  - tenta merge automatico; se auto-merge falhar, usa fallback admin para publicar.
-- Script: `scripts/processPendingUploads.mjs`
+- arquivo: `.github/workflows/process-pending-uploads.yml`
+- script: `scripts/processPendingUploads.mjs`
+- responsabilidades:
+  - validar escopo do PR
+  - otimizar imagens
+  - atualizar `public/images/galeria/**`
+  - atualizar `src/localAssetsLoader.js`
+  - concluir merge seguro
 
-### 5) Site (Vercel)
+## Localização das imagens
 
-- Carrega galerias via `src/localAssetsLoader.js` (local-first).
-- Existe fallback opcional para API via `VITE_API_URL` quando `VITE_LOCAL_ASSETS_FIRST=false`.
+### Estado atual
 
-## Onde as fotos ficam
+- entrada temporária: `uploads/pendentes/<galeria>/`
+- saída publicada: `public/images/galeria/<galeria>/`
+- índice local: `src/localAssetsLoader.js`
 
-- Entrada (temporario, no PR): `uploads/pendentes/<galeria>/`
-- Saida (publicado no site): `public/images/galeria/<galeria>/`
-- Mapa local: `src/localAssetsLoader.js`
+### Próxima fase planejada
 
-## Observacoes importantes
+A próxima etapa da arquitetura é retirar os binários do fluxo Git principal e mover o upload para GCS privado.
 
-- Se a foto "nao aparece", na maioria dos casos e cache do PWA/navegador. Teste em aba anonima.
-- Se o PR foi aberto e os checks passaram, a publicacao depende do merge na `master` e do deploy da Vercel.
+Desenho alvo:
 
+- bucket privado temporário para upload
+- `Signed URLs` emitidas pelo backend
+- processamento assíncrono
+- promoção do arquivo aprovado para área pública
+- frontend servindo imagens já pela borda GCP
+
+## Produção vs staging
+
+### Produção
+
+- branch: `master`
+- workflow: `.github/workflows/deploy-frontend-gcp.yml`
+- destino: `Cloud Storage + CDN + LB`
+
+### Staging
+
+- branch: `staging`
+- workflow: `.github/workflows/deploy-frontend-vercel-staging.yml`
+- destino: `Vercel`
+
+## Pendências reais
+
+- `Cloud Armor` ainda não ativado por quota `SECURITY_POLICIES = 0`
+- certificado gerenciado do GCP precisa estar ativo para fechamento total da borda HTTPS
+- migração de imagens para `GCS + Signed URLs` ainda não iniciada em produção

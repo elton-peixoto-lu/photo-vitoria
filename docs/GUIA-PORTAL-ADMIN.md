@@ -1,71 +1,86 @@
-# Guia do Portal Admin (Enviar Fotos)
+# Guia do portal admin
 
-Este guia e para a usuaria do portal (ex.: Vitoria) subir fotos para o site sem precisar mexer no GitHub.
+Este guia é para quem vai subir fotos no portal sem precisar usar GitHub manualmente.
 
-## 1) Acesso
+## Acesso
 
-- Link do portal admin: `https://photo-vitoria.vercel.app/admin/galeria`
-- O login e feito na tela do Keycloak (uma pagina de login segura).
+- endereço: `/admin/galeria`
+- login: conta Google autorizada
+- segurança adicional: desafio Turnstile antes da entrada
 
-Se voce nao conseguir entrar:
-- Confira usuario e senha.
-- No primeiro acesso, o sistema pode pedir para trocar a senha.
+Se o acesso for negado, os motivos mais comuns são:
 
-## 2) Enviar fotos
+- a conta Google não está na allowlist
+- o e-mail da conta não está verificado no Google/Firebase
+- o desafio de segurança expirou
+
+## Como enviar fotos
 
 1. Abra o portal admin.
-2. Escolha a galeria (Casamentos, Infantil, Femininos, Pre-Weding, Noivas).
-3. Clique em "Escolher arquivos" e selecione as fotos.
-4. Clique em "Enviar fotos para galeria".
+2. Clique em `Entrar com Google`.
+3. Escolha a conta autorizada.
+4. Selecione a galeria correta.
+5. Escolha as fotos do lote.
+6. Envie o formulário.
 
-O sistema vai:
-- enviar as fotos com seguranca;
-- otimizar as imagens (reduz tamanho e melhora carregamento);
-- publicar no site.
+## O que acontece depois do envio
 
-## 3) Quando a foto aparece no site
+O sistema não publica a foto direto no site. Ele passa por um fluxo de segurança e processamento:
 
-Normalmente aparece em poucos minutos. Isso depende de:
-- tempo de processamento das imagens;
-- tempo de publicacao (deploy) do site.
+1. o backend valida sua sessão
+2. cria uma branch segura no GitHub
+3. abre um Pull Request automático
+4. o workflow otimiza as imagens
+5. o merge publica a alteração
+6. o deploy do site atualiza a produção
 
-## 4) Limites por envio
+## Limites atuais
 
-Para manter o envio estavel:
-- ate 20 fotos por envio;
-- ate 10MB no total por envio.
+Para manter o fluxo estável neste estágio da arquitetura:
 
-Se precisar subir mais fotos, envie em lotes menores.
+- até 10 MB por lote no frontend
+- backend com limite total de 20 MB por requisição
+- envio em lotes pequenos é o caminho mais seguro
 
-## 5) Problemas comuns
+Se houver muitas fotos, envie em grupos menores.
 
-### A) "Enviei, mas nao apareceu"
+## Problemas comuns
 
-1. Aguarde 2 a 5 minutos.
-2. Abra o site em uma aba anonima e verifique de novo.
-3. Faca um "hard refresh" (Ctrl+F5 no Windows/Linux, Cmd+Shift+R no Mac).
+### O login não entra
 
-Motivo comum: cache do navegador/PWA pode mostrar uma versao antiga por alguns minutos.
+Causas comuns:
 
-### B) "Apareceu duplicado"
+- desafio Turnstile expirado
+- conta Google fora da allowlist
+- popup bloqueado no navegador
 
-Se isso acontecer, avise o mantenedor. O sistema tem protecoes contra duplicacao, mas pode existir cache antigo no seu navegador.
-O teste mais rapido e abrir a galeria em aba anonima.
+Tente recarregar a página e repetir o login.
 
-### C) "Nao consigo enviar (erro)"
+### O envio foi aceito, mas a foto ainda não apareceu
 
-Possiveis causas:
-- arquivo muito grande;
-- muitas fotos no mesmo envio;
-- internet instavel.
+Isso normalmente significa que o fluxo ainda está processando o PR ou que o navegador está com cache.
 
-Tente enviar menos fotos por vez.
+Tente:
 
-## 6) Suporte
+1. aguardar alguns minutos
+2. abrir o site em aba anônima
+3. atualizar a página com recarga completa
 
-Se travar em qualquer etapa, envie para o mantenedor:
-- nome da galeria;
-- quantidade de fotos;
-- horario aproximado do envio;
-- print da mensagem de erro (se tiver).
+### O envio falhou
 
+Causas comuns:
+
+- lote grande demais
+- conexão instável
+- formato não permitido
+
+A melhor alternativa é reenviar menos arquivos por vez.
+
+## Informações úteis para suporte
+
+Se algo travar, envie para quem mantém o sistema:
+
+- nome da galeria
+- horário aproximado do envio
+- quantidade de fotos
+- mensagem de erro exibida

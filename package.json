@@ -15,7 +15,8 @@
     "sync:images:force": "node scripts/syncImages.mjs --force",
     "sync:images:web": "node scripts/syncWebInterface.mjs",
     "process:uploads": "node scripts/processPendingUploads.mjs",
-    "sync:test": "node scripts/test.mjs"
+    "sync:test": "node scripts/test.mjs",
+    "smoke:gcp": "node scripts/smokeFrontendGcp.mjs"
   },
   "dependencies": {
     "@cloudinary/react": "^1.14.3",

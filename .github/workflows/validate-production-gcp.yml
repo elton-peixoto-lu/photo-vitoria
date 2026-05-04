@@ -1,0 +1,28 @@
+name: Validate Production GCP Frontend
+
+on:
+  workflow_run:
+    workflows: ["Deploy Frontend to GCP Storage"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production smoke test
+        run: npm run smoke:gcp
