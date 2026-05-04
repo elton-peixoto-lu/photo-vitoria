@@ -73,4 +73,4 @@ jobs:
             --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.API_SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --set-env-vars="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }},GITHUB_REPO=${{ secrets.GITHUB_REPO }},GITHUB_UPLOAD_TOKEN=${{ secrets.GITHUB_UPLOAD_TOKEN }}"
+            --set-env-vars="GITHUB_TOKEN=${{ secrets.GH_UPLOAD_TOKEN }},GITHUB_REPO=${{ secrets.REPO_NAME }},GITHUB_UPLOAD_TOKEN=${{ secrets.GH_UPLOAD_TOKEN }}"
