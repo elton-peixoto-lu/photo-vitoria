@@ -28,6 +28,16 @@
         error = '';
         
         try {
+            const turnstileResponse = await fetch('/api/auth/turnstile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: turnstileToken })
+            });
+            if (!turnstileResponse.ok) {
+                error = "Validação de segurança falhou. Tente novamente.";
+                return;
+            }
+
             await signInWithEmailAndPassword(auth, email, password);
             goto('/admin');
         } catch (err) {

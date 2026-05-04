@@ -1,42 +1,46 @@
-# sv
+# Admin New (SvelteKit 2)
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Painel administrativo do Photo Vitoria com login via Firebase Auth e proteção de acesso com Cloudflare Turnstile validado no backend SvelteKit.
 
-## Creating a project
+## Stack
+- SvelteKit 2
+- Firebase Authentication (Email/Senha)
+- Cloudflare Turnstile (token validado server-side)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Configuração
+1. Copie `admin-new/.env.example` para `admin-new/.env`.
+2. Preencha credenciais do Firebase e chaves do Turnstile.
+3. Rode:
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.15.2 create --template minimal --types jsdoc --add tailwindcss="plugins:none" --no-download-check --install npm admin-new
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+cd admin-new
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Migração Keycloak -> Firebase (GCP)
 
-To create a production version of your app:
+### 1) Projeto Firebase/GCP
+- Acesse console Firebase e selecione o projeto GCP da sua conta `pluizelton@gmail.com`.
+- Ative `Authentication`.
+- Habilite provider `Email/Password`.
+- Crie app Web e copie as variáveis `VITE_FIREBASE_*`.
 
-```sh
-npm run build
-```
+### 2) Usuários administrativos
+- Crie usuários admin em `Authentication > Users`.
+- Recomendado: usar e-mails corporativos e MFA (quando aplicável).
 
-You can preview the production build with `npm run preview`.
+### 3) Turnstile
+- Criar site key e secret key no Cloudflare Turnstile para o domínio do admin.
+- `VITE_TURNSTILE_SITE_KEY` fica no frontend.
+- `TURNSTILE_SECRET_KEY` fica somente no servidor.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### 4) Segurança
+- O token Turnstile é validado em `src/routes/api/auth/turnstile/+server.js`.
+- Sem validação de captcha, o login não continua para o Firebase.
+- Nunca exponha `TURNSTILE_SECRET_KEY` no cliente.
+
+## Artefatos entregues nesta migração
+- Endpoint server-side de validação Turnstile.
+- Login integrado com Firebase Auth + bloqueio por Turnstile.
+- Variáveis de ambiente padronizadas para GCP/Firebase.
