@@ -4,8 +4,16 @@ import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 const PROD_MEDIA_GATEWAY_ORIGIN =
   'https://photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app';
 
+function getViteEnv() {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env;
+  }
+
+  return {};
+}
+
 function getMediaBaseUrl() {
-  const configuredBaseUrl = String(import.meta.env.VITE_MEDIA_BASE_URL || '').trim();
+  const configuredBaseUrl = String(getViteEnv().VITE_MEDIA_BASE_URL || '').trim();
   if (configuredBaseUrl) {
     return configuredBaseUrl.replace(/\/$/, '');
   }
@@ -271,7 +279,7 @@ export function loadLocalImages(pasta) {
 async function loadFromAPI(pasta) {
   console.log(`🌐 Tentando carregar via API para pasta: ${pasta}`);
   
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = getViteEnv().VITE_API_URL;
   
   return await apiCircuitBreaker.call(async () => {
     const response = await fetch(`${apiUrl}/galeria/${encodeURIComponent(pasta)}`, {
@@ -303,7 +311,7 @@ export async function loadGalleryImages(pasta) {
     // Por padrão, respeita o fluxo atual do projeto: assets locais primeiro.
     // Para forçar API primeiro (e refletir uploads imediatos sem redeploy),
     // defina VITE_LOCAL_ASSETS_FIRST=false.
-    const preferLocal = import.meta.env.VITE_LOCAL_ASSETS_FIRST !== 'false';
+    const preferLocal = getViteEnv().VITE_LOCAL_ASSETS_FIRST !== 'false';
 
     // Estratégia 1: API primeiro apenas quando configurado explicitamente.
     if (!preferLocal) {

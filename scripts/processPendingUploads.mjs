@@ -50,6 +50,29 @@ export async function ensurePendingFolders(config) {
   }
 }
 
+function sanitizeFileName(fileName) {
+  if (typeof fileName !== 'string' || !fileName.includes('.')) {
+    throw new Error('Nome de arquivo invalido');
+  }
+
+  const extension = path.extname(fileName).toLowerCase();
+  if (!INPUT_EXTENSIONS.has(extension)) {
+    throw new Error(`Formato nao permitido: ${fileName}`);
+  }
+
+  const baseName = fileName
+    .slice(0, -extension.length)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+
+  const hash = crypto.createHash('sha1').update(fileName).digest('hex').slice(0, 8);
+  return `${Date.now()}-${baseName || 'foto'}-${hash}${extension}`;
+}
+
 async function listImageFiles(folderPath) {
   const files = [];
 

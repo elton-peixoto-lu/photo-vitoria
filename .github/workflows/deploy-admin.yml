@@ -16,6 +16,8 @@ env:
   REGION: us-central1
   SERVICE_NAME: photo-vitoria-admin-panel
   API_SERVICE_NAME: photo-vitoria-admin-api
+  ADMIN_API_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
+  UPLOAD_TEMP_BUCKET: photo-vitoria-upload-temp
 
 jobs:
   deploy-panel:
@@ -79,4 +81,7 @@ jobs:
             --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.API_SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --set-env-vars="GITHUB_TOKEN=${{ secrets.GH_UPLOAD_TOKEN }},GITHUB_REPO=${{ secrets.REPO_NAME }},GITHUB_UPLOAD_TOKEN=${{ secrets.GH_UPLOAD_TOKEN }}"
+            --service-account ${{ env.ADMIN_API_SERVICE_ACCOUNT }} \
+            --allow-unauthenticated \
+            --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest" \
+            --set-env-vars="GITHUB_REPO=elton-peixoto-lu/photo-vitoria,GITHUB_BASE_BRANCH=master,ADMIN_ALLOWED_ORIGINS=https://photo-vitoria.vercel.app\,https://estudiovitoriafreitas.com.br\,https://www.estudiovitoriafreitas.com.br,ADMIN_ALLOWED_EMAILS=pluizelton@gmail.com\,estudiovitoriafreitas@gmail.com,UPLOAD_TEMP_BUCKET=${{ env.UPLOAD_TEMP_BUCKET }},FIREBASE_AUTH_PROJECT_ID=photo-vitoria,SIGNED_UPLOAD_URL_EXPIRATION_SECONDS=900"

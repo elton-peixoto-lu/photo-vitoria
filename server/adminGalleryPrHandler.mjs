@@ -5,7 +5,9 @@ import { Storage } from '@google-cloud/storage';
 
 // Inicializar Firebase Admin se ainda não estiver inicializado
 if (!admin.apps.length) {
-  admin.initializeApp();
+  admin.initializeApp({
+    projectId: String(process.env.FIREBASE_AUTH_PROJECT_ID || 'photo-vitoria').trim(),
+  });
 }
 
 const storage = new Storage();
