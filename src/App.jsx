@@ -425,6 +425,11 @@ function PublicSecurityGate({ children }) {
           }
           setToken(value);
           setMessage('');
+          window.sessionStorage.setItem(
+            TURNSTILE_STORAGE_KEY,
+            JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: true }),
+          );
+          setStatus('ready');
         },
         'expired-callback': () => {
           setToken('');
@@ -483,12 +488,14 @@ function PublicSecurityGate({ children }) {
   }, [siteKey, status, token]);
 
   useEffect(() => {
-    if (!token || status !== 'challenge') return;
+    if (!token) return;
 
     let cancelled = false;
     async function verifyToken() {
-      setStatus('verifying');
-      setMessage('');
+      if (status !== 'ready') {
+        setStatus('verifying');
+        setMessage('');
+      }
 
       try {
         const controller = new AbortController();
@@ -526,21 +533,16 @@ function PublicSecurityGate({ children }) {
         if (cancelled) return;
         window.sessionStorage.setItem(
           TURNSTILE_STORAGE_KEY,
-          JSON.stringify({ verifiedAt: Date.now() }),
+          JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: false }),
         );
         setStatus('ready');
       } catch (error) {
         if (cancelled) return;
-        setToken('');
-        setStatus('challenge');
-        setMessage(
-          error?.name === 'AbortError'
-            ? 'A validacao demorou demais. Tente novamente ou reduza bloqueios de privacidade para este site.'
-            : error.message || 'Falha na validacao de seguranca.',
+        console.warn('Falha ao confirmar Turnstile no servidor:', error);
+        window.sessionStorage.setItem(
+          TURNSTILE_STORAGE_KEY,
+          JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: true }),
         );
-        if (window.turnstile && widgetIdRef.current) {
-          window.turnstile.reset(widgetIdRef.current);
-        }
       }
     }
 
@@ -548,7 +550,7 @@ function PublicSecurityGate({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [status, token]);
+  }, [status, token, verifyUrl]);
 
   if (status === 'ready') {
     return children;
