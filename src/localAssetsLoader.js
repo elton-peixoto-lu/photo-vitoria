@@ -1,6 +1,32 @@
 // Sistema de carregamento híbrido: assets locais + API fallback com circuit breaker
 import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 
+const PROD_MEDIA_GATEWAY_ORIGIN =
+  'https://photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app';
+
+function getMediaBaseUrl() {
+  const configuredBaseUrl = String(import.meta.env.VITE_MEDIA_BASE_URL || '').trim();
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/$/, '');
+  }
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  if (
+    currentHostname === 'estudiovitoriafreitas.com.br' ||
+    currentHostname === 'www.estudiovitoriafreitas.com.br'
+  ) {
+    return PROD_MEDIA_GATEWAY_ORIGIN;
+  }
+
+  return '';
+}
+
+function buildGalleryAssetUrl(pasta, filename) {
+  const baseUrl = getMediaBaseUrl();
+  const assetPath = `/images/galeria/${pasta}/${filename}`;
+  return baseUrl ? `${baseUrl}${assetPath}` : assetPath;
+}
+
 // Mapeamento das imagens locais por pasta
 const LOCAL_IMAGES_MAP = {
   "casamentos": [
@@ -231,8 +257,8 @@ export function loadLocalImages(pasta) {
 
   // Converte para o formato esperado pelo sistema atual
   return localImages.map((filename, index) => ({
-    url: `/images/galeria/${pasta}/${filename}`,
-    thumb: `/images/galeria/${pasta}/${filename}`, // Mesmo arquivo (já otimizado em AVIF)
+    url: buildGalleryAssetUrl(pasta, filename),
+    thumb: buildGalleryAssetUrl(pasta, filename), // Mesmo arquivo (ja otimizado em AVIF)
     width: 800, // Valores padrão - podem ser ajustados
     height: 1200,
     format: 'avif',
