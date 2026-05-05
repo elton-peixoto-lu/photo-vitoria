@@ -44,5 +44,20 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Ensure deploy SA has bucket permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY_SA="$(gcloud config get-value account)"
+          echo "Deploy service account: ${DEPLOY_SA}"
+          gcloud storage buckets add-iam-policy-binding gs://${{ env.GCS_BUCKET }} \
+            --member="serviceAccount:${DEPLOY_SA}" \
+            --role="roles/storage.objectAdmin" \
+            --quiet
+          gcloud storage buckets add-iam-policy-binding gs://${{ env.GCS_BUCKET }} \
+            --member="serviceAccount:${DEPLOY_SA}" \
+            --role="roles/storage.legacyBucketReader" \
+            --quiet
+
       - name: Upload static build to Cloud Storage
         run: gcloud storage rsync ./dist gs://${{ env.GCS_BUCKET }} --recursive --delete-unmatched-destination-objects
