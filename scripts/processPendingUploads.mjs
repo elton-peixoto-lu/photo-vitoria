@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG = {
   watermarkLogoUrl:
     process.env.WATERMARK_LOGO_URL ||
     'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.2),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.24),
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
@@ -230,6 +230,22 @@ async function createWatermarkOverlay(metadata, config) {
         });
       }
     }
+
+    // Extra protection: add a stronger centered diagonal mark.
+    const centerSvg = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <text x="50%" y="50%" text-anchor="middle"
+          fill="rgba(120,38,74,0.28)"
+          font-size="${Math.max(28, Math.round(width * 0.04))}"
+          font-family="Georgia, serif"
+          font-weight="700"
+          letter-spacing="8"
+          transform="rotate(-22 ${Math.round(width / 2)} ${Math.round(height / 2)})">
+          VITORIA FOTOGRAFIA
+        </text>
+      </svg>`,
+    );
+    composites.push({ input: centerSvg, left: 0, top: 0, blend: 'over' });
 
     return composites;
   }
