@@ -68,3 +68,18 @@ jobs:
 
       - name: Upload static build to Cloud Storage
         run: gcloud storage rsync ./dist gs://${{ env.GCS_BUCKET }} --recursive --delete-unmatched-destination-objects
+
+      - name: Invalidate Cloud CDN cache
+        shell: bash
+        env:
+          CDN_URL_MAP: ${{ secrets.GCP_CDN_URL_MAP }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CDN_URL_MAP:-}" ]; then
+            echo "Secret GCP_CDN_URL_MAP nao configurado; pulando invalidacao de CDN."
+            exit 0
+          fi
+          gcloud compute url-maps invalidate-cdn-cache "${CDN_URL_MAP}" \
+            --path "/*" \
+            --async
+          echo "Invalidacao de CDN solicitada para ${CDN_URL_MAP}."
