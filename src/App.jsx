@@ -357,10 +357,9 @@ export default function App() {
 
 function GlobalTurnstileMonitor() {
   const [token, setToken] = useState('');
-  const [visible, setVisible] = useState(false);
+  const [message, setMessage] = useState('');
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
-  const timerRef = useRef(null);
   const isLocalHost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -372,37 +371,25 @@ function GlobalTurnstileMonitor() {
   useEffect(() => {
     if (typeof window === 'undefined' || isLocalHost || !siteKey) return;
 
-    const scriptId = 'cf-turnstile-global-background-script';
+    const scriptId = 'cf-turnstile-global-visible-script';
     const renderWidget = () => {
       if (!window.turnstile || !containerRef.current || widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
-        size: 'invisible',
+        theme: 'light',
         callback: (value) => {
           setToken(value);
-          setVisible(false);
-          if (timerRef.current) {
-            window.clearTimeout(timerRef.current);
-            timerRef.current = null;
-          }
+          setMessage('');
         },
         'error-callback': () => {
-          setVisible(false);
+          setMessage('Nao foi possivel validar agora, mas voce pode continuar navegando.');
         },
         'expired-callback': () => {
           setToken('');
-          setVisible(true);
+          setMessage('A verificacao expirou. Atualize o desafio quando quiser.');
         },
       });
-
-      try {
-        window.turnstile.execute(widgetIdRef.current);
-      } catch {
-        setVisible(true);
-      }
     };
-
-    timerRef.current = window.setTimeout(() => setVisible(true), TURNSTILE_RENDER_TIMEOUT_MS);
 
     const existingScript = document.getElementById(scriptId);
     if (existingScript) {
@@ -418,10 +405,6 @@ function GlobalTurnstileMonitor() {
     }
 
     return () => {
-      if (timerRef.current) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
       if (window.turnstile && widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current);
       }
@@ -457,17 +440,18 @@ function GlobalTurnstileMonitor() {
     };
   }, [token]);
 
-  if (!visible) {
-    return <div ref={containerRef} className="hidden" aria-hidden="true" />;
-  }
-
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[120]">
       <div className="pointer-events-auto rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b13f73]">
-          Verificacao Ativa
+          Verificacao Do Site
         </p>
         <div ref={containerRef} />
+        {message && (
+          <p className="mt-2 max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
+            {message}
+          </p>
+        )}
       </div>
     </div>
   );
