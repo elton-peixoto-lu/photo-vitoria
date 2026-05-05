@@ -25,7 +25,6 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
 const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
 const TURNSTILE_TTL_MS = 1000 * 60 * 30;
-const PROD_TURNSTILE_SITE_KEY = '0x4AAAAAAC9eV3XaW-3g_hmC';
 const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
 
 // Importa utilitários de teste em desenvolvimento
@@ -364,12 +363,23 @@ function PublicSecurityGate({ children }) {
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
   const shouldProtect = typeof window !== 'undefined' && !isLocalHost;
-  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || PROD_TURNSTILE_SITE_KEY;
+  const siteKey =
+    import.meta.env.VITE_PUBLIC_TURNSTILE_SITE_KEY ||
+    import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+    '';
   const verifyUrl = `${import.meta.env.VITE_ADMIN_API_URL || PROD_ADMIN_API_URL}/api/admin/turnstile-verify`;
 
   useEffect(() => {
     if (!shouldProtect) {
       setStatus('ready');
+      return;
+    }
+
+    if (!siteKey) {
+      setStatus('challenge');
+      setMessage(
+        'Turnstile publico nao configurado. Defina VITE_PUBLIC_TURNSTILE_SITE_KEY para este dominio.',
+      );
       return;
     }
 
@@ -390,7 +400,7 @@ function PublicSecurityGate({ children }) {
     }
 
     setStatus('challenge');
-  }, [shouldProtect]);
+  }, [shouldProtect, siteKey]);
 
   useEffect(() => {
     if (status !== 'challenge' || !siteKey || !containerRef.current) return;
@@ -408,8 +418,14 @@ function PublicSecurityGate({ children }) {
           setToken('');
           setMessage('A verificacao expirou. Tente novamente.');
         },
-        'error-callback': () => {
+        'error-callback': (code) => {
           setToken('');
+          if (String(code || '') === '110200') {
+            setMessage(
+              'Turnstile recusou este dominio. Crie uma site key publica com os hostnames estudiovitoriafreitas.com.br e www.estudiovitoriafreitas.com.br.',
+            );
+            return;
+          }
           setMessage('Nao foi possivel iniciar a verificacao de seguranca.');
         },
       });
