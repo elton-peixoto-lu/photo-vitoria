@@ -18,9 +18,16 @@ export const DEFAULT_CONFIG = {
   maxHeight: 1800,
   quality: 85,
   folders: ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'],
+  watermarkEnabled: true,
+  watermarkLogoPath: process.env.WATERMARK_LOGO_PATH || '',
+  watermarkLogoUrl:
+    process.env.WATERMARK_LOGO_URL ||
+    'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png',
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.11),
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
+let cachedWatermarkLogoBuffer = null;
 
 async function pathExists(filePath) {
   try {
@@ -88,6 +95,103 @@ async function createOutputName(inputPath) {
   };
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function loadWatermarkLogoBuffer(config) {
+  if (cachedWatermarkLogoBuffer) {
+    return cachedWatermarkLogoBuffer;
+  }
+
+  if (config.watermarkLogoPath) {
+    try {
+      cachedWatermarkLogoBuffer = await fs.readFile(config.watermarkLogoPath);
+      return cachedWatermarkLogoBuffer;
+    } catch (error) {
+      console.warn(`Nao foi possivel ler WATERMARK_LOGO_PATH: ${error.message}`);
+    }
+  }
+
+  if (config.watermarkLogoUrl) {
+    try {
+      const response = await fetch(config.watermarkLogoUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      cachedWatermarkLogoBuffer = Buffer.from(await response.arrayBuffer());
+      return cachedWatermarkLogoBuffer;
+    } catch (error) {
+      console.warn(`Nao foi possivel baixar a logo da marca d'agua: ${error.message}`);
+    }
+  }
+
+  return null;
+}
+
+async function createWatermarkOverlay(metadata, config) {
+  const width = metadata.width || config.maxWidth;
+  const height = metadata.height || config.maxHeight;
+  const logoBuffer = await loadWatermarkLogoBuffer(config);
+
+  if (logoBuffer) {
+    const logoWidth = Math.max(120, Math.round(width * 0.16));
+    const preparedLogo = await sharp(logoBuffer)
+      .resize({ width: logoWidth, withoutEnlargement: true })
+      .ensureAlpha()
+      .modulate({ brightness: 1.02 })
+      .linear(1, 0)
+      .png()
+      .toBuffer();
+
+    const logoMetadata = await sharp(preparedLogo).metadata();
+    const tileX = Math.max(logoWidth + 60, Math.round(width * 0.28));
+    const tileY = Math.max((logoMetadata.height || logoWidth) + 70, Math.round(height * 0.26));
+    const composites = [];
+
+    for (let y = -Math.round(tileY * 0.35); y < height + tileY; y += tileY) {
+      for (let x = -Math.round(tileX * 0.35); x < width + tileX; x += tileX) {
+        composites.push({
+          input: preparedLogo,
+          left: x,
+          top: y,
+          blend: 'over',
+          opacity: config.watermarkOpacity,
+        });
+      }
+    }
+
+    return composites;
+  }
+
+  const text = escapeXml('VITORIA FOTOGRAFIA');
+  const fontSize = Math.max(26, Math.round(width * 0.032));
+  const stepY = Math.max(140, Math.round(height * 0.24));
+  const rows = [];
+
+  for (let y = 90; y < height + stepY; y += stepY) {
+    rows.push(
+      `<text x="50%" y="${y}" text-anchor="middle" fill="rgba(120, 38, 74, ${Math.min(
+        config.watermarkOpacity + 0.03,
+        0.18,
+      )})" font-size="${fontSize}" font-family="Georgia, serif" letter-spacing="6" transform="rotate(-18 ${Math.round(
+        width / 2,
+      )} ${y})">${text}</text>`,
+    );
+  }
+
+  const svg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${rows.join('')}</svg>`,
+  );
+
+  return [{ input: svg, left: 0, top: 0 }];
+}
+
 function compareFilePreference(leftName, rightName) {
   const generatedPattern = /-[0-9a-f]{10}\.avif$/i;
   const leftGenerated = generatedPattern.test(leftName);
@@ -148,12 +252,20 @@ export async function processPendingFolder(folder, config) {
       continue;
     }
 
-    await sharp(buffer)
+    const image = sharp(buffer)
       .rotate()
       .resize(config.maxWidth, config.maxHeight, {
         fit: 'inside',
         withoutEnlargement: true,
-      })
+      });
+
+    const metadata = await image.metadata();
+    if (config.watermarkEnabled) {
+      const overlay = await createWatermarkOverlay(metadata, config);
+      image.composite(overlay);
+    }
+
+    await image
       .avif({
         quality: config.quality,
         effort: 4,

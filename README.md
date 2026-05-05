@@ -54,6 +54,7 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 - validação de galeria, extensão, MIME type e base64 no backend
 - PR limitado a `uploads/pendentes/**`
 - auto-merge restrito a branches seguras do portal (`gallery-upload/**`)
+- processamento CI com conversão para AVIF e aplicação de marca d'água nas imagens publicadas
 
 ## Estado da migração para GCP
 
@@ -196,6 +197,7 @@ Workflow:
 Responsabilidades:
 - validar escopo do PR
 - otimizar imagens
+- aplicar marca d'água no pipeline
 - atualizar `src/localAssetsLoader.js`
 - limpar `uploads/pendentes/`
 - habilitar auto-merge quando o PR estiver no trilho seguro

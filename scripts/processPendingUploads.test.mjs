@@ -59,6 +59,7 @@ test('processa nova foto e remove duplicadas por conteudo do mapa final', async 
     maxWidth: 1200,
     maxHeight: 1800,
     quality: 85,
+    watermarkEnabled: false,
     folders: FOLDERS,
   });
 
@@ -107,6 +108,7 @@ test('remove duplicadas legadas por familia e mantem a variante com sufixo', asy
     maxWidth: 1200,
     maxHeight: 1800,
     quality: 85,
+    watermarkEnabled: false,
     folders: FOLDERS,
   });
 
