@@ -11,7 +11,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
 const WATERMARK_LOGO_PATH =
   process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg');
-const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.24);
+const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.1);
 
 async function listAvifFiles(dir) {
   const out = [];
@@ -35,46 +35,53 @@ async function loadLogoBuffer() {
 }
 
 async function createOverlayForImage(width, height, logoBuffer) {
-  const logoWidth = Math.max(120, Math.round(width * 0.16));
-  const preparedLogo = await sharp(logoBuffer)
-    .resize({ width: logoWidth, withoutEnlargement: true })
-    .ensureAlpha()
-    .png()
-    .toBuffer();
+  const text = 'VITORIA FOTOGRAFIA';
+  const accent = 'vitoria';
+  const diagonalFontSize = Math.max(52, Math.round(width * 0.072));
+  const cornerFontSize = Math.max(18, Math.round(width * 0.02));
+  const centerX = Math.round(width / 2);
+  const centerY = Math.round(height / 2);
 
-  const logoMetadata = await sharp(preparedLogo).metadata();
-  const tileX = Math.max(logoWidth + 48, Math.round(width * 0.24));
-  const tileY = Math.max((logoMetadata.height || logoWidth) + 56, Math.round(height * 0.22));
-  const composites = [];
-
-  for (let y = -Math.round(tileY * 0.35); y < height + tileY; y += tileY) {
-    for (let x = -Math.round(tileX * 0.35); x < width + tileX; x += tileX) {
-      composites.push({
-        input: preparedLogo,
-        left: x,
-        top: y,
-        blend: 'over',
-        opacity: WATERMARK_OPACITY,
-      });
-    }
-  }
-
-  const centerSvg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-      <text x="50%" y="50%" text-anchor="middle"
-        fill="rgba(120,38,74,0.28)"
-        font-size="${Math.max(28, Math.round(width * 0.04))}"
-        font-family="Georgia, serif"
-        font-weight="700"
-        letter-spacing="8"
-        transform="rotate(-22 ${Math.round(width / 2)} ${Math.round(height / 2)})">
-        VITORIA FOTOGRAFIA
-      </text>
+  const svg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <g opacity="${WATERMARK_OPACITY}">
+        <text
+          x="${centerX}"
+          y="${centerY}"
+          text-anchor="middle"
+          fill="#7a264a"
+          font-size="${diagonalFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          font-weight="600"
+          letter-spacing="5"
+          transform="rotate(-22 ${centerX} ${centerY})"
+        >${text}</text>
+      </g>
+      <g opacity="0.09">
+        <text
+          x="${Math.round(width * 0.08)}"
+          y="${Math.round(height * 0.92)}"
+          fill="#7a264a"
+          font-size="${cornerFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          letter-spacing="3"
+        >${accent}</text>
+        <text
+          x="${Math.round(width * 0.72)}"
+          y="${Math.round(height * 0.12)}"
+          fill="#7a264a"
+          font-size="${cornerFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          letter-spacing="3"
+        >${accent}</text>
+      </g>
     </svg>`,
   );
-  composites.push({ input: centerSvg, left: 0, top: 0, blend: 'over' });
 
-  return composites;
+  return [{ input: svg, left: 0, top: 0, blend: 'over' }];
 }
 
 async function main() {

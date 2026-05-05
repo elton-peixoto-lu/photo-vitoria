@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG = {
   watermarkLogoPath:
     process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg'),
   watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.24),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.1),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
 
@@ -209,70 +209,50 @@ async function createWatermarkOverlay(metadata, config) {
     );
   }
 
-  if (logoBuffer) {
-    const logoWidth = Math.max(120, Math.round(width * 0.16));
-    const preparedLogo = await sharp(logoBuffer)
-      .resize({ width: logoWidth, withoutEnlargement: true })
-      .ensureAlpha()
-      .modulate({ brightness: 1.02 })
-      .linear(1, 0)
-      .png()
-      .toBuffer();
-
-    const logoMetadata = await sharp(preparedLogo).metadata();
-    const tileX = Math.max(logoWidth + 48, Math.round(width * 0.24));
-    const tileY = Math.max((logoMetadata.height || logoWidth) + 56, Math.round(height * 0.22));
-    const composites = [];
-
-    for (let y = -Math.round(tileY * 0.35); y < height + tileY; y += tileY) {
-      for (let x = -Math.round(tileX * 0.35); x < width + tileX; x += tileX) {
-        composites.push({
-          input: preparedLogo,
-          left: x,
-          top: y,
-          blend: 'over',
-          opacity: config.watermarkOpacity,
-        });
-      }
-    }
-
-    // Extra protection: add a stronger centered diagonal mark.
-    const centerSvg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-        <text x="50%" y="50%" text-anchor="middle"
-          fill="rgba(120,38,74,0.28)"
-          font-size="${Math.max(28, Math.round(width * 0.04))}"
-          font-family="Georgia, serif"
-          font-weight="700"
-          letter-spacing="8"
-          transform="rotate(-22 ${Math.round(width / 2)} ${Math.round(height / 2)})">
-          VITORIA FOTOGRAFIA
-        </text>
-      </svg>`,
-    );
-    composites.push({ input: centerSvg, left: 0, top: 0, blend: 'over' });
-
-    return composites;
-  }
-
   const text = escapeXml('VITORIA FOTOGRAFIA');
-  const fontSize = Math.max(26, Math.round(width * 0.032));
-  const stepY = Math.max(140, Math.round(height * 0.24));
-  const rows = [];
-
-  for (let y = 90; y < height + stepY; y += stepY) {
-    rows.push(
-      `<text x="50%" y="${y}" text-anchor="middle" fill="rgba(120, 38, 74, ${Math.min(
-        config.watermarkOpacity + 0.03,
-        0.18,
-      )})" font-size="${fontSize}" font-family="Georgia, serif" letter-spacing="6" transform="rotate(-18 ${Math.round(
-        width / 2,
-      )} ${y})">${text}</text>`,
-    );
-  }
+  const accent = escapeXml('vitoria');
+  const diagonalFontSize = Math.max(52, Math.round(width * 0.072));
+  const cornerFontSize = Math.max(18, Math.round(width * 0.02));
+  const centerX = Math.round(width / 2);
+  const centerY = Math.round(height / 2);
 
   const svg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${rows.join('')}</svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <g opacity="${config.watermarkOpacity}">
+        <text
+          x="${centerX}"
+          y="${centerY}"
+          text-anchor="middle"
+          fill="#7a264a"
+          font-size="${diagonalFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          font-weight="600"
+          letter-spacing="5"
+          transform="rotate(-22 ${centerX} ${centerY})"
+        >${text}</text>
+      </g>
+      <g opacity="0.09">
+        <text
+          x="${Math.round(width * 0.08)}"
+          y="${Math.round(height * 0.92)}"
+          fill="#7a264a"
+          font-size="${cornerFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          letter-spacing="3"
+        >${accent}</text>
+        <text
+          x="${Math.round(width * 0.72)}"
+          y="${Math.round(height * 0.12)}"
+          fill="#7a264a"
+          font-size="${cornerFontSize}"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-style="italic"
+          letter-spacing="3"
+        >${accent}</text>
+      </g>
+    </svg>`,
   );
 
   return [{ input: svg, left: 0, top: 0 }];
