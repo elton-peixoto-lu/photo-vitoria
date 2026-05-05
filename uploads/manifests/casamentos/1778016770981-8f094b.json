@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "createdAt": "2026-05-05T21:32:50.981Z",
+  "folder": "casamentos",
+  "uploadedBy": "Elton Pluiz",
+  "source": "admin-portal",
+  "files": [
+    {
+      "bucket": "photo-vitoria-upload-temp",
+      "objectPath": "incoming/casamentos/1778016767485-infantis-vlf-0965-f44941d4.jpg",
+      "originalName": "Infantis VLF 0965.jpg",
+      "contentType": "image/jpeg"
+    }
+  ]
+}
