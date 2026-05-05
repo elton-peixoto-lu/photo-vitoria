@@ -26,6 +26,7 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
 const TURNSTILE_TTL_MS = 1000 * 60 * 30;
 const PROD_TURNSTILE_SITE_KEY = '0x4AAAAAAC9eV3XaW-3g_hmC';
+const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
 
 // Importa utilitários de teste em desenvolvimento
 if (import.meta.env.DEV) {
@@ -364,6 +365,7 @@ function PublicSecurityGate({ children }) {
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
   const shouldProtect = typeof window !== 'undefined' && !isLocalHost;
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || PROD_TURNSTILE_SITE_KEY;
+  const verifyUrl = `${import.meta.env.VITE_ADMIN_API_URL || PROD_ADMIN_API_URL}/api/admin/turnstile-verify`;
 
   useEffect(() => {
     if (!shouldProtect) {
@@ -449,8 +451,18 @@ function PublicSecurityGate({ children }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
         });
+ 
+        if (response.status === 503) {
+          const fallbackResponse = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
 
-        if (!response.ok) {
+          if (!fallbackResponse.ok) {
+            throw new Error('Validacao de seguranca nao autorizada.');
+          }
+        } else if (!response.ok) {
           throw new Error('Validacao de seguranca nao autorizada.');
         }
 
