@@ -26,6 +26,7 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
 const TURNSTILE_TTL_MS = 1000 * 60 * 30;
 const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
+const PUBLIC_TURNSTILE_SITE_KEY = '0x4AAAAAADJksWK2ejJKf8NL';
 
 // Importa utilitários de teste em desenvolvimento
 if (import.meta.env.DEV) {
@@ -366,7 +367,7 @@ function PublicSecurityGate({ children }) {
   const siteKey =
     import.meta.env.VITE_PUBLIC_TURNSTILE_SITE_KEY ||
     import.meta.env.VITE_TURNSTILE_SITE_KEY ||
-    '';
+    PUBLIC_TURNSTILE_SITE_KEY;
   const verifyUrl = `${import.meta.env.VITE_ADMIN_API_URL || PROD_ADMIN_API_URL}/api/admin/turnstile-verify`;
 
   useEffect(() => {

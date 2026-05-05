@@ -11,6 +11,8 @@ const FOLDERS = [
   { value: 'noivas', label: 'Noivas' },
 ];
 
+const DEFAULT_TURNSTILE_SITE_KEY = '0x4AAAAAADJksWK2ejJKf8NL';
+
 export default function AdminGaleriaUploads() {
   const [folder, setFolder] = useState('casamentos');
   const [files, setFiles] = useState([]);
@@ -34,7 +36,7 @@ export default function AdminGaleriaUploads() {
   const adminApiUrl = import.meta.env.VITE_ADMIN_API_URL || 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
   const turnstileSiteKey = isLocalDev
     ? '1x00000000000000000000AA'
-    : import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAC9eV3XaW-3g_hmC';
+    : import.meta.env.VITE_TURNSTILE_SITE_KEY || DEFAULT_TURNSTILE_SITE_KEY;
 
   const isConfigured = useMemo(() => {
     return Boolean(

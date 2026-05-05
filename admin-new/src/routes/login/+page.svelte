@@ -110,7 +110,7 @@
 
                 <div class="flex justify-center py-2 scale-90 opacity-90 hover:opacity-100 transition-opacity">
                     <Turnstile 
-                        sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY} 
+                        sitekey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAADJksWK2ejJKf8NL'} 
                         on:callback={(e) => turnstileToken = e.detail.token}
                         theme="light"
                     />
