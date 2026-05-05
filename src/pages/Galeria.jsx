@@ -22,6 +22,31 @@ export default function Galeria() {
   const { columnsForGallery, isMobile } = useResponsive();
 
   useEffect(() => {
+    const preventContextMenu = (event) => event.preventDefault();
+    const preventDrag = (event) => event.preventDefault();
+    const preventShortcuts = (event) => {
+      const key = String(event.key || '').toLowerCase();
+      const withCtrlMeta = event.ctrlKey || event.metaKey;
+      if (withCtrlMeta && ['s', 'u', 'p'].includes(key)) {
+        event.preventDefault();
+      }
+      if (key === 'f12') {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener('dragstart', preventDrag);
+    document.addEventListener('keydown', preventShortcuts);
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('dragstart', preventDrag);
+      document.removeEventListener('keydown', preventShortcuts);
+    };
+  }, []);
+
+  useEffect(() => {
     async function fetchAll() {
       setCarregando(true);
       const result = {};
@@ -62,7 +87,7 @@ export default function Galeria() {
   const safeFotos = album => Array.isArray(fotosPorAlbum[album]) ? fotosPorAlbum[album] : [];
 
   return (
-    <div className="relative min-h-screen flex flex-col w-full">
+    <div className="relative min-h-screen flex flex-col w-full select-none" onContextMenu={(e) => e.preventDefault()}>
       {/* Fundo gradiente + blur de imagem */}
       <div className="absolute inset-0 z-0 w-full h-full min-h-screen">
         <div className="w-full h-full min-h-screen absolute inset-0" style={{

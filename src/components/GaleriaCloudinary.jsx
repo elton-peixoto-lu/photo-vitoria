@@ -26,6 +26,32 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   const [paused, setPaused] = useState(false);
   const { isMobile: isMobileResponsive, shouldAutoplayCarousel, prefersReducedMotion } = useResponsive();
 
+  useEffect(() => {
+    const preventContextMenu = (event) => event.preventDefault();
+    const preventDrag = (event) => event.preventDefault();
+    const preventShortcuts = (event) => {
+      const key = String(event.key || '').toLowerCase();
+      const withCtrlMeta = event.ctrlKey || event.metaKey;
+
+      if (withCtrlMeta && ['s', 'u', 'p'].includes(key)) {
+        event.preventDefault();
+      }
+      if (key === 'f12') {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener('dragstart', preventDrag);
+    document.addEventListener('keydown', preventShortcuts);
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('dragstart', preventDrag);
+      document.removeEventListener('keydown', preventShortcuts);
+    };
+  }, []);
+
   // Fetch das fotos usando sistema híbrido (local + API fallback)
   useEffect(() => {
     if (fotos.length > 0) setPrevFotos(fotos);
@@ -147,7 +173,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
     if (!fotos || fotos.length === 0) return <div className="w-full flex items-center justify-center py-12 text-lg text-pink-300">Nenhuma foto encontrada.</div>;
     // Mobile: lista de miniaturas
     return (
-      <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0">
+      <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0 select-none" onContextMenu={(e) => e.preventDefault()}>
         {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
           <div key={foto?.public_id || foto?.url || i} className="w-full flex flex-col items-center justify-center">
             <img
@@ -155,6 +181,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               alt={`Foto ${i + 1}`}
               className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white"
               draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
               onError={(event) => {
                 event.currentTarget.src = getGalleryFallbackUrl(pasta);
               }}
@@ -177,6 +204,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               alt={`Foto ${i + 1}`}
               className="rounded-lg shadow-md w-full h-full object-cover"
               draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
               style={{ background: '#fff' }}
               onError={(event) => {
                 event.currentTarget.src = getGalleryFallbackUrl(pasta);
@@ -195,7 +223,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
   }, [semSetasDots, fotos.length]);
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden select-none" onContextMenu={(e) => e.preventDefault()}>
       {/* Fundo blur cobre toda a área do conteúdo */}
       {fotos.length > 0 && (
         <div className="absolute inset-0 z-0">

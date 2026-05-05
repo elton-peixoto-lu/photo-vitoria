@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG = {
   watermarkLogoUrl:
     process.env.WATERMARK_LOGO_URL ||
     'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.11),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.2),
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
@@ -215,8 +215,8 @@ async function createWatermarkOverlay(metadata, config) {
       .toBuffer();
 
     const logoMetadata = await sharp(preparedLogo).metadata();
-    const tileX = Math.max(logoWidth + 60, Math.round(width * 0.28));
-    const tileY = Math.max((logoMetadata.height || logoWidth) + 70, Math.round(height * 0.26));
+    const tileX = Math.max(logoWidth + 48, Math.round(width * 0.24));
+    const tileY = Math.max((logoMetadata.height || logoWidth) + 56, Math.round(height * 0.22));
     const composites = [];
 
     for (let y = -Math.round(tileY * 0.35); y < height + tileY; y += tileY) {
