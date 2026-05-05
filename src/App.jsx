@@ -357,6 +357,9 @@ export default function App() {
 }
 
 function PublicSecurityGate({ children }) {
+  const currentPath =
+    typeof window !== 'undefined' ? String(window.location.pathname || '') : '/';
+  const requiresGate = currentPath.startsWith('/admin');
   const [status, setStatus] = useState('checking');
   const [token, setToken] = useState('');
   const [message, setMessage] = useState('');
@@ -366,7 +369,7 @@ function PublicSecurityGate({ children }) {
   const isLocalHost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const shouldProtect = typeof window !== 'undefined' && !isLocalHost;
+  const shouldProtect = typeof window !== 'undefined' && !isLocalHost && requiresGate;
   const siteKey =
     import.meta.env.VITE_PUBLIC_TURNSTILE_SITE_KEY ||
     import.meta.env.VITE_TURNSTILE_SITE_KEY ||
