@@ -9,9 +9,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.join(__dirname, '..');
 const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
-const WATERMARK_LOGO_URL =
-  process.env.WATERMARK_LOGO_URL ||
-  'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png';
+const WATERMARK_LOGO_PATH =
+  process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg');
 const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.24);
 
 async function listAvifFiles(dir) {
@@ -32,11 +31,7 @@ async function listAvifFiles(dir) {
 }
 
 async function loadLogoBuffer() {
-  const response = await fetch(WATERMARK_LOGO_URL);
-  if (!response.ok) {
-    throw new Error(`Falha ao baixar logo de marca d'agua: HTTP ${response.status}`);
-  }
-  return Buffer.from(await response.arrayBuffer());
+  return fs.readFile(WATERMARK_LOGO_PATH);
 }
 
 async function createOverlayForImage(width, height, logoBuffer) {

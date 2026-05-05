@@ -20,10 +20,9 @@ export const DEFAULT_CONFIG = {
   quality: 85,
   folders: ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'],
   watermarkEnabled: true,
-  watermarkLogoPath: process.env.WATERMARK_LOGO_PATH || '',
-  watermarkLogoUrl:
-    process.env.WATERMARK_LOGO_URL ||
-    'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png',
+  watermarkLogoPath:
+    process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg'),
+  watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
   watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.24),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
