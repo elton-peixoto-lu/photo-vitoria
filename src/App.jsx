@@ -23,8 +23,6 @@ import { loadGalleryImages } from './localAssetsLoader';
 import { ConfigProvider, ConfigStatus } from './components/ConfigProvider';
 import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
-const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
-const TURNSTILE_TTL_MS = 1000 * 60 * 30;
 const TURNSTILE_VERIFY_TIMEOUT_MS = 12000;
 const TURNSTILE_RENDER_TIMEOUT_MS = 10000;
 const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
@@ -341,25 +339,34 @@ export default function App() {
   return (
     <SidebarProvider>
       <ConfigProvider>
-        <PublicSecurityGate>
           <BrowserRouter>
+            <RouteSecurityGate>
             <AppContent 
               menuOpen={menuOpen} 
               setMenuOpen={setMenuOpen} 
               showInstall={showInstall}
               handleInstallClick={handleInstallClick}
             />
+            </RouteSecurityGate>
           </BrowserRouter>
-        </PublicSecurityGate>
       </ConfigProvider>
     </SidebarProvider>
   );
 }
 
-function PublicSecurityGate({ children }) {
-  const currentPath =
-    typeof window !== 'undefined' ? String(window.location.pathname || '') : '/';
-  const requiresGate = currentPath.startsWith('/admin');
+function RouteSecurityGate({ children }) {
+  const location = useLocation();
+  const protectedPaths = ['/agendar', '/admin'];
+  const requiresGate = protectedPaths.some((path) => location.pathname.startsWith(path));
+
+  if (!requiresGate) {
+    return children;
+  }
+
+  return <ProtectedRouteGate key={location.pathname}>{children}</ProtectedRouteGate>;
+}
+
+function ProtectedRouteGate({ children }) {
   const [status, setStatus] = useState('checking');
   const [token, setToken] = useState('');
   const [message, setMessage] = useState('');
@@ -369,7 +376,7 @@ function PublicSecurityGate({ children }) {
   const isLocalHost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const shouldProtect = typeof window !== 'undefined' && !isLocalHost && requiresGate;
+  const shouldProtect = typeof window !== 'undefined' && !isLocalHost;
   const siteKey =
     import.meta.env.VITE_PUBLIC_TURNSTILE_SITE_KEY ||
     import.meta.env.VITE_TURNSTILE_SITE_KEY ||
@@ -388,22 +395,6 @@ function PublicSecurityGate({ children }) {
         'Turnstile publico nao configurado. Defina VITE_PUBLIC_TURNSTILE_SITE_KEY para este dominio.',
       );
       return;
-    }
-
-    try {
-      const rawValue = window.sessionStorage.getItem(TURNSTILE_STORAGE_KEY);
-      if (!rawValue) {
-        setStatus('challenge');
-        return;
-      }
-
-      const parsedValue = JSON.parse(rawValue);
-      if (Date.now() - Number(parsedValue?.verifiedAt || 0) < TURNSTILE_TTL_MS) {
-        setStatus('ready');
-        return;
-      }
-    } catch {
-      window.sessionStorage.removeItem(TURNSTILE_STORAGE_KEY);
     }
 
     setStatus('challenge');
@@ -428,10 +419,6 @@ function PublicSecurityGate({ children }) {
           }
           setToken(value);
           setMessage('');
-          window.sessionStorage.setItem(
-            TURNSTILE_STORAGE_KEY,
-            JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: true }),
-          );
           setStatus('ready');
         },
         'expired-callback': () => {
@@ -534,18 +521,10 @@ function PublicSecurityGate({ children }) {
         }
 
         if (cancelled) return;
-        window.sessionStorage.setItem(
-          TURNSTILE_STORAGE_KEY,
-          JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: false }),
-        );
         setStatus('ready');
       } catch (error) {
         if (cancelled) return;
         console.warn('Falha ao confirmar Turnstile no servidor:', error);
-        window.sessionStorage.setItem(
-          TURNSTILE_STORAGE_KEY,
-          JSON.stringify({ verifiedAt: Date.now(), pendingServerVerification: true }),
-        );
       }
     }
 
