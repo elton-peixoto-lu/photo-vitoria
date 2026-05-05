@@ -340,6 +340,7 @@ export default function App() {
     <SidebarProvider>
       <ConfigProvider>
           <BrowserRouter>
+            <GlobalTurnstileMonitor />
             <RouteSecurityGate>
             <AppContent 
               menuOpen={menuOpen} 
@@ -351,6 +352,124 @@ export default function App() {
           </BrowserRouter>
       </ConfigProvider>
     </SidebarProvider>
+  );
+}
+
+function GlobalTurnstileMonitor() {
+  const [token, setToken] = useState('');
+  const [visible, setVisible] = useState(false);
+  const containerRef = useRef(null);
+  const widgetIdRef = useRef(null);
+  const timerRef = useRef(null);
+  const isLocalHost =
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const siteKey =
+    import.meta.env.VITE_PUBLIC_TURNSTILE_SITE_KEY ||
+    import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+    PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isLocalHost || !siteKey) return;
+
+    const scriptId = 'cf-turnstile-global-background-script';
+    const renderWidget = () => {
+      if (!window.turnstile || !containerRef.current || widgetIdRef.current) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        size: 'invisible',
+        callback: (value) => {
+          setToken(value);
+          setVisible(false);
+          if (timerRef.current) {
+            window.clearTimeout(timerRef.current);
+            timerRef.current = null;
+          }
+        },
+        'error-callback': () => {
+          setVisible(false);
+        },
+        'expired-callback': () => {
+          setToken('');
+          setVisible(true);
+        },
+      });
+
+      try {
+        window.turnstile.execute(widgetIdRef.current);
+      } catch {
+        setVisible(true);
+      }
+    };
+
+    timerRef.current = window.setTimeout(() => setVisible(true), TURNSTILE_RENDER_TIMEOUT_MS);
+
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) {
+      renderWidget();
+    } else {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = renderWidget;
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      if (window.turnstile && widgetIdRef.current) {
+        window.turnstile.remove(widgetIdRef.current);
+      }
+      widgetIdRef.current = null;
+    };
+  }, [isLocalHost, siteKey]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+    async function verifyToken() {
+      try {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), TURNSTILE_VERIFY_TIMEOUT_MS);
+        await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+          signal: controller.signal,
+        });
+        window.clearTimeout(timeoutId);
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Falha na verificacao global do Turnstile:', error);
+        }
+      }
+    }
+
+    verifyToken();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  if (!visible) {
+    return <div ref={containerRef} className="hidden" aria-hidden="true" />;
+  }
+
+  return (
+    <div className="pointer-events-none fixed bottom-4 right-4 z-[120]">
+      <div className="pointer-events-auto rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b13f73]">
+          Verificacao Ativa
+        </p>
+        <div ref={containerRef} />
+      </div>
+    </div>
   );
 }
 
@@ -388,6 +507,9 @@ function ProtectedRouteGate({ children }) {
       setStatus('ready');
       return;
     }
+
+    setToken('');
+    setMessage('');
 
     if (!siteKey) {
       setStatus('challenge');
