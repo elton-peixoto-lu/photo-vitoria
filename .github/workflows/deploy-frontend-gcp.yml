@@ -1,9 +1,11 @@
 name: Deploy Frontend to GCP Storage
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
     paths:
+      - '.github/workflows/deploy-frontend-gcp.yml'
       - 'src/**'
       - 'public/**'
       - 'index.html'
