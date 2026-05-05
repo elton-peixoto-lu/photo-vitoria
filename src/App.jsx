@@ -352,6 +352,47 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
   const location = useLocation();
   const { isOpen, toggle, sidebarWidth } = useSidebar();
 
+  useEffect(() => {
+    const preventContextMenu = (event) => event.preventDefault();
+    const preventDrag = (event) => event.preventDefault();
+    const preventAuxClick = (event) => {
+      if (event.button === 2) event.preventDefault();
+    };
+    const preventMouseDown = (event) => {
+      if (event.button === 2) event.preventDefault();
+    };
+    const preventSelection = (event) => event.preventDefault();
+    const preventCopy = (event) => event.preventDefault();
+    const preventShortcuts = (event) => {
+      const key = String(event.key || '').toLowerCase();
+      const withCtrlMeta = event.ctrlKey || event.metaKey;
+      if (withCtrlMeta && ['s', 'u', 'p', 'c', 'x'].includes(key)) {
+        event.preventDefault();
+      }
+      if (key === 'f12') {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener('dragstart', preventDrag);
+    document.addEventListener('auxclick', preventAuxClick);
+    document.addEventListener('mousedown', preventMouseDown);
+    document.addEventListener('selectstart', preventSelection);
+    document.addEventListener('copy', preventCopy);
+    document.addEventListener('keydown', preventShortcuts);
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('dragstart', preventDrag);
+      document.removeEventListener('auxclick', preventAuxClick);
+      document.removeEventListener('mousedown', preventMouseDown);
+      document.removeEventListener('selectstart', preventSelection);
+      document.removeEventListener('copy', preventCopy);
+      document.removeEventListener('keydown', preventShortcuts);
+    };
+  }, []);
+
   if (location.pathname === '/admin/galeria') {
     return (
       <>

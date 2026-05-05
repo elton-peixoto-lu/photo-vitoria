@@ -12,7 +12,7 @@ const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
 const WATERMARK_LOGO_URL =
   process.env.WATERMARK_LOGO_URL ||
   'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png';
-const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.11);
+const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.24);
 
 async function listAvifFiles(dir) {
   const out = [];
@@ -48,8 +48,8 @@ async function createOverlayForImage(width, height, logoBuffer) {
     .toBuffer();
 
   const logoMetadata = await sharp(preparedLogo).metadata();
-  const tileX = Math.max(logoWidth + 60, Math.round(width * 0.28));
-  const tileY = Math.max((logoMetadata.height || logoWidth) + 70, Math.round(height * 0.26));
+  const tileX = Math.max(logoWidth + 48, Math.round(width * 0.24));
+  const tileY = Math.max((logoMetadata.height || logoWidth) + 56, Math.round(height * 0.22));
   const composites = [];
 
   for (let y = -Math.round(tileY * 0.35); y < height + tileY; y += tileY) {
@@ -63,6 +63,21 @@ async function createOverlayForImage(width, height, logoBuffer) {
       });
     }
   }
+
+  const centerSvg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+      <text x="50%" y="50%" text-anchor="middle"
+        fill="rgba(120,38,74,0.28)"
+        font-size="${Math.max(28, Math.round(width * 0.04))}"
+        font-family="Georgia, serif"
+        font-weight="700"
+        letter-spacing="8"
+        transform="rotate(-22 ${Math.round(width / 2)} ${Math.round(height / 2)})">
+        VITORIA FOTOGRAFIA
+      </text>
+    </svg>`,
+  );
+  composites.push({ input: centerSvg, left: 0, top: 0, blend: 'over' });
 
   return composites;
 }

@@ -43,6 +43,7 @@ export default function SafeImageWithBlur({ src, fallback, alt, className = '', 
         style={{ opacity: loaded ? 0 : 1, zIndex: 1 }}
         aria-hidden="true"
         draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
         onError={handleError}
       />
       {/* Imagem real com fade */}
@@ -54,6 +55,7 @@ export default function SafeImageWithBlur({ src, fallback, alt, className = '', 
         onLoad={() => setLoaded(true)}
         onError={handleError}
         draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
         loading={loading}
         {...props}
       />
