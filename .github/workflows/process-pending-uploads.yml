@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'uploads/pendentes/**'
+      - 'uploads/manifests/**'
   workflow_dispatch:
 
 permissions:
@@ -50,7 +51,7 @@ jobs:
 
           while IFS= read -r file; do
             case "$file" in
-              uploads/pendentes/*) ;;
+              uploads/pendentes/*|uploads/manifests/*) ;;
               *)
                 echo "::error::Arquivo fora do escopo permitido: $file"
                 exit 1
@@ -86,7 +87,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --unset-all http.https://github.com/.extraheader || true
           git remote set-url origin "https://x-access-token:${{ secrets.ACTIONS_BYPASS_TOKEN }}@github.com/${{ github.repository }}.git"
-          git add public/images/galeria src/localAssetsLoader.js uploads/pendentes
+          git add public/images/galeria src/localAssetsLoader.js uploads/pendentes uploads/manifests
           git commit -m "Process pending gallery uploads"
           git push origin "HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}"
 

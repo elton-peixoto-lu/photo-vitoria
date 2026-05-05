@@ -11,18 +11,6 @@ const FOLDERS = [
   { value: 'noivas', label: 'Noivas' },
 ];
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result || '');
-      resolve(result.includes(',') ? result.split(',')[1] : result);
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AdminGaleriaUploads() {
   const [folder, setFolder] = useState('casamentos');
   const [files, setFiles] = useState([]);
@@ -188,20 +176,48 @@ export default function AdminGaleriaUploads() {
     try {
       const idToken = await user.getIdToken(true);
 
-      const payloadFiles = await Promise.all(files.map(async (file) => ({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        contentBase64: await fileToBase64(file),
-      })));
+      const uploads = [];
+      for (const file of files) {
+        const signedResponse = await fetch(`${adminApiUrl}/api/admin/upload-url`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            folder,
+            fileName: file.name,
+            contentType: file.type,
+          }),
+        });
+        const signedData = await signedResponse.json();
+        if (!signedResponse.ok) {
+          throw new Error(signedData.error || `Falha ao gerar upload seguro para ${file.name}`);
+        }
 
-      const response = await fetch(`${adminApiUrl}/api/admin/gallery-pr`, {
+        const uploadResponse = await fetch(signedData.uploadUrl, {
+          method: signedData.method || 'PUT',
+          headers: signedData.headers || { 'Content-Type': file.type },
+          body: file,
+        });
+        if (!uploadResponse.ok) {
+          throw new Error(`Falha ao enviar ${file.name} para armazenamento temporario`);
+        }
+
+        uploads.push({
+          objectPath: signedData.objectPath,
+          originalName: file.name,
+          contentType: file.type,
+        });
+      }
+
+      const response = await fetch(`${adminApiUrl}/api/admin/gallery-pr-manifest`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ folder, files: payloadFiles }),
+        body: JSON.stringify({ folder, uploads }),
       });
 
       const data = await response.json();

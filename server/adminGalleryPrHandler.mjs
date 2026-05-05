@@ -239,6 +239,50 @@ async function createGalleryPullRequest({ folder, files, userName }) {
   return pr;
 }
 
+async function createGalleryManifestPullRequest({ folder, uploads, userName }) {
+  const repo = process.env.GITHUB_REPO || 'elton-peixoto-lu/photo-vitoria';
+  const baseBranch = process.env.GITHUB_BASE_BRANCH || 'master';
+  const branchName = `gallery-upload/${folder}/${Date.now()}`;
+
+  const baseRef = await github('GET', `/repos/${repo}/git/ref/heads/${baseBranch}`);
+  await github('POST', `/repos/${repo}/git/refs`, {
+    ref: `refs/heads/${branchName}`,
+    sha: baseRef.object.sha,
+  });
+
+  const manifestId = `${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+  const manifestPath = `uploads/manifests/${folder}/${manifestId}.json`;
+  const manifest = {
+    version: 1,
+    createdAt: new Date().toISOString(),
+    folder,
+    uploadedBy: userName || 'usuario autenticado',
+    source: 'admin-portal',
+    files: uploads,
+  };
+
+  await github('PUT', `/repos/${repo}/contents/${manifestPath}`, {
+    message: `Add upload manifest for ${folder}: ${manifestId}`,
+    content: Buffer.from(JSON.stringify(manifest, null, 2), 'utf8').toString('base64'),
+    branch: branchName,
+  });
+
+  const pr = await github('POST', `/repos/${repo}/pulls`, {
+    title: `Adicionar fotos em ${folder}`,
+    head: branchName,
+    base: baseBranch,
+    body: [
+      `Upload enviado pelo portal admin por ${userName || 'usuario autenticado'}.`,
+      '',
+      `Escopo permitido: uploads/manifests/${folder}/`,
+      '',
+      'O workflow de fotos pendentes deve baixar os arquivos do bucket temporario, processar e publicar.',
+    ].join('\n'),
+  });
+
+  return pr;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -326,6 +370,70 @@ export async function signedUploadUrlHandler(req, res) {
       headers: {
         'Content-Type': body.contentType,
       },
+    });
+  } catch (error) {
+    const message = error?.message || 'Erro inesperado';
+    const statusCode =
+      message.includes('Token') ||
+      message.includes('Usuario sem permissao')
+        ? 401
+        : 400;
+    return json(res, statusCode, { error: message });
+  }
+}
+
+export async function createManifestPullRequestHandler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return json(res, 405, { error: 'Method not allowed' });
+  }
+
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+    if (!token) return json(res, 401, { error: 'Token ausente' });
+
+    const firebaseUser = await verifyFirebaseToken(token);
+    const body = await getJsonBody(req);
+    const folder = body?.folder;
+    const uploads = Array.isArray(body?.uploads) ? body.uploads : [];
+
+    if (!ALLOWED_FOLDERS.has(folder)) throw new Error('Galeria invalida');
+    if (uploads.length === 0) throw new Error('Envie pelo menos um item');
+    if (uploads.length > MAX_FILES) throw new Error(`Limite de ${MAX_FILES} fotos por envio`);
+
+    const bucketName = requireUploadBucket();
+    const normalizedUploads = uploads.map((item) => {
+      const objectPath = String(item?.objectPath || '').trim();
+      const originalName = String(item?.originalName || '').trim();
+      const contentType = String(item?.contentType || '').toLowerCase().trim();
+
+      if (!objectPath.startsWith(`incoming/${folder}/`)) {
+        throw new Error('Objeto fora do escopo permitido');
+      }
+      if (!originalName) throw new Error('Nome original ausente');
+      sanitizeFileName(originalName);
+      if (!ALLOWED_MIME_TYPES.has(contentType)) {
+        throw new Error(`Mime type nao permitido: ${originalName}`);
+      }
+
+      return {
+        bucket: bucketName,
+        objectPath,
+        originalName,
+        contentType,
+      };
+    });
+
+    const pr = await createGalleryManifestPullRequest({
+      folder,
+      uploads: normalizedUploads,
+      userName: firebaseUser.name || firebaseUser.email,
+    });
+
+    return json(res, 200, {
+      pullRequestUrl: pr.html_url,
+      pullRequestNumber: pr.number,
     });
   } catch (error) {
     const message = error?.message || 'Erro inesperado';

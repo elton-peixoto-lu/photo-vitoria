@@ -3,6 +3,7 @@
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { Storage } from '@google-cloud/storage';
 import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 
@@ -27,6 +28,7 @@ export const DEFAULT_CONFIG = {
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
+const storage = new Storage();
 let cachedWatermarkLogoBuffer = null;
 
 async function pathExists(filePath) {
@@ -71,6 +73,69 @@ async function listImageFiles(folderPath) {
 
   await walk(folderPath);
   return files.sort((leftPath, rightPath) => leftPath.localeCompare(rightPath));
+}
+
+async function listManifestFiles(config) {
+  const manifestsDir = path.join(ROOT_DIR, 'uploads', 'manifests');
+  if (!(await pathExists(manifestsDir))) return [];
+  const files = [];
+  async function walk(currentPath) {
+    if (!(await pathExists(currentPath))) return;
+    const entries = await fs.readdir(currentPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(currentPath, entry.name);
+      if (entry.isDirectory()) {
+        await walk(entryPath);
+        continue;
+      }
+      if (entry.name.toLowerCase().endsWith('.json')) {
+        files.push(entryPath);
+      }
+    }
+  }
+  await walk(manifestsDir);
+  return files.sort((a, b) => a.localeCompare(b));
+}
+
+async function materializeManifestsToPending(config) {
+  const manifestFiles = await listManifestFiles(config);
+  if (manifestFiles.length === 0) return 0;
+
+  let hydrated = 0;
+  for (const manifestPath of manifestFiles) {
+    const raw = await fs.readFile(manifestPath, 'utf8');
+    const manifest = JSON.parse(raw);
+    const folder = manifest?.folder;
+    const files = Array.isArray(manifest?.files) ? manifest.files : [];
+
+    if (!config.folders.includes(folder) || files.length === 0) {
+      await fs.rm(manifestPath, { force: true });
+      continue;
+    }
+
+    const pendingFolder = path.join(config.pendingDir, folder);
+    await fs.mkdir(pendingFolder, { recursive: true });
+
+    for (const file of files) {
+      const bucket = String(file?.bucket || '').trim();
+      const objectPath = String(file?.objectPath || '').trim();
+      const originalName = String(file?.originalName || '').trim();
+      if (!bucket || !objectPath || !originalName) continue;
+
+      const safeFileName = sanitizeFileName(originalName);
+      const destinationPath = path.join(pendingFolder, safeFileName);
+      const tempPath = `${destinationPath}.download`;
+
+      await storage.bucket(bucket).file(objectPath).download({ destination: tempPath });
+      await fs.rename(tempPath, destinationPath);
+      await storage.bucket(bucket).file(objectPath).delete({ ignoreNotFound: true });
+      hydrated++;
+    }
+
+    await fs.rm(manifestPath, { force: true });
+  }
+
+  return hydrated;
 }
 
 function slugify(filePath) {
@@ -398,6 +463,7 @@ export async function updateLocalMapping(config) {
 
 export async function runProcessPendingUploads(config = DEFAULT_CONFIG) {
   await ensurePendingFolders(config);
+  const hydratedFromManifests = await materializeManifestsToPending(config);
 
   let totalProcessed = 0;
   let totalSkipped = 0;
@@ -416,10 +482,11 @@ export async function runProcessPendingUploads(config = DEFAULT_CONFIG) {
     processed: totalProcessed,
     skipped: totalSkipped,
     removedDuplicates: totalRemovedDuplicates,
+    hydratedFromManifests,
   };
 
   console.log(
-    `Resumo: ${summary.processed} processadas, ${summary.skipped} duplicadas ignoradas, ${summary.removedDuplicates} duplicadas removidas`,
+    `Resumo: ${summary.processed} processadas, ${summary.skipped} duplicadas ignoradas, ${summary.removedDuplicates} duplicadas removidas, ${summary.hydratedFromManifests} baixadas de manifesto`,
   );
 
   return summary;

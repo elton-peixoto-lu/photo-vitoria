@@ -1,5 +1,9 @@
 import express from 'express';
-import galleryPrHandler, { turnstileVerifyHandler, signedUploadUrlHandler } from './adminGalleryPrHandler.mjs';
+import galleryPrHandler, {
+  createManifestPullRequestHandler,
+  signedUploadUrlHandler,
+  turnstileVerifyHandler,
+} from './adminGalleryPrHandler.mjs';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -38,6 +42,7 @@ app.get('/healthz', health);
 app.post('/api/admin/gallery-pr', galleryPrHandler);
 app.post('/api/admin/turnstile-verify', turnstileVerifyHandler);
 app.post('/api/admin/upload-url', signedUploadUrlHandler);
+app.post('/api/admin/gallery-pr-manifest', createManifestPullRequestHandler);
 
 app.listen(port, () => {
   console.log(`Admin gallery API listening on ${port}`);
