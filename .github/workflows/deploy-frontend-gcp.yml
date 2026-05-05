@@ -83,6 +83,7 @@ jobs:
             exit 0
           fi
           gcloud compute url-maps invalidate-cdn-cache "${CDN_URL_MAP}" \
+            --project "${{ env.PROJECT_ID }}" \
             --path "/*" \
             --async
           echo "Invalidacao de CDN solicitada para ${CDN_URL_MAP}."
