@@ -23,6 +23,10 @@ import { loadGalleryImages } from './localAssetsLoader';
 import { ConfigProvider, ConfigStatus } from './components/ConfigProvider';
 import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
+const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
+const TURNSTILE_TTL_MS = 1000 * 60 * 30;
+const PROD_TURNSTILE_SITE_KEY = '0x4AAAAAAC9eV3XaW-3g_hmC';
+
 // Importa utilitários de teste em desenvolvimento
 if (import.meta.env.DEV) {
   import('./utils/testHybridSystem.js').then(() => {
@@ -334,16 +338,175 @@ export default function App() {
   return (
     <SidebarProvider>
       <ConfigProvider>
-        <BrowserRouter>
-          <AppContent 
-            menuOpen={menuOpen} 
-            setMenuOpen={setMenuOpen} 
-            showInstall={showInstall}
-            handleInstallClick={handleInstallClick}
-          />
-        </BrowserRouter>
+        <PublicSecurityGate>
+          <BrowserRouter>
+            <AppContent 
+              menuOpen={menuOpen} 
+              setMenuOpen={setMenuOpen} 
+              showInstall={showInstall}
+              handleInstallClick={handleInstallClick}
+            />
+          </BrowserRouter>
+        </PublicSecurityGate>
       </ConfigProvider>
     </SidebarProvider>
+  );
+}
+
+function PublicSecurityGate({ children }) {
+  const [status, setStatus] = useState('checking');
+  const [token, setToken] = useState('');
+  const [message, setMessage] = useState('');
+  const containerRef = useRef(null);
+  const widgetIdRef = useRef(null);
+  const isLocalHost =
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const shouldProtect = typeof window !== 'undefined' && !isLocalHost;
+  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || PROD_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!shouldProtect) {
+      setStatus('ready');
+      return;
+    }
+
+    try {
+      const rawValue = window.sessionStorage.getItem(TURNSTILE_STORAGE_KEY);
+      if (!rawValue) {
+        setStatus('challenge');
+        return;
+      }
+
+      const parsedValue = JSON.parse(rawValue);
+      if (Date.now() - Number(parsedValue?.verifiedAt || 0) < TURNSTILE_TTL_MS) {
+        setStatus('ready');
+        return;
+      }
+    } catch {
+      window.sessionStorage.removeItem(TURNSTILE_STORAGE_KEY);
+    }
+
+    setStatus('challenge');
+  }, [shouldProtect]);
+
+  useEffect(() => {
+    if (status !== 'challenge' || !siteKey || !containerRef.current) return;
+
+    const scriptId = 'cf-turnstile-global-script';
+    const renderWidget = () => {
+      if (!window.turnstile || widgetIdRef.current) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        callback: (value) => {
+          setToken(value);
+          setMessage('');
+        },
+        'expired-callback': () => {
+          setToken('');
+          setMessage('A verificacao expirou. Tente novamente.');
+        },
+        'error-callback': () => {
+          setToken('');
+          setMessage('Nao foi possivel iniciar a verificacao de seguranca.');
+        },
+      });
+    };
+
+    const existingScript = document.getElementById(scriptId);
+    if (existingScript) {
+      renderWidget();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderWidget;
+    document.head.appendChild(script);
+
+    return () => {
+      if (window.turnstile && widgetIdRef.current) {
+        window.turnstile.remove(widgetIdRef.current);
+      }
+      widgetIdRef.current = null;
+    };
+  }, [siteKey, status]);
+
+  useEffect(() => {
+    if (!token || status !== 'challenge') return;
+
+    let cancelled = false;
+    async function verifyToken() {
+      setStatus('verifying');
+      setMessage('');
+
+      try {
+        const response = await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Validacao de seguranca nao autorizada.');
+        }
+
+        if (cancelled) return;
+        window.sessionStorage.setItem(
+          TURNSTILE_STORAGE_KEY,
+          JSON.stringify({ verifiedAt: Date.now() }),
+        );
+        setStatus('ready');
+      } catch (error) {
+        if (cancelled) return;
+        setToken('');
+        setStatus('challenge');
+        setMessage(error.message || 'Falha na validacao de seguranca.');
+        if (window.turnstile && widgetIdRef.current) {
+          window.turnstile.reset(widgetIdRef.current);
+        }
+      }
+    }
+
+    verifyToken();
+    return () => {
+      cancelled = true;
+    };
+  }, [status, token]);
+
+  if (status === 'ready') {
+    return children;
+  }
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(244,114,182,0.16),_transparent_35%),linear-gradient(180deg,#fff8fb_0%,#fff 48%,#fffaf1_100%)] px-6 py-10 text-[#6c2948]">
+      <div className="mx-auto flex min-h-[80vh] max-w-2xl items-center justify-center">
+        <div className="w-full rounded-[32px] border border-white/70 bg-white/88 p-8 shadow-[0_32px_120px_rgba(219,39,119,0.15)] backdrop-blur">
+          <p className="mb-4 text-center text-[11px] uppercase tracking-[0.35em] text-pink-500">Acesso protegido</p>
+          <h1 className="mb-3 text-center text-4xl font-light tracking-[0.2em] text-[#7a264b]">PHOTO VITORIA</h1>
+          <p className="mx-auto mb-8 max-w-xl text-center text-lg leading-relaxed text-[#8b5e74]">
+            Antes de navegar, confirme que o acesso e humano. Essa verificacao protege a galeria, o agendamento e o portal contra abuso automatizado.
+          </p>
+          <div className="rounded-[24px] border border-pink-100 bg-[#fff9fc] p-6">
+            <div ref={containerRef} className="flex min-h-[70px] justify-center" />
+            {status === 'verifying' && (
+              <p className="mt-4 text-center text-sm text-[#8b5e74]">Validando seguranca...</p>
+            )}
+            {message && (
+              <p className="mt-4 text-center text-sm text-red-500">{message}</p>
+            )}
+            {isLocalHost && (
+              <p className="mt-4 text-center text-sm text-amber-600">
+                Ambiente local dispensado do gate global.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
