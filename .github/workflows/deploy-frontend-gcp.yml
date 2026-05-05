@@ -60,11 +60,11 @@ jobs:
           gcloud storage buckets add-iam-policy-binding gs://${{ env.GCS_BUCKET }} \
             --member="serviceAccount:${DEPLOY_SA}" \
             --role="roles/storage.objectAdmin" \
-            --quiet
+            --quiet || echo "Sem permissao para auto-grant objectAdmin; seguindo com IAM atual."
           gcloud storage buckets add-iam-policy-binding gs://${{ env.GCS_BUCKET }} \
             --member="serviceAccount:${DEPLOY_SA}" \
             --role="roles/storage.legacyBucketReader" \
-            --quiet
+            --quiet || echo "Sem permissao para auto-grant legacyBucketReader; seguindo com IAM atual."
 
       - name: Upload static build to Cloud Storage
         run: gcloud storage rsync ./dist gs://${{ env.GCS_BUCKET }} --recursive --delete-unmatched-destination-objects
