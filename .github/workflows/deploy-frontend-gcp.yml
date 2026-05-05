@@ -14,6 +14,10 @@ on:
       - 'vite.config.js'
       - 'vercel.json'
 
+permissions:
+  contents: read
+  id-token: write
+
 env:
   PROJECT_ID: fotovitoria
   GCS_BUCKET: photo-vitoria-site-prod
