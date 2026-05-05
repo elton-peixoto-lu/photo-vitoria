@@ -9,7 +9,7 @@ const bucketName = process.env.GALLERY_BUCKET || 'photo-vitoria-site-prod';
 const bucket = storage.bucket(bucketName);
 
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
-app.get('/images/*', async (req, res) => {
+app.get(/^\/images\/.*/, async (req, res) => {
   try {
     const objectPath = req.path.replace(/^\//, '');
     if (!objectPath.startsWith('images/galeria/')) return res.status(403).send('forbidden');
