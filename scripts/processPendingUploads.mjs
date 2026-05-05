@@ -25,6 +25,7 @@ export const DEFAULT_CONFIG = {
     process.env.WATERMARK_LOGO_URL ||
     'https://res.cloudinary.com/driuyeufs/image/upload/v1749126164/logo_ozilmf.png',
   watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.24),
+  requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
@@ -203,6 +204,11 @@ async function createWatermarkOverlay(metadata, config) {
   const width = metadata.width || config.maxWidth;
   const height = metadata.height || config.maxHeight;
   const logoBuffer = await loadWatermarkLogoBuffer(config);
+  if (config.requireWatermark && !logoBuffer) {
+    throw new Error(
+      "Marca d'agua obrigatoria: configure WATERMARK_LOGO_PATH ou WATERMARK_LOGO_URL com logo valida.",
+    );
+  }
 
   if (logoBuffer) {
     const logoWidth = Math.max(120, Math.round(width * 0.16));
