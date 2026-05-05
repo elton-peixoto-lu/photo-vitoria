@@ -25,6 +25,8 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
 const TURNSTILE_STORAGE_KEY = 'photo-vitoria-turnstile-ok';
 const TURNSTILE_TTL_MS = 1000 * 60 * 30;
+const TURNSTILE_VERIFY_TIMEOUT_MS = 12000;
+const TURNSTILE_RENDER_TIMEOUT_MS = 10000;
 const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
 const PUBLIC_TURNSTILE_SITE_KEY = '0x4AAAAAADJksWK2ejJKf8NL';
 
@@ -360,6 +362,7 @@ function PublicSecurityGate({ children }) {
   const [message, setMessage] = useState('');
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
+  const renderTimerRef = useRef(null);
   const isLocalHost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -407,11 +410,19 @@ function PublicSecurityGate({ children }) {
     if (status !== 'challenge' || !siteKey || !containerRef.current) return;
 
     const scriptId = 'cf-turnstile-global-script';
+    if (renderTimerRef.current) {
+      window.clearTimeout(renderTimerRef.current);
+    }
+
     const renderWidget = () => {
       if (!window.turnstile || widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
         callback: (value) => {
+          if (renderTimerRef.current) {
+            window.clearTimeout(renderTimerRef.current);
+            renderTimerRef.current = null;
+          }
           setToken(value);
           setMessage('');
         },
@@ -432,10 +443,23 @@ function PublicSecurityGate({ children }) {
       });
     };
 
+    renderTimerRef.current = window.setTimeout(() => {
+      if (widgetIdRef.current && !token) {
+        setMessage(
+          'A verificacao demorou para responder. Toque em tentar novamente ou reduza protecoes de privacidade do navegador para este site.',
+        );
+      }
+    }, TURNSTILE_RENDER_TIMEOUT_MS);
+
     const existingScript = document.getElementById(scriptId);
     if (existingScript) {
       renderWidget();
-      return;
+      return () => {
+        if (renderTimerRef.current) {
+          window.clearTimeout(renderTimerRef.current);
+          renderTimerRef.current = null;
+        }
+      };
     }
 
     const script = document.createElement('script');
@@ -447,12 +471,16 @@ function PublicSecurityGate({ children }) {
     document.head.appendChild(script);
 
     return () => {
+      if (renderTimerRef.current) {
+        window.clearTimeout(renderTimerRef.current);
+        renderTimerRef.current = null;
+      }
       if (window.turnstile && widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current);
       }
       widgetIdRef.current = null;
     };
-  }, [siteKey, status]);
+  }, [siteKey, status, token]);
 
   useEffect(() => {
     if (!token || status !== 'challenge') return;
@@ -463,18 +491,30 @@ function PublicSecurityGate({ children }) {
       setMessage('');
 
       try {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), TURNSTILE_VERIFY_TIMEOUT_MS);
+
         const response = await fetch('/api/turnstile/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
+          signal: controller.signal,
         });
+        window.clearTimeout(timeoutId);
  
         if (response.status === 503) {
+          const fallbackController = new AbortController();
+          const fallbackTimeoutId = window.setTimeout(
+            () => fallbackController.abort(),
+            TURNSTILE_VERIFY_TIMEOUT_MS,
+          );
           const fallbackResponse = await fetch(verifyUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token }),
+            signal: fallbackController.signal,
           });
+          window.clearTimeout(fallbackTimeoutId);
 
           if (!fallbackResponse.ok) {
             throw new Error('Validacao de seguranca nao autorizada.');
@@ -493,7 +533,11 @@ function PublicSecurityGate({ children }) {
         if (cancelled) return;
         setToken('');
         setStatus('challenge');
-        setMessage(error.message || 'Falha na validacao de seguranca.');
+        setMessage(
+          error?.name === 'AbortError'
+            ? 'A validacao demorou demais. Tente novamente ou reduza bloqueios de privacidade para este site.'
+            : error.message || 'Falha na validacao de seguranca.',
+        );
         if (window.turnstile && widgetIdRef.current) {
           window.turnstile.reset(widgetIdRef.current);
         }
@@ -509,6 +553,15 @@ function PublicSecurityGate({ children }) {
   if (status === 'ready') {
     return children;
   }
+
+  const handleRetry = () => {
+    setToken('');
+    setMessage('');
+    setStatus('challenge');
+    if (window.turnstile && widgetIdRef.current) {
+      window.turnstile.reset(widgetIdRef.current);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(244,114,182,0.16),_transparent_35%),linear-gradient(180deg,#fff8fb_0%,#fff 48%,#fffaf1_100%)] px-6 py-10 text-[#6c2948]">
@@ -526,6 +579,17 @@ function PublicSecurityGate({ children }) {
             )}
             {message && (
               <p className="mt-4 text-center text-sm text-red-500">{message}</p>
+            )}
+            {(status === 'verifying' || message) && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="rounded-full border border-pink-200 bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[#b13f73] transition hover:border-pink-300 hover:bg-pink-50"
+                >
+                  Tentar Novamente
+                </button>
+              </div>
             )}
             {isLocalHost && (
               <p className="mt-4 text-center text-sm text-amber-600">
