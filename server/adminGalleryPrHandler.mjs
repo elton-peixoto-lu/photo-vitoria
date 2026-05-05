@@ -1,11 +1,14 @@
 /* global Buffer, process */
 import crypto from 'crypto';
 import admin from 'firebase-admin';
+import { Storage } from '@google-cloud/storage';
 
 // Inicializar Firebase Admin se ainda não estiver inicializado
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+const storage = new Storage();
 
 async function verifyFirebaseToken(token) {
   try {
@@ -74,6 +77,7 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 const MAX_FILES = 50;
 const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
+const SIGNED_UPLOAD_URL_EXPIRATION_SECONDS = Number(process.env.SIGNED_UPLOAD_URL_EXPIRATION_SECONDS || 15 * 60);
 
 function json(res, statusCode, body) {
   res.statusCode = statusCode;
@@ -111,6 +115,23 @@ function sanitizeFileName(fileName) {
 
   const hash = crypto.randomBytes(4).toString('hex');
   return `${Date.now()}-${baseName || 'foto'}-${hash}${extension}`;
+}
+
+function requireUploadBucket() {
+  const bucketName = String(process.env.UPLOAD_TEMP_BUCKET || '').trim();
+  if (!bucketName) {
+    throw new Error('UPLOAD_TEMP_BUCKET nao configurado');
+  }
+  return bucketName;
+}
+
+function buildTempObjectPath(folder, originalFileName) {
+  if (!ALLOWED_FOLDERS.has(folder)) {
+    throw new Error('Galeria invalida');
+  }
+
+  const safeName = sanitizeFileName(originalFileName);
+  return `incoming/${folder}/${safeName}`;
 }
 
 async function github(method, path, body) {
@@ -165,6 +186,20 @@ function validatePayload(body) {
 
   if (totalBytes > MAX_TOTAL_BYTES) {
     throw new Error('Lote muito grande. Envie ate 10MB por vez.');
+  }
+}
+
+function validateSignedUploadPayload(body) {
+  const folder = body?.folder;
+  const fileName = body?.fileName;
+  const contentType = String(body?.contentType || '').toLowerCase();
+
+  if (!ALLOWED_FOLDERS.has(folder)) throw new Error('Galeria invalida');
+  if (!fileName) throw new Error('Nome de arquivo ausente');
+  sanitizeFileName(fileName);
+
+  if (!ALLOWED_MIME_TYPES.has(contentType)) {
+    throw new Error(`Mime type nao permitido: ${fileName}`);
   }
 }
 
@@ -251,5 +286,54 @@ export async function turnstileVerifyHandler(req, res) {
     return json(res, 200, { ok: true });
   } catch (error) {
     return json(res, 403, { error: error?.message || 'Falha na validacao de seguranca' });
+  }
+}
+
+export async function signedUploadUrlHandler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return json(res, 405, { error: 'Method not allowed' });
+  }
+
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+    if (!token) return json(res, 401, { error: 'Token ausente' });
+
+    await verifyFirebaseToken(token);
+
+    const body = await getJsonBody(req);
+    validateSignedUploadPayload(body);
+
+    const bucketName = requireUploadBucket();
+    const objectPath = buildTempObjectPath(body.folder, body.fileName);
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file(objectPath);
+
+    const [uploadUrl] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'write',
+      expires: Date.now() + SIGNED_UPLOAD_URL_EXPIRATION_SECONDS * 1000,
+      contentType: body.contentType,
+    });
+
+    return json(res, 200, {
+      bucket: bucketName,
+      objectPath,
+      uploadUrl,
+      expiresInSeconds: SIGNED_UPLOAD_URL_EXPIRATION_SECONDS,
+      method: 'PUT',
+      headers: {
+        'Content-Type': body.contentType,
+      },
+    });
+  } catch (error) {
+    const message = error?.message || 'Erro inesperado';
+    const statusCode =
+      message.includes('Token') ||
+      message.includes('Usuario sem permissao')
+        ? 401
+        : 400;
+    return json(res, statusCode, { error: message });
   }
 }

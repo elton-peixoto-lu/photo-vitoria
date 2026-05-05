@@ -72,6 +72,7 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 - ativação do `Cloud Armor`
 - motivo atual: quota do projeto `fotovitoria` está com `SECURITY_POLICIES = 0`
 - migração futura das imagens para `Cloud Storage + Signed URLs`
+- base inicial dessa fase já adicionada com bucket privado temporário e endpoint de emissão de Signed URL
 
 ## Stack principal
 
@@ -95,6 +96,7 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 - `.github/workflows/`: automações de deploy e pipeline de imagens
 - `infra/gcp/frontend-spa/`: Terraform da borda/frontend no GCP
 - `infra/gcp/admin-api/`: Terraform e apoio do backend admin
+- `infra/gcp/image-upload/`: bucket privado temporário para uploads com Signed URLs
 - `docs/`: documentação complementar
 
 ## Como rodar localmente
@@ -158,6 +160,8 @@ npm run admin-api
 - `GITHUB_REPO`
 - `GITHUB_BASE_BRANCH`
 - `GITHUB_UPLOAD_TOKEN`
+- `UPLOAD_TEMP_BUCKET`
+- `SIGNED_UPLOAD_URL_EXPIRATION_SECONDS`
 
 ## Deploys
 
@@ -212,7 +216,7 @@ Bucket do frontend:
 
 ## Próxima fase planejada
 
-A próxima evolução da arquitetura é retirar os binários de imagem do fluxo Git principal e mover uploads para `Cloud Storage` privado, com:
+A próxima evolução da arquitetura é retirar os binários de imagem do fluxo Git principal e mover uploads para `Cloud Storage` privado. A base inicial já foi criada no backend e na infraestrutura, com:
 
 - upload temporário em GCS
 - `Signed URLs`

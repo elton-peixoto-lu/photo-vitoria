@@ -1,0 +1,10 @@
+project_id                    = "fotovitoria"
+region                        = "us-central1"
+upload_bucket_name            = "photo-vitoria-upload-temp"
+admin_api_service_account_email = "photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com"
+
+cors_origins = [
+  "https://estudiovitoriafreitas.com.br",
+  "https://www.estudiovitoriafreitas.com.br",
+  "https://staging.estudiovitoriafreitas.com.br",
+]
