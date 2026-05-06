@@ -104,7 +104,7 @@ async function testEnvironment() {
   
   // 7. Teste conectividade API
   try {
-    const response = await fetch('https://photo-vitoria.vercel.app/api/galeria/casamentos');
+    const response = await fetch('https://www.estudiovitoriafreitas.com.br/api/galeria/casamentos');
     if (response.ok) {
       const data = await response.json();
       results.push({ test: 'API Connection', status: 'ok', message: `${data.images?.length || 0} imagens disponíveis` });

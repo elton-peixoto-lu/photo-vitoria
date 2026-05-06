@@ -1,173 +1,122 @@
-import { get, getAll } from '@vercel/edge-config';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-/**
- * Utility para usar Vercel Edge Config no projeto React/Vite
- * Como não temos middleware, usamos essas funções utilitárias
- */
+const STATIC_CONFIG = {
+  galeria: {
+    maxImagens: 50,
+    qualidadeImagem: 80,
+    habilitarPreload: true,
+  },
+  sistema: {
+    circuitBreakerLimite: 3,
+    circuitBreakerTimeout: 30000,
+    tentativasMaximas: 3,
+  },
+  conteudo: {
+    saudacao: 'Bem-vindo ao Photo Vitória!',
+    manutencao: false,
+    mensagemManutencao: 'Site em manutenção',
+    welcomeMessage: 'Capture seus momentos únicos!',
+  },
+  features: {
+    novasGalerias: false,
+    animacoesAvancadas: true,
+    analytics: false,
+  },
+  promocoes: {
+    bannerAtivo: false,
+    mensagemBanner: null,
+    desconto: 0,
+  },
+  avulsas: {
+    greeting: 'Bem-vindo ao Photo Vitória!',
+    welcome_message: 'Capture seus momentos únicos!',
+    manutencao_ativa: false,
+    manutencao_mensagem: 'Site em manutenção',
+    galeria_max_imagens: 50,
+    galeria_qualidade: 80,
+    galeria_preload: true,
+    sistema_circuit_breaker_limite: 3,
+    sistema_circuit_breaker_timeout: 30000,
+    sistema_tentativas_maximas: 3,
+    feature_novas_galerias: false,
+    feature_animacoes_avancadas: true,
+    feature_analytics: false,
+    promotion_banner_active: false,
+    promotion_banner: null,
+    promotion_discount: 0,
+    promocao_site_ativa: false,
+    promocao_site_desconto: 10,
+    promocao_site_titulo: 'OFERTA ESPECIAL',
+    promocao_site_subtitulo: 'Para quem nos encontrou pelo site!',
+    promocao_site_codigo: 'SITE10',
+    promocao_site_validade: 'Válido até o final do mês',
+    promocao_site_cor: 'gradient-pink',
+    servicos_ativos: true,
+    servicos_lista: null,
+  },
+};
 
-function hasEdgeConfig() {
-  return Boolean(import.meta.env.VITE_EDGE_CONFIG);
+function getFlatConfigValue(key) {
+  if (Object.prototype.hasOwnProperty.call(STATIC_CONFIG.avulsas, key)) {
+    return STATIC_CONFIG.avulsas[key];
+  }
+
+  return undefined;
 }
 
-/**
- * Busca uma configuração específica do Edge Config
- * @param {string} key - Chave da configuração
- * @param {any} defaultValue - Valor padrão se não encontrar
- * @returns {Promise<any>} Valor da configuração
- */
 export async function getConfig(key, defaultValue = null) {
-  if (!hasEdgeConfig()) {
-    return defaultValue;
-  }
-
-  try {
-    const value = await get(key);
-    return value !== undefined ? value : defaultValue;
-  } catch (error) {
-    console.error(`🔧 Erro ao buscar config '${key}':`, error);
-    return defaultValue;
-  }
+  const value = getFlatConfigValue(key);
+  return value !== undefined ? value : defaultValue;
 }
 
-/**
- * Busca todas as configurações do Edge Config
- * @returns {Promise<Object>} Todas as configurações
- */
 export async function getAllConfigs() {
-  if (!hasEdgeConfig()) {
-    return {};
-  }
-
-  try {
-    const configs = await getAll();
-    return configs || {};
-  } catch (error) {
-    console.error('🔧 Erro ao buscar todas as configs:', error);
-    return {};
-  }
+  return { ...STATIC_CONFIG.avulsas };
 }
 
-/**
- * Busca configurações específicas para funcionalidades do site
- */
 export async function getSiteConfigs() {
-  if (!hasEdgeConfig()) {
-    return {
-      galeria: {
-        maxImagens: 50,
-        qualidadeImagem: 80,
-        habilitarPreload: true
-      },
-      sistema: {
-        circuitBreakerLimite: 3,
-        circuitBreakerTimeout: 30000,
-        tentativasMaximas: 3
-      },
-      conteudo: {
-        saudacao: 'Bem-vindo ao Photo Vitória!',
-        manutencao: false,
-        mensagemManutencao: 'Site em manutenção'
-      },
-      features: {
-        novasGalerias: false,
-        animacoesAvancadas: true,
-        analytics: true
-      }
-    };
-  }
-
-  try {
-    const configs = await getAll();
-    return {
-      // Configurações da galeria
-      galeria: {
-        maxImagens: configs.galeria_max_imagens || 50,
-        qualidadeImagem: configs.galeria_qualidade || 80,
-        habilitarPreload: configs.galeria_preload || true
-      },
-      
-      // Configurações do sistema híbrido
-      sistema: {
-        circuitBreakerLimite: configs.sistema_circuit_breaker_limite || 3,
-        circuitBreakerTimeout: configs.sistema_circuit_breaker_timeout || 30000,
-        tentativasMaximas: configs.sistema_tentativas_maximas || 3
-      },
-      
-      // Mensagens e conteúdo dinâmico
-      conteudo: {
-        saudacao: configs.greeting || 'Bem-vindo ao Photo Vitória!',
-        manutencao: configs.manutencao_ativa || false,
-        mensagemManutencao: configs.manutencao_mensagem || 'Site em manutenção'
-      },
-      
-      // Feature flags
-      features: {
-        novasGalerias: configs.feature_novas_galerias || false,
-        animacoesAvancadas: configs.feature_animacoes_avancadas || true,
-        analytics: configs.feature_analytics || true
-      }
-    };
-  } catch (error) {
-    console.error('🔧 Erro ao buscar configurações do site:', error);
-    // Retorna configurações padrão em caso de erro
-    return {
-      galeria: {
-        maxImagens: 50,
-        qualidadeImagem: 80,
-        habilitarPreload: true
-      },
-      sistema: {
-        circuitBreakerLimite: 3,
-        circuitBreakerTimeout: 30000,
-        tentativasMaximas: 3
-      },
-      conteudo: {
-        saudacao: 'Bem-vindo ao Photo Vitória!',
-        manutencao: false,
-        mensagemManutencao: 'Site em manutenção'
-      },
-      features: {
-        novasGalerias: false,
-        animacoesAvancadas: true,
-        analytics: true
-      }
-    };
-  }
+  return {
+    galeria: { ...STATIC_CONFIG.galeria },
+    sistema: { ...STATIC_CONFIG.sistema },
+    conteudo: { ...STATIC_CONFIG.conteudo },
+    features: { ...STATIC_CONFIG.features },
+    promocoes: { ...STATIC_CONFIG.promocoes },
+  };
 }
 
-/**
- * Hook React para usar Edge Config
- * @param {string} key - Chave da configuração
- * @param {any} defaultValue - Valor padrão
- * @returns {Object} { data, loading, error }
- */
 export function useEdgeConfig(key, defaultValue = null) {
   const [data, setData] = useState(defaultValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function fetchConfig() {
+    let mounted = true;
+
+    async function load() {
       try {
         setLoading(true);
         setError(null);
         const value = await getConfig(key, defaultValue);
-        setData(value);
+        if (mounted) {
+          setData(value);
+        }
       } catch (err) {
-        setError(err);
-        setData(defaultValue);
+        if (mounted) {
+          setError(err);
+          setData(defaultValue);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
-    fetchConfig();
+    load();
+
+    return () => {
+      mounted = false;
+    };
   }, [key, defaultValue]);
 
   return { data, loading, error };
-}
-
-if (import.meta.env.DEV && hasEdgeConfig()) {
-  console.log('Edge Config ativo para este ambiente.');
 }

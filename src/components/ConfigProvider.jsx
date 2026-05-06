@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getSiteConfigs } from '../utils/edgeConfig';
 
 /**
- * Context para prover configurações do Edge Config em toda a aplicação
+ * Context para prover configurações estáticas em toda a aplicação
  */
 const ConfigContext = createContext(null);
 
@@ -17,7 +17,7 @@ export function ConfigProvider({ children }) {
         setLoading(true);
         setError(null);
         
-        console.log('🔧 Carregando configurações do Edge Config...');
+        console.log('🔧 Carregando configurações do site...');
         const siteConfigs = await getSiteConfigs();
         setConfigs(siteConfigs);
         
@@ -52,7 +52,7 @@ export function ConfigProvider({ children }) {
 }
 
 /**
- * Hook para usar as configurações do Edge Config
+ * Hook para usar as configurações do site
  */
 export function useConfigs() {
   const context = useContext(ConfigContext);
@@ -90,7 +90,7 @@ export function ConfigStatus() {
 
   return (
     <div className="fixed bottom-4 right-4 bg-green-100 text-green-800 px-3 py-1 rounded text-sm z-50">
-      ✅ Edge Config ativo
+      ✅ Config local ativa
       <details className="mt-1">
         <summary className="cursor-pointer">Ver configs</summary>
         <pre className="text-xs mt-1 bg-white p-2 rounded max-w-xs overflow-auto">

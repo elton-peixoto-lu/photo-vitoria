@@ -12,7 +12,6 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.js'
-      - 'vercel.json'
 
 permissions:
   contents: read

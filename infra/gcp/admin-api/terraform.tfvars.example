@@ -3,7 +3,7 @@ region     = "us-central1"
 
 image = "us-central1-docker.pkg.dev/fotovitoria/photo-vitoria/admin-api:latest"
 
-admin_allowed_origins = "https://photo-vitoria.vercel.app,https://estudiovitoriafreitas.com.br"
+admin_allowed_origins = "https://estudiovitoriafreitas.com.br,https://www.estudiovitoriafreitas.com.br"
 
 keycloak_issuer        = "https://keycloak-ff24d6d8.35-212-226-35.sslip.io/realms/photo-vitoria"
 keycloak_client_id     = "photo-vitoria-admin"

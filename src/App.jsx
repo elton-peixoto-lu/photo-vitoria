@@ -12,11 +12,20 @@ import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
-import { FaInstagram, FaBars, FaTimes, FaArrowLeft, FaWhatsapp, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import {
+  FaInstagram,
+  FaBars,
+  FaTimes,
+  FaArrowLeft,
+  FaWhatsapp,
+  FaChevronLeft,
+  FaChevronRight,
+  FaHeart,
+  FaEnvelope,
+} from 'react-icons/fa';
 import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight, PiCalendarLight } from 'react-icons/pi';
 import { CONTATO } from './components/ContatoInfo';
 import { LOGO_URL } from './constants';
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import CookieBanner from './components/CookieBanner';
 import SystemMonitor from './components/SystemMonitor';
 import { loadGalleryImages } from './localAssetsLoader';
@@ -112,7 +121,18 @@ function Logo({ collapsed = false }) {
 
 function Sidebar({ mobile = false, open = false, onClose }) {
   const location = useLocation();
-  const MOBILE_MENU_PATHS = ['/', '/galeria', '/contato', '/estudio', '/galeria-noivas'];
+  const MOBILE_MENU_PATHS = [
+    '/',
+    '/galeria',
+    '/galeria-infantil',
+    '/galeria-casamentos',
+    '/galeria-femininos',
+    '/galeria-pre-weding',
+    '/galeria-noivas',
+    '/estudio',
+    '/agendar',
+    '/contato',
+  ];
   if (mobile) {
     return (
       <>
@@ -755,7 +775,6 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
             <Route path="/admin/galeria" element={<AdminGaleriaUploads />} />
           </Routes>
         </div>
-        <SpeedInsights />
       </>
     );
   }
@@ -817,7 +836,6 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
           </div>
         </div>
       </div>
-      <SpeedInsights />
       {/* Botão flutuante de instalar app (PWA) */}
       {showInstall && (
         <button

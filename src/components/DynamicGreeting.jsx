@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getConfig } from '../utils/edgeConfig';
 
 /**
- * Componente de saudação dinâmica usando Edge Config
+ * Componente de saudação dinâmica usando config local
  * Permite mudar textos sem deploy
  */
 export default function DynamicGreeting({ defaultTitle, defaultSubtitle, className = "" }) {
@@ -69,7 +69,7 @@ export default function DynamicGreeting({ defaultTitle, defaultSubtitle, classNa
  *   className="text-center mb-8"
  * />
  * 
- * Configurações no Vercel Edge Config:
+ * Configurações no config local:
  * greeting: "✨ Studio Vitória Freitas"
  * welcome_message: "📸 Transformando momentos em memórias eternas"
  */

@@ -3,7 +3,7 @@ import { useConfigs } from '../components/ConfigProvider';
 import { getConfig } from '../utils/edgeConfig';
 
 /**
- * Exemplo de como usar Edge Config na página Home
+ * Exemplo de como usar config local na página Home
  * Este é um exemplo didático - você pode aplicar os conceitos em qualquer componente
  */
 export default function HomeWithEdgeConfig() {
@@ -64,7 +64,7 @@ export default function HomeWithEdgeConfig() {
           </div>
         )}
 
-        {/* Saudação personalizada do Edge Config */}
+        {/* Saudação personalizada do config local */}
         <p className="text-xl text-gray-600 mb-8">
           {conteudo.saudacao}
         </p>
@@ -121,7 +121,7 @@ export default function HomeWithEdgeConfig() {
       {/* Debug info (apenas em desenvolvimento) */}
       {import.meta.env.DEV && (
         <div className="fixed bottom-20 left-4 bg-black text-white p-4 rounded-lg text-xs max-w-xs">
-          <p className="font-semibold mb-2">🔧 Edge Config Debug:</p>
+          <p className="font-semibold mb-2">🔧 config local Debug:</p>
           <pre className="overflow-auto max-h-40">
             {JSON.stringify({ configs, dynamicContent }, null, 2)}
           </pre>
@@ -134,7 +134,7 @@ export default function HomeWithEdgeConfig() {
 /**
  * Como usar este exemplo:
  * 
- * 1. No Vercel Dashboard, vá em Storage > Edge Config
+ * 1. No painel de configuração, vá em Storage > config local
  * 2. Adicione estas configurações:
  *    - welcome_message: "Capture seus momentos únicos!"
  *    - promotion_banner: "🎉 Desconto de 20% em ensaios de casal!"

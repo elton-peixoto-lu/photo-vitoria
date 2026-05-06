@@ -1,12 +1,12 @@
 # Arquitetura atual
 
-Este documento descreve a arquitetura real do projeto hoje, depois da separação entre produção no GCP e staging na Vercel.
+Este documento descreve a arquitetura real do projeto hoje, com produção e serviços principais no GCP.
 
 ## Resumo executivo
 
 - frontend público: `React + Vite`
 - produção: `Cloud Storage + Cloud CDN + HTTPS Load Balancer`
-- staging: `Vercel`
+- staging: `ambiente opcional fora de produção`
 - portal admin: rota `/admin/galeria`
 - autenticação do portal: `Firebase Auth` com login Google
 - proteção anti-bot: `Cloudflare Turnstile`
@@ -68,7 +68,6 @@ sequenceDiagram
 - código em `src/`
 - build estático via `vite build`
 - deploy de produção para bucket GCS
-- deploy de staging na Vercel
 
 ### Portal admin
 
@@ -130,7 +129,7 @@ Desenho alvo:
 
 - branch: `staging`
 - workflow: `.github/workflows/deploy-frontend-vercel-staging.yml`
-- destino: `Vercel`
+- destino: `ambiente de homologação opcional`
 
 ## Pendências reais
 

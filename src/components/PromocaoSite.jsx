@@ -6,7 +6,7 @@ import { abrirWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 
 /**
  * Banner de promoção específica para visitantes do site
- * Configurável via Edge Config - pode alterar valores sem deploy
+ * Configurável via config local - pode alterar valores sem deploy
  */
 export default function PromocaoSite() {
   const [promocao, setPromocao] = useState(null);
@@ -142,7 +142,7 @@ export default function PromocaoSite() {
 }
 
 /**
- * Configurações sugeridas no Vercel Edge Config:
+ * Configurações sugeridas no config local:
  * 
  * promocao_site_ativa: true
  * promocao_site_desconto: 10

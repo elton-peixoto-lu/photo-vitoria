@@ -19,7 +19,7 @@ npm run sync:images
 ```
 
 **O que acontece:**
-- 📡 Conecta com a API em `https://photo-vitoria.vercel.app/api`
+- 📡 Conecta com a API em `https://www.estudiovitoriafreitas.com.br/api`
 - 📁 Busca imagens das pastas: `casamentos`, `infantil`, `femininos`, `pre-weding`, `noivas`
 - ⬇️ Baixa apenas imagens que ainda não existem localmente
 - 🎨 Converte para AVIF otimizado (qualidade 85%)
@@ -73,7 +73,7 @@ npm run sync:images
 🚀 SINCRONIZAÇÃO DE IMAGENS API → LOCAL
 
 📁 Diretório de destino: /Users/usuario/projeto/public/images/galeria
-🔄 API URL: https://photo-vitoria.vercel.app/api
+🔄 API URL: https://www.estudiovitoriafreitas.com.br/api
 ⚡ Downloads concorrentes: 3
 🎨 Qualidade AVIF: 85
 
@@ -206,7 +206,7 @@ $ npm run sync:images
 🚀 SINCRONIZAÇÃO DE IMAGENS API → LOCAL
 
 📁 Diretório: /projeto/public/images/galeria
-🔄 API URL: https://photo-vitoria.vercel.app/api
+🔄 API URL: https://www.estudiovitoriafreitas.com.br/api
 ⚡ Downloads concorrentes: 3
 🎨 Qualidade AVIF: 85
 📏 Tamanho máximo: 1200x1800

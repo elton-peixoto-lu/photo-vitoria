@@ -1,6 +1,6 @@
 # Photo Vitoria
 
-![Status](https://img.shields.io/badge/status-active-success) ![Production](https://img.shields.io/badge/production-GCP-4285F4) ![Staging](https://img.shields.io/badge/staging-Vercel-black) ![Frontend](https://img.shields.io/badge/frontend-React%2019-61DAFB) ![Build](https://img.shields.io/badge/build-Vite%203-646CFF) ![Auth](https://img.shields.io/badge/auth-Firebase%20Google-FFCA28) ![Backend](https://img.shields.io/badge/backend-Cloud%20Run-34A853) ![Images](https://img.shields.io/badge/images-GitOps%20current-blueviolet)
+![Status](https://img.shields.io/badge/status-active-success) ![Production](https://img.shields.io/badge/production-GCP-4285F4) ![Frontend](https://img.shields.io/badge/frontend-React%2019-61DAFB) ![Build](https://img.shields.io/badge/build-Vite%203-646CFF) ![Auth](https://img.shields.io/badge/auth-Firebase%20Google-FFCA28) ![Backend](https://img.shields.io/badge/backend-Cloud%20Run-34A853) ![Images](https://img.shields.io/badge/images-GitOps%20current-blueviolet)
 
 Frontend institucional e portal administrativo de upload para o acervo da Photo Vitoria.
 
@@ -15,7 +15,7 @@ Este repositório concentra 3 responsabilidades:
 Hoje a operação está organizada assim:
 
 - `master`: produção no GCP
-- `staging`: homologação na Vercel
+- `staging`: homologação opcional fora de produção
 - `admin-api`: backend do portal em `Cloud Run`
 - imagens publicadas: ainda versionadas no Git e servidas pelo frontend estático
 
@@ -32,7 +32,6 @@ Hoje a operação está organizada assim:
 ### Homologação
 
 - branch `staging`
-- deploy na Vercel por workflow dedicado
 
 ### Publicação de imagens
 
@@ -65,7 +64,7 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 - `Cloud CDN` ativo
 - `HTTPS Load Balancer` ativo
 - deploy de `master` para GCS configurado em workflow
-- staging isolado na Vercel
+- staging isolado opcional
 - `admin-api` em `Cloud Run`
 
 ### Pendente
@@ -187,7 +186,6 @@ Origem:
 - branch `staging`
 
 Destino:
-- projeto Vercel de homologação
 
 ### Portal / pipeline de imagens
 

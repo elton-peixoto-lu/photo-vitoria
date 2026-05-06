@@ -76,7 +76,7 @@ A interface web oferece:
 
 ```bash
 # .env
-VITE_API_URL=https://seu-site.vercel.app/api
+VITE_API_URL=https://www.estudiovitoriafreitas.com.br/api
 SYNC_PORT=3002  # Porta da interface web
 ```
 
@@ -86,7 +86,7 @@ Edite `CONFIG` em `scripts/syncImages.mjs`:
 
 ```javascript
 const CONFIG = {
-  API_URL: 'https://photo-vitoria.vercel.app/api',
+  API_URL: 'https://www.estudiovitoriafreitas.com.br/api',
   CONCURRENT_DOWNLOADS: 3,     // Downloads simultâneos
   QUALITY: 85,                 // Qualidade AVIF (0-100)
   MAX_WIDTH: 1200,            // Largura máxima
@@ -132,7 +132,7 @@ public/
 🚀 SINCRONIZAÇÃO DE IMAGENS API → LOCAL
 
 📁 Diretório de destino: /projeto/public/images/galeria
-🔄 API URL: https://photo-vitoria.vercel.app/api
+🔄 API URL: https://www.estudiovitoriafreitas.com.br/api
 ⚡ Downloads concorrentes: 3
 🎨 Qualidade AVIF: 85
 📏 Tamanho máximo: 1200x1800

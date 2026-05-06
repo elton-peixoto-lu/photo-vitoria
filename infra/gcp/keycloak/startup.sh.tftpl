@@ -182,8 +182,8 @@ if ! docker exec photo-vitoria-keycloak-keycloak-1 /opt/keycloak/bin/kcadm.sh ge
     -s standardFlowEnabled=true \
     -s directAccessGrantsEnabled=false \
     -s implicitFlowEnabled=false \
-    -s 'redirectUris=["http://localhost:5173/*","https://photo-vitoria.vercel.app/*","https://estudiovitoriafreitas.com.br/*","https://www.estudiovitoriafreitas.com.br/*"]' \
-    -s 'webOrigins=["http://localhost:5173","https://photo-vitoria.vercel.app","https://estudiovitoriafreitas.com.br","https://www.estudiovitoriafreitas.com.br"]' \
+    -s 'redirectUris=["http://localhost:5173/*","https://estudiovitoriafreitas.com.br/*","https://www.estudiovitoriafreitas.com.br/*"]' \
+    -s 'webOrigins=["http://localhost:5173","https://estudiovitoriafreitas.com.br","https://www.estudiovitoriafreitas.com.br"]' \
     -s 'attributes."pkce.code.challenge.method"=S256' \
     -s 'attributes."post.logout.redirect.uris"=+'
 fi

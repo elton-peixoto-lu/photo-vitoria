@@ -5,7 +5,7 @@ import { PiHeartLight, PiBabyLight, PiCrownLight, PiBuildingsLight, PiCameraLigh
 
 /**
  * Seção de Serviços com transições carregando e bullet points
- * Configurável via Edge Config
+ * Configurável via config local
  */
 export default function ServicosSection() {
   const [servicos, setServicos] = useState([]);
@@ -332,7 +332,7 @@ function ServicoDetalhes({ servico }) {
 }
 
 /**
- * Configurações sugeridas no Vercel Edge Config:
+ * Configurações sugeridas no config local:
  * 
  * servicos_ativos: true
  * servicos_lista: [array de serviços personalizados]

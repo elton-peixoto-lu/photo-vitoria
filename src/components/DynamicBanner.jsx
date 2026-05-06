@@ -3,7 +3,7 @@ import { getConfig } from '../utils/edgeConfig';
 import { FaTimes, FaGift } from 'react-icons/fa';
 
 /**
- * Banner promocional dinâmico usando Edge Config
+ * Banner promocional dinâmico usando config local
  * Pode ser ligado/desligado e o conteúdo alterado sem deploy
  */
 export default function DynamicBanner() {
@@ -80,7 +80,7 @@ export default function DynamicBanner() {
 }
 
 /**
- * Como configurar no Vercel Edge Config:
+ * Como configurar no config local:
  * 
  * promotion_banner_active: true
  * promotion_banner: "🎉 SUPER PROMOÇÃO: 30% OFF em todos os ensaios!"
