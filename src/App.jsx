@@ -107,13 +107,19 @@ function preloadGaleria(pasta) {
   });
 }
 
-function Logo({ collapsed = false }) {
+function Logo({ collapsed = false, mobile = false }) {
+  const logoClassName = collapsed
+    ? 'w-10'
+    : mobile
+      ? 'w-16'
+      : 'w-32';
+
   return (
     <div className="flex flex-col items-center mb-10 mt-6 select-none">
       <img
         src={LOGO_URL}
         alt="Logo Fotos da Vitória"
-        className={`${collapsed ? 'w-10' : 'w-32'} h-auto mb-2 drop-shadow transition-all duration-300`}
+        className={`${logoClassName} h-auto mb-2 drop-shadow transition-all duration-300`}
       />
     </div>
   );
@@ -175,11 +181,11 @@ function Sidebar({ mobile = false, open = false, onClose }) {
               initial={{ x: -260 }}
               animate={{ x: open ? 0 : -260 }}
               transition={{ duration: 0.3, type: 'spring' }}
-              className="fixed left-0 top-0 z-[100] bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 w-20 h-screen flex flex-col px-2 py-4 shadow-2xl border-r border-[#f3e8ff]"
-              style={{ width: 80 }}
+              className="fixed left-0 top-0 z-[100] bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 h-screen flex flex-col px-3 py-4 shadow-2xl border-r border-[#f3e8ff]"
+              style={{ width: 96 }}
             >
               <div className="mt-20" /> {/* Espaço para os botões fixos */}
-              <Logo />
+              <Logo mobile />
               <nav className="flex-1 flex flex-col gap-2 mt-4 items-center">
                 {MENU.filter(item => MOBILE_MENU_PATHS.includes(item.path)).map(item => (
                   <Link

@@ -1,2 +1,2 @@
 // Centralização de assets e constantes globais
-export const LOGO_URL = "/logo.svg";
+export const LOGO_URL = "/logo.png";
