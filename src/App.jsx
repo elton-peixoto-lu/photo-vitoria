@@ -523,24 +523,23 @@ function GlobalTurnstileMonitor() {
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[120]">
-      <div className="pointer-events-auto rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b13f73]">
-          Verificacao Do Site
-        </p>
+    <>
+      <div className="pointer-events-none fixed -left-[10000px] top-0 z-[-1] opacity-0" aria-hidden="true">
         <div ref={containerRef} />
-        {status === 'verifying' && !message && (
-          <p className="mt-2 max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
-            Confirmando a verificacao de seguranca...
-          </p>
-        )}
-        {message && (
-          <p className="mt-2 max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
-            {message}
-          </p>
-        )}
       </div>
-    </div>
+      {message && (
+        <div className="pointer-events-none fixed bottom-4 right-4 z-[120]">
+          <div className="pointer-events-auto rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#b13f73]">
+              Verificacao Do Site
+            </p>
+            <p className="max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
+              {message}
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

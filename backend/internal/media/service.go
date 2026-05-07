@@ -103,7 +103,7 @@ func NewService(ctx context.Context, logger *slog.Logger) (*Service, error) {
 
 	watermarkPath := os.Getenv("WATERMARK_LOGO_PATH")
 	if watermarkPath == "" {
-		watermarkPath = filepath.Join(repoRoot, "assets", "watermark-logo.svg")
+		watermarkPath = filepath.Join(repoRoot, "assets", "watermark-logo.png")
 	}
 
 	loaderSource := filepath.Join(repoRoot, "src", "localAssetsLoader.js")

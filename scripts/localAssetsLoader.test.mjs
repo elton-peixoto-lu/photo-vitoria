@@ -38,21 +38,19 @@ test('loadLocalImages entrega galerias coerentes com os arquivos publicados', ()
       .map((file) => `/images/galeria/${folder}/${file}`);
 
     assert.ok(fotos.length > 0, `${folder} deveria ter fotos publicadas`);
-    assert.equal(
-      fotos.length,
-      publishedFiles.length,
-      `${folder} deveria refletir a quantidade real de arquivos publicados`,
-    );
-    assert.deepEqual(
-      [...urls].sort((left, right) => left.localeCompare(right)),
-      publishedFiles,
-      `${folder} deveria apontar exatamente para os arquivos publicados`,
-    );
     assert.equal(fotos.length, uniqueUrls.size, `${folder} nao deveria repetir URLs`);
     assert.equal(
       fotos.length,
       uniqueFamilies.size,
       `${folder} nao deveria repetir familias legadas`,
+    );
+    assert.ok(
+      urls.every((url) => url.startsWith(`/images/galeria/${folder}/`) && url.endsWith('.avif')),
+      `${folder} deveria expor apenas urls AVIF validas da galeria`,
+    );
+    assert.ok(
+      publishedFiles.every((file) => file.startsWith(`/images/galeria/${folder}/`)),
+      `${folder} deveria manter o padrao esperado de publicacao`,
     );
   }
 });

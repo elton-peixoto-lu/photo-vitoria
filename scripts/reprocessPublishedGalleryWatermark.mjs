@@ -10,8 +10,8 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.join(__dirname, '..');
 const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
 const WATERMARK_LOGO_PATH =
-  process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg');
-const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.1);
+  process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png');
+const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.055);
 
 async function listAvifFiles(dir) {
   const out = [];
@@ -31,57 +31,82 @@ async function listAvifFiles(dir) {
 }
 
 async function loadLogoBuffer() {
-  return fs.readFile(WATERMARK_LOGO_PATH);
+  const rawLogoBuffer = await fs.readFile(WATERMARK_LOGO_PATH);
+  const { data, info } = await sharp(rawLogoBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const output = Buffer.from(data);
+  const background = { r: 246, g: 222, b: 222 };
+
+  for (let index = 0; index < output.length; index += info.channels) {
+    const dr = output[index] - background.r;
+    const dg = output[index + 1] - background.g;
+    const db = output[index + 2] - background.b;
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+    if (distance < 26) {
+      output[index + 3] = 0;
+      continue;
+    }
+
+    if (distance < 40) {
+      output[index + 3] = Math.round(((distance - 26) / 14) * 255);
+    }
+  }
+
+  return sharp(output, { raw: info }).trim().png().toBuffer();
 }
 
 async function createOverlayForImage(width, height, logoBuffer) {
-  const text = 'VITORIA FOTOGRAFIA';
-  const accent = 'vitoria';
-  const diagonalFontSize = Math.max(52, Math.round(width * 0.072));
-  const cornerFontSize = Math.max(18, Math.round(width * 0.02));
-  const centerX = Math.round(width / 2);
-  const centerY = Math.round(height / 2);
+  const horizontalPadding = Math.max(12, Math.round(width * 0.05));
+  const verticalPadding = Math.max(12, Math.round(height * 0.05));
+  const centerMaxWidth = Math.max(1, width - horizontalPadding * 2);
+  const centerMaxHeight = Math.max(1, height - verticalPadding * 2);
+  const accentMaxWidth = Math.max(1, Math.round(width * 0.16));
+  const accentMaxHeight = Math.max(1, Math.round(height * 0.12));
 
-  const svg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <g opacity="${WATERMARK_OPACITY}">
-        <text
-          x="${centerX}"
-          y="${centerY}"
-          text-anchor="middle"
-          fill="#7a264a"
-          font-size="${diagonalFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          font-weight="600"
-          letter-spacing="5"
-          transform="rotate(-22 ${centerX} ${centerY})"
-        >${text}</text>
-      </g>
-      <g opacity="0.09">
-        <text
-          x="${Math.round(width * 0.08)}"
-          y="${Math.round(height * 0.92)}"
-          fill="#7a264a"
-          font-size="${cornerFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          letter-spacing="3"
-        >${accent}</text>
-        <text
-          x="${Math.round(width * 0.72)}"
-          y="${Math.round(height * 0.12)}"
-          fill="#7a264a"
-          font-size="${cornerFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          letter-spacing="3"
-        >${accent}</text>
-      </g>
-    </svg>`,
-  );
+  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.32)));
+  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(56, Math.round(width * 0.1)));
 
-  return [{ input: svg, left: 0, top: 0, blend: 'over' }];
+  const centerLogo = await sharp(logoBuffer, { density: 288 })
+    .resize({
+      width: centerTargetWidth,
+      height: centerMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .ensureAlpha(WATERMARK_OPACITY)
+    .rotate(-18, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize({
+      width: centerMaxWidth,
+      height: centerMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+
+  const accentLogo = await sharp(logoBuffer, { density: 288 })
+    .resize({
+      width: accentTargetWidth,
+      height: accentMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .ensureAlpha(Math.min(WATERMARK_OPACITY * 0.5, 0.022))
+    .png()
+    .toBuffer({ resolveWithObject: true });
+
+  const centerLeft = Math.max(0, Math.round((width - centerLogo.info.width) / 2));
+  const centerTop = Math.max(0, Math.round((height - centerLogo.info.height) / 2));
+  const topRightLeft = Math.max(0, width - accentLogo.info.width - horizontalPadding);
+  const topRightTop = Math.max(0, verticalPadding);
+  const bottomLeftLeft = Math.max(0, horizontalPadding);
+  const bottomLeftTop = Math.max(0, height - accentLogo.info.height - verticalPadding);
+
+  return [
+    { input: centerLogo.data, left: centerLeft, top: centerTop, blend: 'over' },
+    { input: accentLogo.data, left: topRightLeft, top: topRightTop, blend: 'over' },
+    { input: accentLogo.data, left: bottomLeftLeft, top: bottomLeftTop, blend: 'over' },
+  ];
 }
 
 async function main() {

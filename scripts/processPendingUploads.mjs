@@ -24,13 +24,37 @@ export const DEFAULT_CONFIG = {
   watermarkLogoPath:
     process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png'),
   watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.1),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.055),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
 
 const INPUT_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.tiff']);
 const storage = new Storage();
 let cachedWatermarkLogoBuffer = null;
+
+async function buildTransparentWatermarkLogoBuffer(logoBuffer) {
+  const { data, info } = await sharp(logoBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const output = Buffer.from(data);
+  const background = { r: 246, g: 222, b: 222 };
+
+  for (let index = 0; index < output.length; index += info.channels) {
+    const dr = output[index] - background.r;
+    const dg = output[index + 1] - background.g;
+    const db = output[index + 2] - background.b;
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+    if (distance < 26) {
+      output[index + 3] = 0;
+      continue;
+    }
+
+    if (distance < 40) {
+      output[index + 3] = Math.round(((distance - 26) / 14) * 255);
+    }
+  }
+
+  return sharp(output, { raw: info }).trim().png().toBuffer();
+}
 
 async function pathExists(filePath) {
   try {
@@ -191,7 +215,8 @@ async function loadWatermarkLogoBuffer(config) {
 
   if (config.watermarkLogoPath) {
     try {
-      cachedWatermarkLogoBuffer = await fs.readFile(config.watermarkLogoPath);
+      const rawLogoBuffer = await fs.readFile(config.watermarkLogoPath);
+      cachedWatermarkLogoBuffer = await buildTransparentWatermarkLogoBuffer(rawLogoBuffer);
       return cachedWatermarkLogoBuffer;
     } catch (error) {
       console.warn(`Nao foi possivel ler WATERMARK_LOGO_PATH: ${error.message}`);
@@ -205,7 +230,8 @@ async function loadWatermarkLogoBuffer(config) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      cachedWatermarkLogoBuffer = Buffer.from(await response.arrayBuffer());
+      const rawLogoBuffer = Buffer.from(await response.arrayBuffer());
+      cachedWatermarkLogoBuffer = await buildTransparentWatermarkLogoBuffer(rawLogoBuffer);
       return cachedWatermarkLogoBuffer;
     } catch (error) {
       console.warn(`Nao foi possivel baixar a logo da marca d'agua: ${error.message}`);
@@ -229,11 +255,11 @@ async function createWatermarkOverlay(metadata, config) {
   const verticalPadding = Math.max(12, Math.round(height * 0.05));
   const centerMaxWidth = Math.max(1, width - horizontalPadding * 2);
   const centerMaxHeight = Math.max(1, height - verticalPadding * 2);
-  const accentMaxWidth = Math.max(1, Math.round(width * 0.24));
-  const accentMaxHeight = Math.max(1, Math.round(height * 0.18));
+  const accentMaxWidth = Math.max(1, Math.round(width * 0.16));
+  const accentMaxHeight = Math.max(1, Math.round(height * 0.12));
 
-  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.42)));
-  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(64, Math.round(width * 0.16)));
+  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.32)));
+  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(56, Math.round(width * 0.1)));
 
   const centerLogo = await sharp(logoBuffer, { density: 288 })
     .resize({
@@ -243,7 +269,7 @@ async function createWatermarkOverlay(metadata, config) {
       withoutEnlargement: true,
     })
     .ensureAlpha(config.watermarkOpacity)
-    .rotate(-22, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .rotate(-18, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize({
       width: centerMaxWidth,
       height: centerMaxHeight,
@@ -260,7 +286,7 @@ async function createWatermarkOverlay(metadata, config) {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .ensureAlpha(Math.min(config.watermarkOpacity * 0.8, 0.08))
+    .ensureAlpha(Math.min(config.watermarkOpacity * 0.5, 0.022))
     .png()
     .toBuffer({ resolveWithObject: true });
 
