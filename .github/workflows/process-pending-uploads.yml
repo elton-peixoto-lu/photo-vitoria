@@ -57,7 +57,7 @@ jobs:
           while IFS= read -r file; do
             case "$file" in
               uploads/pendentes/*|uploads/manifests/*) ;;
-              scripts/processPendingUploads.mjs|scripts/processPendingUploads.test.mjs)
+              .github/workflows/process-pending-uploads.yml|scripts/processPendingUploads.mjs|scripts/processPendingUploads.test.mjs)
                 case "$head_ref" in
                   gallery-upload/*) ;;
                   *)
