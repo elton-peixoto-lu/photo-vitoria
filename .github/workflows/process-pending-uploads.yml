@@ -46,6 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           pr_number="${{ github.event.pull_request.number }}"
+          head_ref="${{ github.event.pull_request.head.ref }}"
           changed_files=$(gh pr view "$pr_number" --repo "${{ github.repository }}" --json files --jq '.files[].path')
 
           if [ -z "$changed_files" ]; then
@@ -56,6 +57,15 @@ jobs:
           while IFS= read -r file; do
             case "$file" in
               uploads/pendentes/*|uploads/manifests/*) ;;
+              scripts/processPendingUploads.mjs|scripts/processPendingUploads.test.mjs)
+                case "$head_ref" in
+                  gallery-upload/*) ;;
+                  *)
+                    echo "::error::Arquivo fora do escopo permitido: $file"
+                    exit 1
+                    ;;
+                esac
+                ;;
               *)
                 echo "::error::Arquivo fora do escopo permitido: $file"
                 exit 1
