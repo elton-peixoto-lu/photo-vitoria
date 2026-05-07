@@ -8,7 +8,10 @@ const port = process.env.PORT || 8080;
 const bucketName = process.env.GALLERY_BUCKET || 'photo-vitoria-site-prod';
 const bucket = storage.bucket(bucketName);
 
-app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
+const healthHandler = (_req, res) => res.status(200).json({ ok: true, service: 'media-gateway' });
+
+app.get('/healthz', healthHandler);
+app.get('/readyz', healthHandler);
 app.get('/gallery-index.json', async (_req, res) => {
   try {
     const file = bucket.file('gallery-index.json');

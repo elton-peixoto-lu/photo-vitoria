@@ -37,7 +37,7 @@ export default function SystemMonitor({ isVisible = false }) {
       
       {isExpanded && stats && (
         <div className="absolute bottom-12 right-0 bg-gray-900 text-white p-4 rounded-lg shadow-xl min-w-80 text-sm">
-          <h3 className="font-bold mb-3 text-blue-300">Sistema Híbrido Status</h3>
+          <h3 className="font-bold mb-3 text-blue-300">Sistema de Galeria</h3>
           
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -77,8 +77,8 @@ export default function SystemMonitor({ isVisible = false }) {
           </div>
           
           <div className="mt-2 text-xs text-gray-400">
-            <div>🏠 Local: Imagens servidas do /public</div>
-            <div>🌐 API: Fallback para Cloudinary</div>
+            <div>🏠 Local: fallback legado do acervo</div>
+            <div>🌐 Produção: índice remoto + media gateway</div>
           </div>
         </div>
       )}

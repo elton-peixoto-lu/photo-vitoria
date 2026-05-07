@@ -33,11 +33,12 @@ app.use((req, res, next) => {
 });
 
 function health(req, res) {
-  res.json({ ok: true });
+  res.json({ ok: true, service: 'admin-api' });
 }
 
 app.get('/', health);
 app.get('/healthz', health);
+app.get('/readyz', health);
 
 app.post('/api/admin/gallery-pr', galleryPrHandler);
 app.post('/api/admin/turnstile-verify', turnstileVerifyHandler);

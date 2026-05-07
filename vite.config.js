@@ -31,10 +31,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/res\.cloudinary\.com\//,
+            urlPattern: ({ url }) =>
+              url.pathname.startsWith('/images/') ||
+              url.hostname === 'photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'cloudinary-images',
+              cacheName: 'gallery-images',
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 }
             }
           }

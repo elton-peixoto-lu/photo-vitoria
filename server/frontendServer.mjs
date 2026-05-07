@@ -59,9 +59,12 @@ app.post('/api/turnstile/verify', async (req, res) => {
   }
 });
 
-app.get('/healthz', (_req, res) => {
-  res.status(200).json({ ok: true });
-});
+const healthHandler = (_req, res) => {
+  res.status(200).json({ ok: true, service: 'frontend-gateway' });
+};
+
+app.get('/healthz', healthHandler);
+app.get('/readyz', healthHandler);
 
 app.get(/^\/(?!api\/).*/, (_req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));

@@ -37,7 +37,7 @@ export default function Lgpd() {
           <ul className="list-disc ml-6">
             <li><strong>Formulário de contato:</strong> Nome, e-mail, mensagem e consentimento LGPD.</li>
             <li><strong>Cookies:</strong> Dados de navegação para melhorar a experiência do usuário.</li>
-            <li><strong>Ferramentas de terceiros:</strong> Dados enviados via Formspree, imagens hospedadas no Cloudinary.</li>
+            <li><strong>Ferramentas de terceiros:</strong> Dados enviados via Formspree e serviços de infraestrutura em nuvem para entrega segura do site e das imagens.</li>
           </ul>
 
           <h2 className="text-lg font-bold text-pink-400 mt-6">2. Finalidade do uso dos dados</h2>
@@ -54,7 +54,7 @@ export default function Lgpd() {
           <p>Seus dados podem ser compartilhados com serviços de terceiros essenciais ao funcionamento do site, como:</p>
           <ul className="list-disc ml-6">
             <li><strong>Formspree:</strong> Processamento e envio de mensagens do formulário de contato.</li>
-            <li><strong>Cloudinary:</strong> Armazenamento e entrega de imagens.</li>
+            <li><strong>Google Cloud Platform:</strong> Hospedagem da aplicação, armazenamento e entrega das imagens publicadas.</li>
           </ul>
           <p>Não vendemos ou compartilhamos seus dados com terceiros para fins comerciais.</p>
 
@@ -73,7 +73,7 @@ export default function Lgpd() {
           <p>Os dados são mantidos apenas pelo tempo necessário para cumprir as finalidades informadas ou obrigações legais.</p>
 
           <h2 className="text-lg font-bold text-pink-400 mt-6">8. Cookies e tecnologias de terceiros</h2>
-          <p>Utilizamos cookies para melhorar a navegação e ferramentas de terceiros (ex: Formspree, Cloudinary) que podem coletar dados conforme suas próprias políticas.</p>
+          <p>Utilizamos cookies para melhorar a navegação e ferramentas de terceiros, como Formspree e infraestrutura em nuvem, que podem coletar dados conforme suas próprias políticas.</p>
 
           <h2 className="text-lg font-bold text-pink-400 mt-6">9. Alterações nesta política</h2>
           <p>Esta política pode ser atualizada a qualquer momento. Recomendamos revisá-la periodicamente.</p>
