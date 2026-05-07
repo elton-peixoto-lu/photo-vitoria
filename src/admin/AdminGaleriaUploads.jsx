@@ -210,6 +210,7 @@ export default function AdminGaleriaUploads() {
           objectPath: signedData.objectPath,
           originalName: file.name,
           contentType: file.type,
+          size: file.size,
         });
       }
 

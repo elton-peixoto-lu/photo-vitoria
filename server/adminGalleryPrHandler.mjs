@@ -80,6 +80,8 @@ const ALLOWED_MIME_TYPES = new Set([
 const MAX_FILES = 50;
 const MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 const SIGNED_UPLOAD_URL_EXPIRATION_SECONDS = Number(process.env.SIGNED_UPLOAD_URL_EXPIRATION_SECONDS || 15 * 60);
+const OBJECT_VALIDATION_RETRIES = Number(process.env.OBJECT_VALIDATION_RETRIES || 5);
+const OBJECT_VALIDATION_DELAY_MS = Number(process.env.OBJECT_VALIDATION_DELAY_MS || 800);
 
 function json(res, statusCode, body) {
   res.statusCode = statusCode;
@@ -134,6 +136,49 @@ function buildTempObjectPath(folder, originalFileName) {
 
   const safeName = sanitizeFileName(originalFileName);
   return `incoming/${folder}/${safeName}`;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ensureUploadedObjectExists(bucketName, objectPath, expectedSize) {
+  const bucket = storage.bucket(bucketName);
+  const file = bucket.file(objectPath);
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= OBJECT_VALIDATION_RETRIES; attempt += 1) {
+    try {
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new Error('Objeto ainda nao encontrado no bucket temporario');
+      }
+
+      const [metadata] = await file.getMetadata();
+      const size = Number(metadata?.size || 0);
+
+      if (!Number.isFinite(size) || size <= 0) {
+        throw new Error('Objeto temporario vazio ou invalido');
+      }
+
+      if (Number.isFinite(expectedSize) && expectedSize > 0 && size !== expectedSize) {
+        throw new Error(`Tamanho inesperado no bucket temporario (${size} != ${expectedSize})`);
+      }
+
+      return {
+        size,
+        contentType: metadata?.contentType || '',
+        generation: metadata?.generation || '',
+      };
+    } catch (error) {
+      lastError = error;
+      if (attempt < OBJECT_VALIDATION_RETRIES) {
+        await sleep(OBJECT_VALIDATION_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError || new Error('Falha ao validar upload no bucket temporario');
 }
 
 async function github(method, path, body) {
@@ -409,6 +454,7 @@ export async function createManifestPullRequestHandler(req, res) {
       const objectPath = String(item?.objectPath || '').trim();
       const originalName = String(item?.originalName || '').trim();
       const contentType = String(item?.contentType || '').toLowerCase().trim();
+      const size = Number(item?.size || 0);
 
       if (!objectPath.startsWith(`incoming/${folder}/`)) {
         throw new Error('Objeto fora do escopo permitido');
@@ -418,14 +464,22 @@ export async function createManifestPullRequestHandler(req, res) {
       if (!ALLOWED_MIME_TYPES.has(contentType)) {
         throw new Error(`Mime type nao permitido: ${originalName}`);
       }
+      if (!Number.isFinite(size) || size <= 0) {
+        throw new Error(`Tamanho invalido: ${originalName}`);
+      }
 
       return {
         bucket: bucketName,
         objectPath,
         originalName,
         contentType,
+        size,
       };
     });
+
+    for (const upload of normalizedUploads) {
+      await ensureUploadedObjectExists(upload.bucket, upload.objectPath, upload.size);
+    }
 
     const pr = await createGalleryManifestPullRequest({
       folder,
