@@ -63,8 +63,13 @@ jobs:
           gcloud storage rsync -r public/images/galeria gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria
 
       - name: Invalidate image cache
-        if: ${{ secrets.GCP_CDN_URL_MAP != '' }}
+        env:
+          GCP_CDN_URL_MAP: ${{ secrets.GCP_CDN_URL_MAP }}
         run: |
-          gcloud compute url-maps invalidate-cdn-cache "${{ secrets.GCP_CDN_URL_MAP }}" \
-            --path "/images/*" \
-            --async
+          if [ -n "$GCP_CDN_URL_MAP" ]; then
+            gcloud compute url-maps invalidate-cdn-cache "$GCP_CDN_URL_MAP" \
+              --path "/images/*" \
+              --async
+          else
+            echo "GCP_CDN_URL_MAP nao configurado; invalidacao ignorada."
+          fi
