@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "createdAt": "2026-05-07T13:49:21.779Z",
+  "folder": "infantil",
+  "uploadedBy": "Elton Pluiz",
+  "source": "admin-portal",
+  "files": [
+    {
+      "bucket": "photo-vitoria-upload-temp",
+      "objectPath": "incoming/infantil/1778161757927-infantis-vlf-0965-88972a72.jpg",
+      "originalName": "Infantis VLF 0965.jpg",
+      "contentType": "image/jpeg"
+    }
+  ]
+}
