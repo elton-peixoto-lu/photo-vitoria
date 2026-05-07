@@ -47,7 +47,7 @@ jobs:
       - name: Download published gallery from bucket
         run: |
           mkdir -p public/images/galeria
-          gcloud storage rsync -r gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria public/images/galeria
+          gcloud storage rsync gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria public/images/galeria --recursive
 
       - name: Reprocess watermark on published gallery
         run: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload refreshed gallery back to bucket
         run: |
-          gcloud storage rsync -r public/images/galeria gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria
+          gcloud storage rsync public/images/galeria gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria --recursive
 
       - name: Invalidate image cache
         env:
