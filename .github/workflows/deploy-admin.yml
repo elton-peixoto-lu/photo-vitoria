@@ -50,6 +50,7 @@ jobs:
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
@@ -83,11 +84,21 @@ jobs:
 
       - name: Deploy API to Cloud Run
         run: |
+          cat > /tmp/admin-api-env.yaml <<EOF
+          GITHUB_REPO: elton-peixoto-lu/photo-vitoria
+          GITHUB_BASE_BRANCH: master
+          ADMIN_ALLOWED_ORIGINS: "https://estudiovitoriafreitas.com.br,https://www.estudiovitoriafreitas.com.br"
+          ADMIN_ALLOWED_EMAILS: "pluizelton@gmail.com,estudiovitoriafreitas@gmail.com"
+          UPLOAD_TEMP_BUCKET: ${{ env.UPLOAD_TEMP_BUCKET }}
+          FIREBASE_AUTH_PROJECT_ID: photo-vitoria
+          SIGNED_UPLOAD_URL_EXPIRATION_SECONDS: "900"
+          EOF
           gcloud run deploy ${{ env.API_SERVICE_NAME }} \
             --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.API_SERVICE_NAME }}:${{ github.sha }} \
+            --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --service-account ${{ env.ADMIN_API_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
             --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest" \
-            --set-env-vars="GITHUB_REPO=elton-peixoto-lu/photo-vitoria,GITHUB_BASE_BRANCH=master,ADMIN_ALLOWED_ORIGINS=https://estudiovitoriafreitas.com.br\,https://www.estudiovitoriafreitas.com.br,ADMIN_ALLOWED_EMAILS=pluizelton@gmail.com\,estudiovitoriafreitas@gmail.com,UPLOAD_TEMP_BUCKET=${{ env.UPLOAD_TEMP_BUCKET }},FIREBASE_AUTH_PROJECT_ID=photo-vitoria,SIGNED_UPLOAD_URL_EXPIRATION_SECONDS=900"
+            --env-vars-file=/tmp/admin-api-env.yaml
