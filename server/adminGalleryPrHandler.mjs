@@ -483,7 +483,8 @@ export async function createManifestPullRequestHandler(req, res) {
       const objectPath = String(item?.objectPath || '').trim();
       const originalName = String(item?.originalName || '').trim();
       const contentType = String(item?.contentType || '').toLowerCase().trim();
-      const size = Number(item?.size || 0);
+      const parsedSize = Number(item?.size);
+      const size = Number.isFinite(parsedSize) && parsedSize > 0 ? parsedSize : null;
 
       if (!objectPath.startsWith(`incoming/${folder}/`)) {
         throw new Error('Objeto fora do escopo permitido');
@@ -492,9 +493,6 @@ export async function createManifestPullRequestHandler(req, res) {
       sanitizeFileName(originalName);
       if (!ALLOWED_MIME_TYPES.has(contentType)) {
         throw new Error(`Mime type nao permitido: ${originalName}`);
-      }
-      if (!Number.isFinite(size) || size <= 0) {
-        throw new Error(`Tamanho invalido: ${originalName}`);
       }
 
       return {
