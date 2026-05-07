@@ -24,7 +24,7 @@ function getMediaBaseUrl() {
     currentHostname === 'estudiovitoriafreitas.com.br' ||
     currentHostname === 'www.estudiovitoriafreitas.com.br'
   ) {
-    return PROD_MEDIA_GATEWAY_ORIGIN;
+    return '';
   }
 
   return '';

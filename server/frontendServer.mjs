@@ -8,6 +8,9 @@ const app = express();
 const port = process.env.PORT || 8080;
 const distDir = path.join(__dirname, '..', 'dist');
 const turnstileSecretKey = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+const mediaGatewayOrigin = String(
+  process.env.MEDIA_GATEWAY_ORIGIN || 'https://photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app',
+).trim().replace(/\/$/, '');
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -65,6 +68,25 @@ const healthHandler = (_req, res) => {
 
 app.get('/healthz', healthHandler);
 app.get('/readyz', healthHandler);
+
+app.get('/gallery-index.json', async (_req, res) => {
+  try {
+    const response = await fetch(`${mediaGatewayOrigin}/gallery-index.json`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'gallery index unavailable' });
+    }
+
+    const body = await response.text();
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.status(200).send(body);
+  } catch {
+    return res.status(502).json({ error: 'gallery index unavailable' });
+  }
+});
 
 app.get(/^\/(?!api\/).*/, (_req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));
