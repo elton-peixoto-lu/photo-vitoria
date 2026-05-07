@@ -108,19 +108,29 @@ function preloadGaleria(pasta) {
 }
 
 function Logo({ collapsed = false, mobile = false }) {
-  const logoClassName = collapsed
-    ? 'w-10'
+  const wrapperClassName = collapsed
+    ? 'w-10 h-10'
     : mobile
-      ? 'w-20'
-      : 'w-32';
+      ? 'w-[96px] h-[40px]'
+      : 'w-[138px] h-[44px]';
+
+  const shellClassName = collapsed
+    ? ''
+    : mobile
+      ? ''
+      : 'rounded-[24px] border border-white/60 bg-white/36 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_18px_40px_-24px_rgba(157,23,77,0.45)] backdrop-blur-xl';
 
   return (
     <div className={`flex flex-col items-center select-none ${mobile ? 'mb-8 mt-4' : 'mb-10 mt-6'}`}>
-      <img
-        src={LOGO_URL}
-        alt="Logo Fotos da Vitória"
-        className={`${logoClassName} h-auto mb-2 drop-shadow transition-all duration-300`}
-      />
+      <div className={shellClassName}>
+        <div className={`${wrapperClassName} flex items-center justify-center overflow-visible`}>
+        <img
+          src={LOGO_URL}
+          alt="Logo Fotos da Vitória"
+          className="max-h-full w-full object-contain drop-shadow transition-all duration-300"
+        />
+        </div>
+      </div>
     </div>
   );
 }
@@ -182,10 +192,10 @@ function Sidebar({ mobile = false, open = false, onClose }) {
               animate={{ x: open ? 0 : -260 }}
               transition={{ duration: 0.3, type: 'spring' }}
               className="fixed left-0 top-0 z-[100] h-screen flex flex-col border-r border-white/40 bg-[linear-gradient(180deg,rgba(255,250,252,0.78)_0%,rgba(253,239,245,0.68)_48%,rgba(255,245,232,0.62)_100%)] px-3 py-4 text-gray-700 shadow-[0_30px_80px_-32px_rgba(88,28,60,0.95)] backdrop-blur-2xl"
-              style={{ width: 112 }}
+              style={{ width: 120 }}
             >
               <div className="mt-20" /> {/* Espaço para os botões fixos */}
-              <div className="mx-auto mb-3 rounded-[28px] border border-white/65 bg-white/38 px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_12px_30px_-18px_rgba(157,23,77,0.5)]">
+              <div className="mx-auto mb-3 rounded-[28px] border border-white/65 bg-white/38 px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_12px_30px_-18px_rgba(157,23,77,0.5)]">
                 <Logo mobile />
               </div>
               <nav className="mt-2 flex flex-1 flex-col items-center gap-2">
@@ -225,7 +235,7 @@ function Sidebar({ mobile = false, open = false, onClose }) {
         width: sidebarWidth 
       }}
       transition={{ duration: 0.3, type: 'spring', stiffness: 100 }}
-      className="bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 h-screen fixed left-0 top-0 flex flex-col py-4 shadow-2xl border-r border-[#f3e8ff] z-40 hidden md:flex overflow-hidden"
+      className="bg-[linear-gradient(180deg,rgba(255,251,253,0.94)_0%,rgba(253,239,245,0.88)_48%,rgba(255,247,237,0.84)_100%)] text-gray-700 h-screen fixed left-0 top-0 flex flex-col py-4 shadow-[0_30px_80px_-32px_rgba(88,28,60,0.95)] border-r border-white/55 z-40 hidden md:flex overflow-hidden backdrop-blur-xl"
       style={{ width: `${sidebarWidth}px` }}
     >
       <div className={`px-2 ${!isOpen ? 'flex justify-center' : ''}`}>
