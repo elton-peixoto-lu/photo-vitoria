@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"photo-vitoria-backend/internal/media"
+
+	"google.golang.org/api/idtoken"
 )
 
 func main() {
@@ -36,7 +38,7 @@ func main() {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 			return
 		}
-		if err := authorizeRequest(r); err != nil {
+		if err := authorizeRequest(r.Context(), r); err != nil {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 			return
 		}
@@ -54,6 +56,30 @@ func main() {
 				status = http.StatusGatewayTimeout
 			}
 			logger.Error("falha ao processar manifesto", "error", err)
+			writeJSON(w, status, map[string]string{"error": err.Error()})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, result)
+	})
+	mux.HandleFunc("/reprocess-published-media", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.Header().Set("Allow", "POST")
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+			return
+		}
+		if err := authorizeRequest(r.Context(), r); err != nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+			return
+		}
+
+		result, err := service.ReprocessPublishedMedia(r.Context())
+		if err != nil {
+			status := http.StatusBadRequest
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				status = http.StatusGatewayTimeout
+			}
+			logger.Error("falha ao reprocessar galeria publicada", "error", err)
 			writeJSON(w, status, map[string]string{"error": err.Error()})
 			return
 		}
@@ -79,20 +105,32 @@ func main() {
 	}
 }
 
-func authorizeRequest(r *http.Request) error {
-	expected := strings.TrimSpace(os.Getenv("IMAGE_WORKER_BEARER_TOKEN"))
-	if expected == "" {
-		return nil
-	}
-
+func authorizeRequest(ctx context.Context, r *http.Request) error {
 	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
 	if !strings.HasPrefix(authHeader, "Bearer ") {
 		return errors.New("missing bearer token")
 	}
-	if strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer ")) != expected {
-		return errors.New("invalid bearer token")
+	token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+
+	expected := strings.TrimSpace(os.Getenv("IMAGE_WORKER_BEARER_TOKEN"))
+	if expected != "" && token == expected {
+		return nil
 	}
-	return nil
+
+	audience := strings.TrimSpace(os.Getenv("IMAGE_WORKER_AUDIENCE"))
+	allowedCaller := strings.TrimSpace(os.Getenv("IMAGE_WORKER_ALLOWED_CALLER"))
+	if audience != "" && allowedCaller != "" {
+		payload, err := idtoken.Validate(ctx, token, audience)
+		if err == nil {
+			email, _ := payload.Claims["email"].(string)
+			emailVerified, _ := payload.Claims["email_verified"].(bool)
+			if email == allowedCaller && emailVerified {
+				return nil
+			}
+		}
+	}
+
+	return errors.New("invalid bearer token")
 }
 
 func withCORS(next http.Handler) http.Handler {

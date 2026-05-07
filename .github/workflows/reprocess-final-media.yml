@@ -5,7 +5,9 @@ on:
     branches: [master]
     paths:
       - 'assets/watermark-logo.png'
+      - 'backend/**'
       - 'scripts/reprocessPublishedGalleryWatermark.mjs'
+      - '.github/workflows/deploy-image-worker.yml'
       - '.github/workflows/reprocess-final-media.yml'
   workflow_dispatch:
 
@@ -14,61 +16,45 @@ permissions:
   id-token: write
 
 env:
-  PROJECT_ID: fotovitoria
-  FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
-  WORKER_RUNTIME_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
+  IMAGE_WORKER_URL: https://photo-vitoria-image-worker-rxpgnk6khq-uc.a.run.app
 
 jobs:
   reprocess-media:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ${{ env.WORKER_RUNTIME_SERVICE_ACCOUNT }}
+          service_account: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download published gallery from bucket
+      - name: Wait for worker deployment to be ready
         run: |
-          mkdir -p public/images/galeria
-          gcloud storage rsync gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria public/images/galeria --recursive
+          for attempt in $(seq 1 40); do
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.IMAGE_WORKER_URL }}/healthz")
+            if [ "$status_code" = "200" ]; then
+              echo "Worker respondeu healthz."
+              exit 0
+            fi
+            echo "Aguardando worker ficar pronto (tentativa $attempt)..."
+            sleep 15
+          done
+          echo "Worker nao ficou pronto a tempo."
+          exit 1
 
-      - name: Reprocess watermark on published gallery
+      - name: Trigger final media reprocess
         run: |
-          WATERMARK_LOGO_PATH=assets/watermark-logo.png \
-          WATERMARK_OPACITY=0.055 \
-          GALLERY_DIR=public/images/galeria \
-          node scripts/reprocessPublishedGalleryWatermark.mjs
-
-      - name: Upload refreshed gallery back to bucket
-        run: |
-          gcloud storage rsync public/images/galeria gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria --recursive
-
-      - name: Invalidate image cache
-        env:
-          GCP_CDN_URL_MAP: ${{ secrets.GCP_CDN_URL_MAP }}
-        run: |
-          if [ -n "$GCP_CDN_URL_MAP" ]; then
-            gcloud compute url-maps invalidate-cdn-cache "$GCP_CDN_URL_MAP" \
-              --project "${{ env.PROJECT_ID }}" \
-              --path "/images/*" \
-              --async
-          else
-            echo "GCP_CDN_URL_MAP nao configurado; invalidacao ignorada."
-          fi
+          IDENTITY_TOKEN="$(gcloud auth print-identity-token --audiences=${{ env.IMAGE_WORKER_URL }})"
+          response="$(curl -sS -w '\n%{http_code}' \
+            -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
+            -H "Authorization: Bearer ${IDENTITY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{}')"
+          body="$(printf '%s' "$response" | sed '$d')"
+          status_code="$(printf '%s' "$response" | tail -n1)"
+          printf '%s\n' "$body"
+          test "$status_code" = "200"

@@ -21,6 +21,7 @@ env:
   PROJECT_ID: fotovitoria
   REGION: us-central1
   SERVICE_NAME: photo-vitoria-image-worker
+  SERVICE_URL: https://photo-vitoria-image-worker-rxpgnk6khq-uc.a.run.app
   IMAGE_NAME: us-central1-docker.pkg.dev/fotovitoria/photo-vitoria/photo-vitoria-image-worker
   RUNTIME_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
   FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
@@ -61,5 +62,5 @@ jobs:
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --service-account ${{ env.RUNTIME_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
-            --set-env-vars="IMAGE_WORKER_REPO_ROOT=/workspace,IMAGE_WORKER_NODE_BIN=node,IMAGE_WORKER_PROCESS_SCRIPT=/workspace/scripts/processManifestWorker.mjs,WATERMARK_LOGO_PATH=/workspace/assets/watermark-logo.png,FINAL_MEDIA_BUCKET=${{ env.FINAL_MEDIA_BUCKET }},GALLERY_INDEX_OBJECT=gallery-index.json" \
+            --set-env-vars="IMAGE_WORKER_REPO_ROOT=/workspace,IMAGE_WORKER_NODE_BIN=node,IMAGE_WORKER_PROCESS_SCRIPT=/workspace/scripts/processManifestWorker.mjs,WATERMARK_LOGO_PATH=/workspace/assets/watermark-logo.png,FINAL_MEDIA_BUCKET=${{ env.FINAL_MEDIA_BUCKET }},GALLERY_INDEX_OBJECT=gallery-index.json,IMAGE_WORKER_AUDIENCE=${{ env.SERVICE_URL }},IMAGE_WORKER_ALLOWED_CALLER=${{ env.RUNTIME_SERVICE_ACCOUNT }}" \
             --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,IMAGE_WORKER_BEARER_TOKEN=photo-vitoria-image-worker-token:latest"

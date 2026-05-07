@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 type Manifest struct {
@@ -238,6 +239,55 @@ func (s *Service) ProcessManifest(ctx context.Context, req ProcessRequest) (*Pro
 	return resp, nil
 }
 
+func (s *Service) ReprocessPublishedMedia(ctx context.Context) (*ProcessResponse, error) {
+	workspace, err := os.MkdirTemp("", "photo-vitoria-reprocess-")
+	if err != nil {
+		return nil, fmt.Errorf("create workspace: %w", err)
+	}
+	defer os.RemoveAll(workspace)
+
+	publicDir := filepath.Join(workspace, "public", "images", "galeria")
+	if err := os.MkdirAll(publicDir, 0o755); err != nil {
+		return nil, fmt.Errorf("mkdir public dir: %w", err)
+	}
+
+	fileCount, err := s.downloadPublishedGallery(ctx, publicDir)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.CommandContext(ctx, s.nodeBin, filepath.Join(s.repoRoot, "scripts", "reprocessPublishedGalleryWatermark.mjs"))
+	cmd.Dir = s.repoRoot
+	cmd.Env = append(os.Environ(),
+		"GALLERY_DIR="+publicDir,
+		"WATERMARK_LOGO_PATH="+s.watermarkPath,
+		"WATERMARK_OPACITY=0.055",
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("reprocess failed: %w\n%s", err, string(out))
+	}
+
+	if err := s.uploadPublishedGallery(ctx, publicDir); err != nil {
+		return nil, err
+	}
+
+	index, err := s.buildGalleryIndex(publicDir)
+	if err != nil {
+		return nil, err
+	}
+	if err := uploadJSONToBucket(ctx, s.storageClient.Bucket(s.finalBucketName), s.indexObjectPath, index); err != nil {
+		return nil, err
+	}
+
+	return &ProcessResponse{
+		Folder:         "all",
+		Processed:      fileCount,
+		PublishedFiles: []string{"gallery-index.json"},
+	}, nil
+}
+
 type processorSummary struct {
 	Processed             int `json:"processed"`
 	Skipped               int `json:"skipped"`
@@ -312,6 +362,73 @@ func (s *Service) downloadManifestFile(ctx context.Context, pendingDir, folder s
 		return fmt.Errorf("tamanho inesperado para %s (%d != %d)", item.ObjectPath, written, item.Size)
 	}
 	return nil
+}
+
+func (s *Service) downloadPublishedGallery(ctx context.Context, publicDir string) (int, error) {
+	bucket := s.storageClient.Bucket(s.finalBucketName)
+	iter := bucket.Objects(ctx, &storage.Query{Prefix: "images/galeria/"})
+	count := 0
+
+	for {
+		attrs, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return 0, fmt.Errorf("list published gallery: %w", err)
+		}
+		if attrs.Name == "" || strings.HasSuffix(attrs.Name, "/") {
+			continue
+		}
+
+		relPath := strings.TrimPrefix(attrs.Name, "images/galeria/")
+		dest := filepath.Join(publicDir, filepath.FromSlash(relPath))
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			return 0, err
+		}
+
+		reader, err := bucket.Object(attrs.Name).NewReader(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("open published object %s: %w", attrs.Name, err)
+		}
+
+		file, err := os.Create(dest)
+		if err != nil {
+			reader.Close()
+			return 0, err
+		}
+
+		if _, err := io.Copy(file, reader); err != nil {
+			file.Close()
+			reader.Close()
+			return 0, fmt.Errorf("download published object %s: %w", attrs.Name, err)
+		}
+		file.Close()
+		reader.Close()
+		count++
+	}
+
+	return count, nil
+}
+
+func (s *Service) uploadPublishedGallery(ctx context.Context, publicDir string) error {
+	finalBucket := s.storageClient.Bucket(s.finalBucketName)
+	return filepath.WalkDir(publicDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(publicDir, p)
+		if err != nil {
+			return err
+		}
+
+		objectPath := filepath.ToSlash(filepath.Join("images/galeria", relPath))
+		return uploadFileToBucket(ctx, finalBucket, objectPath, p)
+	})
 }
 
 type fileState struct {
