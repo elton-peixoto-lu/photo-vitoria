@@ -16,6 +16,7 @@ permissions:
 env:
   PROJECT_ID: fotovitoria
   FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
+  WORKER_RUNTIME_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
 
 jobs:
   reprocess-media:
@@ -29,7 +30,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+          service_account: ${{ env.WORKER_RUNTIME_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
