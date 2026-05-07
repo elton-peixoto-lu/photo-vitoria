@@ -25,7 +25,7 @@ import {
 } from 'react-icons/fa';
 import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight, PiCalendarLight } from 'react-icons/pi';
 import { CONTATO } from './components/ContatoInfo';
-import { LOGO_URL } from './constants';
+import { BRAND_ICON_URL, LOGO_URL } from './constants';
 import CookieBanner from './components/CookieBanner';
 import SystemMonitor from './components/SystemMonitor';
 import { loadGalleryImages } from './localAssetsLoader';
@@ -108,16 +108,19 @@ function preloadGaleria(pasta) {
 }
 
 function Logo({ collapsed = false, mobile = false }) {
+  const useIconMark = collapsed || mobile;
+  const imageSrc = useIconMark ? BRAND_ICON_URL : LOGO_URL;
+  const imageAlt = useIconMark ? 'Monograma Fotos da Vitória' : 'Logo Fotos da Vitória';
   const wrapperClassName = collapsed
     ? 'w-10 h-10'
     : mobile
-      ? 'w-[96px] h-[40px]'
+      ? 'w-[56px] h-[56px]'
       : 'w-[138px] h-[44px]';
 
   const shellClassName = collapsed
-    ? ''
+    ? 'rounded-2xl border border-white/55 bg-white/24 p-2 shadow-[0_12px_28px_-18px_rgba(157,23,77,0.55)] backdrop-blur-xl'
     : mobile
-      ? ''
+      ? 'rounded-[22px] border border-white/60 bg-white/30 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_14px_32px_-20px_rgba(157,23,77,0.55)] backdrop-blur-xl'
       : 'rounded-[24px] border border-white/60 bg-white/36 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_18px_40px_-24px_rgba(157,23,77,0.45)] backdrop-blur-xl';
 
   return (
@@ -125,8 +128,8 @@ function Logo({ collapsed = false, mobile = false }) {
       <div className={shellClassName}>
         <div className={`${wrapperClassName} flex items-center justify-center overflow-visible`}>
         <img
-          src={LOGO_URL}
-          alt="Logo Fotos da Vitória"
+          src={imageSrc}
+          alt={imageAlt}
           className="max-h-full w-full object-contain drop-shadow transition-all duration-300"
         />
         </div>
