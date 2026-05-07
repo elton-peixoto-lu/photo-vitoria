@@ -13,6 +13,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 
 export const DEFAULT_CONFIG = {
   pendingDir: path.join(ROOT_DIR, 'uploads', 'pendentes'),
+  manifestsDir: path.join(ROOT_DIR, 'uploads', 'manifests'),
   publicDir: path.join(ROOT_DIR, 'public', 'images', 'galeria'),
   loaderFile: path.join(ROOT_DIR, 'src', 'localAssetsLoader.js'),
   maxWidth: 1200,
@@ -99,7 +100,7 @@ async function listImageFiles(folderPath) {
 }
 
 async function listManifestFiles(config) {
-  const manifestsDir = path.join(ROOT_DIR, 'uploads', 'manifests');
+  const manifestsDir = config.manifestsDir || path.join(ROOT_DIR, 'uploads', 'manifests');
   if (!(await pathExists(manifestsDir))) return [];
   const files = [];
   async function walk(currentPath) {

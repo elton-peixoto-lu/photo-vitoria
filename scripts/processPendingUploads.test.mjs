@@ -39,6 +39,7 @@ async function createImage(filePath, color) {
 test('processa nova foto e remove duplicadas por conteudo do mapa final', async (t) => {
   const rootDir = await createFixtureRoot();
   const pendingDir = path.join(rootDir, 'uploads', 'pendentes');
+  const manifestsDir = path.join(rootDir, 'uploads', 'manifests');
   const publicDir = path.join(rootDir, 'public', 'images', 'galeria');
   const loaderFile = path.join(rootDir, 'src', 'localAssetsLoader.js');
 
@@ -54,6 +55,7 @@ test('processa nova foto e remove duplicadas por conteudo do mapa final', async 
 
   const summary = await runProcessPendingUploads({
     pendingDir,
+    manifestsDir,
     publicDir,
     loaderFile,
     maxWidth: 1200,
@@ -89,6 +91,7 @@ test('processa nova foto e remove duplicadas por conteudo do mapa final', async 
 test('remove duplicadas legadas por familia e mantem a variante com sufixo', async (t) => {
   const rootDir = await createFixtureRoot();
   const pendingDir = path.join(rootDir, 'uploads', 'pendentes');
+  const manifestsDir = path.join(rootDir, 'uploads', 'manifests');
   const publicDir = path.join(rootDir, 'public', 'images', 'galeria');
   const loaderFile = path.join(rootDir, 'src', 'localAssetsLoader.js');
 
@@ -103,6 +106,7 @@ test('remove duplicadas legadas por familia e mantem a variante com sufixo', asy
 
   const summary = await runProcessPendingUploads({
     pendingDir,
+    manifestsDir,
     publicDir,
     loaderFile,
     maxWidth: 1200,
