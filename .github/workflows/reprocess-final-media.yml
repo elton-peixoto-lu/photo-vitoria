@@ -35,9 +35,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Select target project
-        run: gcloud config set project ${{ env.PROJECT_ID }}
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -69,6 +66,7 @@ jobs:
         run: |
           if [ -n "$GCP_CDN_URL_MAP" ]; then
             gcloud compute url-maps invalidate-cdn-cache "$GCP_CDN_URL_MAP" \
+              --project "${{ env.PROJECT_ID }}" \
               --path "/images/*" \
               --async
           else
