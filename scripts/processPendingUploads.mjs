@@ -22,7 +22,7 @@ export const DEFAULT_CONFIG = {
   folders: ['casamentos', 'infantil', 'femininos', 'pre-weding', 'noivas'],
   watermarkEnabled: true,
   watermarkLogoPath:
-    process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.svg'),
+    process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png'),
   watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
   watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.1),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
@@ -184,14 +184,6 @@ async function createOutputName(inputPath) {
   };
 }
 
-function escapeXml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 async function loadWatermarkLogoBuffer(config) {
   if (cachedWatermarkLogoBuffer) {
     return cachedWatermarkLogoBuffer;
@@ -233,61 +225,34 @@ async function createWatermarkOverlay(metadata, config) {
     );
   }
 
-  const text = escapeXml('VITORIA FOTOGRAFIA');
-  const accent = escapeXml('vitoria');
-  const diagonalFontSize = Math.max(52, Math.round(width * 0.072));
-  const cornerFontSize = Math.max(18, Math.round(width * 0.02));
-  const centerX = Math.round(width / 2);
-  const centerY = Math.round(height / 2);
+  const centerTargetWidth = Math.max(240, Math.round(width * 0.42));
+  const accentTargetWidth = Math.max(110, Math.round(width * 0.16));
 
-  const svg = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <g opacity="${config.watermarkOpacity}">
-        <text
-          x="${centerX}"
-          y="${centerY}"
-          text-anchor="middle"
-          fill="#7a264a"
-          font-size="${diagonalFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          font-weight="600"
-          letter-spacing="5"
-          transform="rotate(-22 ${centerX} ${centerY})"
-        >${text}</text>
-      </g>
-      <g opacity="0.09">
-        <text
-          x="${Math.round(width * 0.08)}"
-          y="${Math.round(height * 0.92)}"
-          fill="#7a264a"
-          font-size="${cornerFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          letter-spacing="3"
-        >${accent}</text>
-        <text
-          x="${Math.round(width * 0.72)}"
-          y="${Math.round(height * 0.12)}"
-          fill="#7a264a"
-          font-size="${cornerFontSize}"
-          font-family="Georgia, 'Times New Roman', serif"
-          font-style="italic"
-          letter-spacing="3"
-        >${accent}</text>
-      </g>
-    </svg>`,
-  );
-
-  const rasterizedOverlay = await sharp(svg, { density: 144 })
-    .resize(width, height, {
-      fit: 'fill',
-      withoutEnlargement: false,
-    })
+  const centerLogo = await sharp(logoBuffer, { density: 288 })
+    .resize({ width: centerTargetWidth, withoutEnlargement: true })
+    .ensureAlpha(config.watermarkOpacity)
+    .rotate(-22, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
-    .toBuffer();
+    .toBuffer({ resolveWithObject: true });
 
-  return [{ input: rasterizedOverlay, left: 0, top: 0 }];
+  const accentLogo = await sharp(logoBuffer, { density: 288 })
+    .resize({ width: accentTargetWidth, withoutEnlargement: true })
+    .ensureAlpha(Math.min(config.watermarkOpacity * 0.8, 0.08))
+    .png()
+    .toBuffer({ resolveWithObject: true });
+
+  const centerLeft = Math.max(0, Math.round((width - centerLogo.info.width) / 2));
+  const centerTop = Math.max(0, Math.round((height - centerLogo.info.height) / 2));
+  const topRightLeft = Math.max(0, width - accentLogo.info.width - Math.round(width * 0.05));
+  const topRightTop = Math.max(0, Math.round(height * 0.05));
+  const bottomLeftLeft = Math.max(0, Math.round(width * 0.05));
+  const bottomLeftTop = Math.max(0, height - accentLogo.info.height - Math.round(height * 0.05));
+
+  return [
+    { input: centerLogo.data, left: centerLeft, top: centerTop },
+    { input: accentLogo.data, left: topRightLeft, top: topRightTop },
+    { input: accentLogo.data, left: bottomLeftLeft, top: bottomLeftTop },
+  ];
 }
 
 function compareFilePreference(leftName, rightName) {
