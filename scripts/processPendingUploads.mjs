@@ -279,7 +279,15 @@ async function createWatermarkOverlay(metadata, config) {
     </svg>`,
   );
 
-  return [{ input: svg, left: 0, top: 0 }];
+  const rasterizedOverlay = await sharp(svg, { density: 144 })
+    .resize(width, height, {
+      fit: 'fill',
+      withoutEnlargement: false,
+    })
+    .png()
+    .toBuffer();
+
+  return [{ input: rasterizedOverlay, left: 0, top: 0 }];
 }
 
 function compareFilePreference(leftName, rightName) {
