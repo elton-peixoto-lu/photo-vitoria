@@ -330,6 +330,35 @@ async function createGalleryManifestPullRequest({ folder, uploads, userName }) {
   return pr;
 }
 
+async function invokeImageWorker(manifest) {
+  const workerUrl = String(process.env.IMAGE_WORKER_URL || '').trim();
+  if (!workerUrl) {
+    throw new Error('IMAGE_WORKER_URL nao configurada');
+  }
+
+  const workerToken = String(process.env.IMAGE_WORKER_TOKEN || '').trim();
+  if (!workerToken) {
+    throw new Error('IMAGE_WORKER_TOKEN nao configurado');
+  }
+
+  const response = await fetch(`${workerUrl.replace(/\/$/, '')}/process-manifest`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${workerToken}`,
+    },
+    body: JSON.stringify({ manifest }),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(data.error || 'Falha ao processar imagem no worker');
+  }
+
+  return data;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -481,15 +510,22 @@ export async function createManifestPullRequestHandler(req, res) {
       await ensureUploadedObjectExists(upload.bucket, upload.objectPath, upload.size);
     }
 
-    const pr = await createGalleryManifestPullRequest({
+    const result = await invokeImageWorker({
+      version: 1,
+      createdAt: new Date().toISOString(),
       folder,
-      uploads: normalizedUploads,
-      userName: firebaseUser.name || firebaseUser.email,
+      uploadedBy: firebaseUser.name || firebaseUser.email,
+      source: 'admin-portal',
+      files: normalizedUploads,
     });
 
     return json(res, 200, {
-      pullRequestUrl: pr.html_url,
-      pullRequestNumber: pr.number,
+      ok: true,
+      folder,
+      processed: result.processed || 0,
+      skipped: result.skipped || 0,
+      removedDuplicates: result.removedDuplicates || 0,
+      publishedFiles: result.publishedFiles || [],
     });
   } catch (error) {
     const message = error?.message || 'Erro inesperado';

@@ -1,5 +1,6 @@
 // Cache em memória para as imagens das galerias
 const galeriaCache = {};
+const CACHE_TTL_MS = 60 * 1000;
 
 export function getGaleriaCache(pasta, signature) {
   const cacheEntry = galeriaCache[pasta];
@@ -13,11 +14,16 @@ export function getGaleriaCache(pasta, signature) {
     return null;
   }
 
+  if (cacheEntry.cachedAt && Date.now() - cacheEntry.cachedAt > CACHE_TTL_MS) {
+    delete galeriaCache[pasta];
+    return null;
+  }
+
   return cacheEntry.fotos || null;
 }
 
 export function setGaleriaCache(pasta, fotos, signature) {
-  galeriaCache[pasta] = { fotos, signature };
+  galeriaCache[pasta] = { fotos, signature, cachedAt: Date.now() };
 }
 
 export function clearGaleriaCache(pasta) {

@@ -56,7 +56,10 @@ type ProcessResponse struct {
 	ChangedFiles    []string `json:"changedFiles,omitempty"`
 	DeletedFiles    []string `json:"deletedFiles,omitempty"`
 	CommittedBranch string   `json:"committedBranch,omitempty"`
+	PublishedFiles  []string `json:"publishedFiles,omitempty"`
 }
+
+type GalleryIndex map[string][]string
 
 type Service struct {
 	logger          *slog.Logger
@@ -69,6 +72,8 @@ type Service struct {
 	processScript   string
 	loaderSource    string
 	publicSourceDir string
+	finalBucketName string
+	indexObjectPath string
 }
 
 func NewService(ctx context.Context, logger *slog.Logger) (*Service, error) {
@@ -103,6 +108,14 @@ func NewService(ctx context.Context, logger *slog.Logger) (*Service, error) {
 
 	loaderSource := filepath.Join(repoRoot, "src", "localAssetsLoader.js")
 	publicSourceDir := filepath.Join(repoRoot, "public", "images", "galeria")
+	finalBucketName := strings.TrimSpace(os.Getenv("FINAL_MEDIA_BUCKET"))
+	if finalBucketName == "" {
+		finalBucketName = "photo-vitoria-gallery-prod"
+	}
+	indexObjectPath := strings.TrimSpace(os.Getenv("GALLERY_INDEX_OBJECT"))
+	if indexObjectPath == "" {
+		indexObjectPath = "gallery-index.json"
+	}
 
 	return &Service{
 		logger:          logger,
@@ -115,6 +128,8 @@ func NewService(ctx context.Context, logger *slog.Logger) (*Service, error) {
 		processScript:   processScript,
 		loaderSource:    loaderSource,
 		publicSourceDir: publicSourceDir,
+		finalBucketName: finalBucketName,
+		indexObjectPath: indexObjectPath,
 	}, nil
 }
 
@@ -199,19 +214,27 @@ func (s *Service) ProcessManifest(ctx context.Context, req ProcessRequest) (*Pro
 		DeletedFiles: deletedFiles,
 	}
 
-	if req.DryRun || req.Repo == "" || req.Branch == "" {
+	if req.DryRun {
 		return resp, nil
 	}
 
-	if s.githubToken == "" {
-		return nil, errors.New("GITHUB_UPLOAD_TOKEN nao configurado")
+	if req.Repo != "" && req.Branch != "" {
+		if s.githubToken == "" {
+			return nil, errors.New("GITHUB_UPLOAD_TOKEN nao configurado")
+		}
+		if err := s.publishToGitHub(ctx, req, publicDir, loaderFile, changedFiles, deletedFiles); err != nil {
+			return nil, err
+		}
+		resp.CommittedBranch = req.Branch
+		return resp, nil
 	}
 
-	if err := s.publishToGitHub(ctx, req, publicDir, loaderFile, changedFiles, deletedFiles); err != nil {
+	publishedFiles, err := s.publishToStorage(ctx, req, publicDir, changedFiles, deletedFiles)
+	if err != nil {
 		return nil, err
 	}
+	resp.PublishedFiles = publishedFiles
 
-	resp.CommittedBranch = req.Branch
 	return resp, nil
 }
 
@@ -510,4 +533,142 @@ func (s *Service) githubJSON(ctx context.Context, method, url string, payload an
 		return json.NewDecoder(resp.Body).Decode(out)
 	}
 	return nil
+}
+
+func (s *Service) publishToStorage(ctx context.Context, req ProcessRequest, publicDir string, changedFiles, deletedFiles []string) ([]string, error) {
+	finalBucket := s.storageClient.Bucket(s.finalBucketName)
+	publishedFiles := make([]string, 0, len(changedFiles))
+
+	for _, rel := range changedFiles {
+		if !strings.HasPrefix(rel, "public/images/galeria/") {
+			continue
+		}
+
+		objectPath := strings.TrimPrefix(rel, "public/")
+		absPath := filepath.Join(publicDir, strings.TrimPrefix(rel, "public/images/galeria/"))
+		if err := uploadFileToBucket(ctx, finalBucket, objectPath, absPath); err != nil {
+			return nil, err
+		}
+		publishedFiles = append(publishedFiles, objectPath)
+	}
+
+	for _, rel := range deletedFiles {
+		if !strings.HasPrefix(rel, "public/images/galeria/") {
+			continue
+		}
+
+		objectPath := strings.TrimPrefix(rel, "public/")
+		if err := finalBucket.Object(objectPath).Delete(ctx); err != nil && !strings.Contains(err.Error(), "object doesn't exist") {
+			return nil, fmt.Errorf("delete object %s: %w", objectPath, err)
+		}
+	}
+
+	index, err := s.buildGalleryIndex(publicDir)
+	if err != nil {
+		return nil, err
+	}
+	if err := uploadJSONToBucket(ctx, finalBucket, s.indexObjectPath, index); err != nil {
+		return nil, err
+	}
+
+	for _, item := range req.Manifest.Files {
+		if item.Bucket == "" || item.ObjectPath == "" {
+			continue
+		}
+		if err := s.storageClient.Bucket(item.Bucket).Object(item.ObjectPath).Delete(ctx); err != nil && !strings.Contains(err.Error(), "object doesn't exist") {
+			s.logger.Warn("falha ao remover objeto temporario", "objectPath", item.ObjectPath, "error", err)
+		}
+	}
+
+	return publishedFiles, nil
+}
+
+func (s *Service) buildGalleryIndex(publicDir string) (GalleryIndex, error) {
+	index := GalleryIndex{}
+	folders, err := os.ReadDir(publicDir)
+	if err != nil {
+		return nil, fmt.Errorf("read public dir: %w", err)
+	}
+
+	for _, folder := range folders {
+		if !folder.IsDir() {
+			continue
+		}
+		folderName := folder.Name()
+		folderPath := filepath.Join(publicDir, folderName)
+		files, err := os.ReadDir(folderPath)
+		if err != nil {
+			return nil, fmt.Errorf("read folder %s: %w", folderName, err)
+		}
+
+		var names []string
+		for _, file := range files {
+			if file.IsDir() || strings.HasPrefix(file.Name(), ".") {
+				continue
+			}
+			names = append(names, file.Name())
+		}
+		sort.Strings(names)
+		index[folderName] = names
+	}
+
+	return index, nil
+}
+
+func uploadFileToBucket(ctx context.Context, bucket *storage.BucketHandle, objectPath, sourcePath string) error {
+	contentType := mimeTypeForPath(objectPath)
+	cacheControl := "public, max-age=3600"
+
+	writer := bucket.Object(objectPath).NewWriter(ctx)
+	writer.ContentType = contentType
+	writer.CacheControl = cacheControl
+
+	file, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("open source file %s: %w", sourcePath, err)
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(writer, file); err != nil {
+		_ = writer.Close()
+		return fmt.Errorf("upload object %s: %w", objectPath, err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("finalize object %s: %w", objectPath, err)
+	}
+	return nil
+}
+
+func uploadJSONToBucket(ctx context.Context, bucket *storage.BucketHandle, objectPath string, payload any) error {
+	data, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal %s: %w", objectPath, err)
+	}
+
+	writer := bucket.Object(objectPath).NewWriter(ctx)
+	writer.ContentType = "application/json; charset=utf-8"
+	writer.CacheControl = "public, max-age=60"
+	if _, err := writer.Write(data); err != nil {
+		_ = writer.Close()
+		return fmt.Errorf("write %s: %w", objectPath, err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("finalize %s: %w", objectPath, err)
+	}
+	return nil
+}
+
+func mimeTypeForPath(objectPath string) string {
+	switch strings.ToLower(filepath.Ext(objectPath)) {
+	case ".avif":
+		return "image/avif"
+	case ".webp":
+		return "image/webp"
+	case ".png":
+		return "image/png"
+	case ".json":
+		return "application/json; charset=utf-8"
+	default:
+		return "image/jpeg"
+	}
 }

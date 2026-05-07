@@ -17,7 +17,6 @@ export default function AdminGaleriaUploads() {
   const [folder, setFolder] = useState('casamentos');
   const [files, setFiles] = useState([]);
   const [status, setStatus] = useState('');
-  const [prUrl, setPrUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [user, setUser] = useState(null);
@@ -156,7 +155,6 @@ export default function AdminGaleriaUploads() {
   async function handleSubmit(event) {
     event.preventDefault();
     setStatus('');
-    setPrUrl('');
 
     if (!user) {
       setStatus('Sessao expirada. Entre novamente.');
@@ -226,10 +224,9 @@ export default function AdminGaleriaUploads() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Falha ao enviar fotos');
 
-      setPrUrl(data.pullRequestUrl);
       setFiles([]);
       event.target.reset();
-      setStatus('Envio concluido! As fotos agora entram em processamento automatico e aparecem no site em seguida.');
+      setStatus(`Envio concluido! ${data.processed || uploads.length} foto(s) processada(s) e publicada(s) na galeria.`);
     } catch (error) {
       setStatus(error?.message || 'Erro ao enviar fotos.');
     } finally {
@@ -326,7 +323,6 @@ export default function AdminGaleriaUploads() {
         </form>
 
         {status && <p className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">{status}</p>}
-        {prUrl && <a href={prUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-md bg-gray-900 px-5 py-3 text-sm font-bold text-white hover:bg-gray-700">Ver detalhes tecnicos do envio</a>}
       </section>
     </main>
   );

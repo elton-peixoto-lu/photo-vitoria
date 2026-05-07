@@ -18,6 +18,7 @@ env:
   API_SERVICE_NAME: photo-vitoria-admin-api
   ADMIN_API_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
   UPLOAD_TEMP_BUCKET: photo-vitoria-upload-temp
+  FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
 
 jobs:
   deploy-panel:
@@ -90,8 +91,10 @@ jobs:
           ADMIN_ALLOWED_ORIGINS: "https://estudiovitoriafreitas.com.br,https://www.estudiovitoriafreitas.com.br"
           ADMIN_ALLOWED_EMAILS: "pluizelton@gmail.com,estudiovitoriafreitas@gmail.com"
           UPLOAD_TEMP_BUCKET: ${{ env.UPLOAD_TEMP_BUCKET }}
+          FINAL_MEDIA_BUCKET: ${{ env.FINAL_MEDIA_BUCKET }}
           FIREBASE_AUTH_PROJECT_ID: photo-vitoria
           SIGNED_UPLOAD_URL_EXPIRATION_SECONDS: "900"
+          IMAGE_WORKER_URL: "${{ secrets.IMAGE_WORKER_URL }}"
           EOF
           gcloud run deploy ${{ env.API_SERVICE_NAME }} \
             --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.API_SERVICE_NAME }}:${{ github.sha }} \
@@ -100,5 +103,5 @@ jobs:
             --platform managed \
             --service-account ${{ env.ADMIN_API_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
-            --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest" \
+            --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest,IMAGE_WORKER_TOKEN=photo-vitoria-image-worker-token:latest" \
             --env-vars-file=/tmp/admin-api-env.yaml

@@ -3,6 +3,7 @@ import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 
 const PROD_MEDIA_GATEWAY_ORIGIN =
   'https://photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app';
+let remoteGalleryIndexPromise = null;
 
 function getViteEnv() {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
@@ -33,6 +34,34 @@ function buildGalleryAssetUrl(pasta, filename) {
   const baseUrl = getMediaBaseUrl();
   const assetPath = `/images/galeria/${pasta}/${filename}`;
   return baseUrl ? `${baseUrl}${assetPath}` : assetPath;
+}
+
+async function loadRemoteGalleryIndex() {
+  if (remoteGalleryIndexPromise) {
+    return remoteGalleryIndexPromise;
+  }
+
+  const baseUrl = getMediaBaseUrl();
+  if (!baseUrl) {
+    return null;
+  }
+
+  remoteGalleryIndexPromise = (async () => {
+    const response = await fetch(`${baseUrl}/gallery-index.json`, {
+      headers: { Accept: 'application/json' }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gallery index retornou ${response.status}`);
+    }
+
+    return response.json();
+  })().catch((error) => {
+    remoteGalleryIndexPromise = null;
+    throw error;
+  });
+
+  return remoteGalleryIndexPromise;
 }
 
 // Mapeamento das imagens locais por pasta
@@ -275,6 +304,20 @@ export function loadLocalImages(pasta) {
   }));
 }
 
+async function loadIndexedImages(pasta) {
+  const index = await loadRemoteGalleryIndex();
+  const files = Array.isArray(index?.[pasta]) ? index[pasta] : [];
+  return files.map((filename, indexPosition) => ({
+    url: buildGalleryAssetUrl(pasta, filename),
+    thumb: buildGalleryAssetUrl(pasta, filename),
+    width: 800,
+    height: 1200,
+    format: filename.split('.').pop()?.toLowerCase() || 'avif',
+    public_id: `remote_${pasta}_${indexPosition}`,
+    isRemoteIndex: true,
+  }));
+}
+
 // Função para carregar via API (com circuit breaker)
 async function loadFromAPI(pasta) {
   console.log(`🌐 Tentando carregar via API para pasta: ${pasta}`);
@@ -308,6 +351,21 @@ export async function loadGalleryImages(pasta) {
   }
 
   try {
+    const preferRemoteIndex = getViteEnv().VITE_GALLERY_INDEX_FIRST !== 'false';
+
+    if (preferRemoteIndex) {
+      try {
+        const indexedImages = await loadIndexedImages(pasta);
+        if (indexedImages.length > 0) {
+          const safeIndexedImages = filterRenderableGalleryImages(indexedImages, pasta);
+          setGaleriaCache(pasta, safeIndexedImages, cacheSignature);
+          return safeIndexedImages;
+        }
+      } catch (error) {
+        console.warn(`⚠️ Falha ao carregar indice remoto da galeria ${pasta}:`, error);
+      }
+    }
+
     // Por padrão, respeita o fluxo atual do projeto: assets locais primeiro.
     // Para forçar API primeiro (e refletir uploads imediatos sem redeploy),
     // defina VITE_LOCAL_ASSETS_FIRST=false.

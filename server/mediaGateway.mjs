@@ -9,6 +9,22 @@ const bucketName = process.env.GALLERY_BUCKET || 'photo-vitoria-site-prod';
 const bucket = storage.bucket(bucketName);
 
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
+app.get('/gallery-index.json', async (_req, res) => {
+  try {
+    const file = bucket.file('gallery-index.json');
+    const [exists] = await file.exists();
+    if (!exists) return res.status(404).json({ error: 'not found' });
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    file.createReadStream()
+      .on('error', () => res.status(500).end())
+      .pipe(res);
+  } catch {
+    res.status(500).json({ error: 'error' });
+  }
+});
 app.get(/^\/images\/.*/, async (req, res) => {
   try {
     const objectPath = req.path.replace(/^\//, '');
