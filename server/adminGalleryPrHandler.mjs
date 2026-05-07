@@ -353,7 +353,22 @@ async function invokeImageWorker(manifest) {
   const text = await response.text();
   const data = text ? JSON.parse(text) : {};
   if (!response.ok) {
-    throw new Error(data.error || 'Falha ao processar imagem no worker');
+    const rawMessage = String(data.error || 'Falha ao processar imagem no worker').trim();
+    const normalizedMessage = rawMessage
+      .replace(/^processor failed:\s*/i, '')
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean);
+
+    if (/fontconfig/i.test(rawMessage)) {
+      throw new Error('Falha ao preparar a marca d\'agua no worker. Tente novamente em instantes.');
+    }
+
+    if (/same dimensions or smaller|to composite/i.test(rawMessage)) {
+      throw new Error('Falha ao aplicar a marca d\'agua na imagem enviada. Vou precisar ajustar o processador.');
+    }
+
+    throw new Error(normalizedMessage || 'Falha ao processar imagem no worker');
   }
 
   return data;

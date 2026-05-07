@@ -225,28 +225,51 @@ async function createWatermarkOverlay(metadata, config) {
     );
   }
 
-  const centerTargetWidth = Math.max(240, Math.round(width * 0.42));
-  const accentTargetWidth = Math.max(110, Math.round(width * 0.16));
+  const horizontalPadding = Math.max(12, Math.round(width * 0.05));
+  const verticalPadding = Math.max(12, Math.round(height * 0.05));
+  const centerMaxWidth = Math.max(1, width - horizontalPadding * 2);
+  const centerMaxHeight = Math.max(1, height - verticalPadding * 2);
+  const accentMaxWidth = Math.max(1, Math.round(width * 0.24));
+  const accentMaxHeight = Math.max(1, Math.round(height * 0.18));
+
+  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.42)));
+  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(64, Math.round(width * 0.16)));
 
   const centerLogo = await sharp(logoBuffer, { density: 288 })
-    .resize({ width: centerTargetWidth, withoutEnlargement: true })
+    .resize({
+      width: centerTargetWidth,
+      height: centerMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .ensureAlpha(config.watermarkOpacity)
     .rotate(-22, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize({
+      width: centerMaxWidth,
+      height: centerMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .png()
     .toBuffer({ resolveWithObject: true });
 
   const accentLogo = await sharp(logoBuffer, { density: 288 })
-    .resize({ width: accentTargetWidth, withoutEnlargement: true })
+    .resize({
+      width: accentTargetWidth,
+      height: accentMaxHeight,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .ensureAlpha(Math.min(config.watermarkOpacity * 0.8, 0.08))
     .png()
     .toBuffer({ resolveWithObject: true });
 
   const centerLeft = Math.max(0, Math.round((width - centerLogo.info.width) / 2));
   const centerTop = Math.max(0, Math.round((height - centerLogo.info.height) / 2));
-  const topRightLeft = Math.max(0, width - accentLogo.info.width - Math.round(width * 0.05));
-  const topRightTop = Math.max(0, Math.round(height * 0.05));
-  const bottomLeftLeft = Math.max(0, Math.round(width * 0.05));
-  const bottomLeftTop = Math.max(0, height - accentLogo.info.height - Math.round(height * 0.05));
+  const topRightLeft = Math.max(0, width - accentLogo.info.width - horizontalPadding);
+  const topRightTop = Math.max(0, verticalPadding);
+  const bottomLeftLeft = Math.max(0, horizontalPadding);
+  const bottomLeftTop = Math.max(0, height - accentLogo.info.height - verticalPadding);
 
   return [
     { input: centerLogo.data, left: centerLeft, top: centerTop },
@@ -315,14 +338,22 @@ export async function processPendingFolder(folder, config) {
       continue;
     }
 
-    const image = sharp(buffer)
+    const prepared = sharp(buffer)
       .rotate()
       .resize(config.maxWidth, config.maxHeight, {
         fit: 'inside',
         withoutEnlargement: true,
       });
 
-    const metadata = await image.metadata();
+    const { data: preparedBuffer, info: preparedInfo } = await prepared
+      .png()
+      .toBuffer({ resolveWithObject: true });
+
+    const image = sharp(preparedBuffer);
+    const metadata = {
+      width: preparedInfo.width,
+      height: preparedInfo.height,
+    };
     if (config.watermarkEnabled) {
       const overlay = await createWatermarkOverlay(metadata, config);
       image.composite(overlay);
