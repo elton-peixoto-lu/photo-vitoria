@@ -111,11 +111,11 @@ function Logo({ collapsed = false, mobile = false }) {
   const logoClassName = collapsed
     ? 'w-10'
     : mobile
-      ? 'w-16'
+      ? 'w-20'
       : 'w-32';
 
   return (
-    <div className="flex flex-col items-center mb-10 mt-6 select-none">
+    <div className={`flex flex-col items-center select-none ${mobile ? 'mb-8 mt-4' : 'mb-10 mt-6'}`}>
       <img
         src={LOGO_URL}
         alt="Logo Fotos da Vitória"
@@ -145,10 +145,10 @@ function Sidebar({ mobile = false, open = false, onClose }) {
         {open && (
           <>
             {/* Botões de ação fixos no topo */}
-            <div className="fixed top-2 left-2 z-[110] flex gap-3 items-center">
+            <div className="fixed top-3 left-3 z-[110] flex gap-2 items-center">
               {/* Seta de voltar */}
               <button
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-3xl focus:outline-none"
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-white/55 bg-white/28 text-3xl text-[#c92f74] shadow-[0_18px_40px_-20px_rgba(157,23,77,0.95)] backdrop-blur-xl transition hover:scale-105 hover:bg-white/36 focus:outline-none"
                 onClick={onClose}
                 aria-label="Voltar"
                 tabIndex={open ? 0 : -1}
@@ -156,24 +156,24 @@ function Sidebar({ mobile = false, open = false, onClose }) {
                 <FaArrowLeft />
               </button>
               {/* Botão coração (exemplo) */}
-              <a href="#" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-2xl">
+              <a href="#" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/50 bg-white/22 text-2xl text-[#c65d93] shadow-[0_18px_35px_-22px_rgba(157,23,77,0.9)] backdrop-blur-xl transition hover:scale-105 hover:bg-white/32">
                 <FaHeart />
               </a>
               {/* Botão WhatsApp */}
-              <a href={CONTATO.whatsapp.url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-green-200 text-green-500 text-2xl">
+              <a href={CONTATO.whatsapp.url} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/50 bg-white/22 text-2xl text-emerald-500 shadow-[0_18px_35px_-22px_rgba(34,197,94,0.55)] backdrop-blur-xl transition hover:scale-105 hover:bg-white/32">
                 <FaWhatsapp />
               </a>
               {/* Botão Instagram */}
-              <a href={CONTATO.instagram.url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-pink-100 text-pink-400 text-2xl">
+              <a href={CONTATO.instagram.url} target="_blank" rel="noopener noreferrer" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/50 bg-white/22 text-2xl text-[#d43b84] shadow-[0_18px_35px_-22px_rgba(212,59,132,0.8)] backdrop-blur-xl transition hover:scale-105 hover:bg-white/32">
                 <FaInstagram />
               </a>
               {/* Botão Email */}
-              <a href={CONTATO.email.url} className="w-12 h-12 flex items-center justify-center rounded-full bg-white/90 shadow border border-blue-100 text-blue-400 text-2xl">
+              <a href={CONTATO.email.url} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/50 bg-white/22 text-2xl text-sky-400 shadow-[0_18px_35px_-22px_rgba(56,189,248,0.75)] backdrop-blur-xl transition hover:scale-105 hover:bg-white/32">
                 <FaEnvelope />
               </a>
             </div>
             <div
-              className="fixed inset-0 z-[99] bg-black/40 transition-opacity duration-300 opacity-100 pointer-events-auto"
+              className="fixed inset-0 z-[99] bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.24),transparent_35%),linear-gradient(180deg,rgba(10,10,10,0.24),rgba(10,10,10,0.5))] backdrop-blur-[2px] transition-opacity duration-300 opacity-100 pointer-events-auto"
               onClick={onClose}
               aria-label="Fechar menu"
             />
@@ -181,22 +181,24 @@ function Sidebar({ mobile = false, open = false, onClose }) {
               initial={{ x: -260 }}
               animate={{ x: open ? 0 : -260 }}
               transition={{ duration: 0.3, type: 'spring' }}
-              className="fixed left-0 top-0 z-[100] bg-gradient-to-b from-[#f8fafc] via-[#fbeffb] to-[#fffbe9] text-gray-700 h-screen flex flex-col px-3 py-4 shadow-2xl border-r border-[#f3e8ff]"
-              style={{ width: 96 }}
+              className="fixed left-0 top-0 z-[100] h-screen flex flex-col border-r border-white/40 bg-[linear-gradient(180deg,rgba(255,250,252,0.78)_0%,rgba(253,239,245,0.68)_48%,rgba(255,245,232,0.62)_100%)] px-3 py-4 text-gray-700 shadow-[0_30px_80px_-32px_rgba(88,28,60,0.95)] backdrop-blur-2xl"
+              style={{ width: 112 }}
             >
               <div className="mt-20" /> {/* Espaço para os botões fixos */}
-              <Logo mobile />
-              <nav className="flex-1 flex flex-col gap-2 mt-4 items-center">
+              <div className="mx-auto mb-3 rounded-[28px] border border-white/65 bg-white/38 px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_12px_30px_-18px_rgba(157,23,77,0.5)]">
+                <Logo mobile />
+              </div>
+              <nav className="mt-2 flex flex-1 flex-col items-center gap-2">
                 {MENU.filter(item => MOBILE_MENU_PATHS.includes(item.path)).map(item => (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300
+                    className={`flex items-center justify-center rounded-[20px] transition-all duration-300
                       ${location.pathname === item.path
-                        ? 'bg-gradient-to-r from-[#fbc2eb] via-[#fbeffb] to-[#a5b4fc] text-[#a21caf] shadow-lg border border-[#f3e8ff] scale-110'
-                        : 'bg-transparent text-gray-500 hover:text-[#a78bfa]'}
+                        ? 'h-14 w-14 border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.72),rgba(251,207,232,0.62),rgba(224,231,255,0.5))] text-[#a21caf] shadow-[0_18px_40px_-18px_rgba(157,23,77,0.72)] scale-105'
+                        : 'h-12 w-12 border border-white/20 bg-white/10 text-[#9b7a8f] hover:border-white/45 hover:bg-white/24 hover:text-[#b43c75]'}
                     `}
-                    style={{ fontSize: 28 }}
+                    style={{ fontSize: location.pathname === item.path ? 29 : 26 }}
                     onClick={onClose}
                     title={item.label || 'Menu'}
                     tabIndex={open ? 0 : -1}
