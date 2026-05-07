@@ -89,6 +89,7 @@ const LOCAL_IMAGES_MAP = {
     "zb0m0fn2ekoksrpmrd8h_sdvinf.avif"
   ],
   "infantil": [
+    "1778183508163-infantis-vlf-0965-9698a068-a1bdf3aa29.avif",
     "1776120514588-infantis-vlf-0779-99d5d095-bd1f50e5c8.avif",
     "a9qjgpbbnzeqmfsxu9xw_g6h3cj.avif",
     "gvwi6jl6uej5s7jv8fxu_c15zg7.avif",
