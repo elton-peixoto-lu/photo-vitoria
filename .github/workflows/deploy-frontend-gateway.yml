@@ -1,0 +1,64 @@
+name: Deploy Frontend Gateway to Cloud Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/deploy-frontend-gateway.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.js'
+      - 'server/frontendServer.mjs'
+      - 'Dockerfile.frontend-gateway'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: fotovitoria
+  REGION: us-central1
+  SERVICE_NAME: photo-vitoria-frontend-gateway
+
+jobs:
+  deploy-frontend-gateway:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Select target project
+        run: gcloud config set project ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and Push Frontend Gateway
+        run: |
+          docker build -f Dockerfile.frontend-gateway \
+            -t us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.SERVICE_NAME }}:${{ github.sha }} .
+          docker push us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.SERVICE_NAME }}:${{ github.sha }}
+
+      - name: Deploy Frontend Gateway to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image us-central1-docker.pkg.dev/${{ env.PROJECT_ID }}/photo-vitoria/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --project ${{ env.PROJECT_ID }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-secrets="TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest"
