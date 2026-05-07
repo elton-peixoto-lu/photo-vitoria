@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.join(__dirname, '..');
-const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
+const GALLERY_DIR = process.env.GALLERY_DIR || path.join(ROOT_DIR, 'public', 'images', 'galeria');
 const WATERMARK_LOGO_PATH =
   process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png');
 const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.055);

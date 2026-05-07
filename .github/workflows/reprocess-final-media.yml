@@ -1,0 +1,70 @@
+name: Reprocess Final Media Watermark
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'assets/watermark-logo.png'
+      - 'scripts/reprocessPublishedGalleryWatermark.mjs'
+      - '.github/workflows/reprocess-final-media.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: fotovitoria
+  FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
+
+jobs:
+  reprocess-media:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Select target project
+        run: gcloud config set project ${{ env.PROJECT_ID }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download published gallery from bucket
+        run: |
+          mkdir -p public/images/galeria
+          gcloud storage rsync -r gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria public/images/galeria
+
+      - name: Reprocess watermark on published gallery
+        run: |
+          WATERMARK_LOGO_PATH=assets/watermark-logo.png \
+          WATERMARK_OPACITY=0.055 \
+          GALLERY_DIR=public/images/galeria \
+          node scripts/reprocessPublishedGalleryWatermark.mjs
+
+      - name: Upload refreshed gallery back to bucket
+        run: |
+          gcloud storage rsync -r public/images/galeria gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria
+
+      - name: Invalidate image cache
+        if: ${{ secrets.GCP_CDN_URL_MAP != '' }}
+        run: |
+          gcloud compute url-maps invalidate-cdn-cache "${{ secrets.GCP_CDN_URL_MAP }}" \
+            --path "/images/*" \
+            --async
