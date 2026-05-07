@@ -35,6 +35,9 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Select target project
+        run: gcloud config set project ${{ env.PROJECT_ID }}
+
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
@@ -66,6 +69,9 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+
+      - name: Select target project
+        run: gcloud config set project ${{ env.PROJECT_ID }}
 
       - name: Configure Docker
         run: gcloud auth configure-docker us-central1-docker.pkg.dev
