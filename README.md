@@ -1,78 +1,173 @@
 # Photo Vitoria
 
-![Status](https://img.shields.io/badge/status-active-success) ![Production](https://img.shields.io/badge/production-GCP-4285F4) ![Frontend](https://img.shields.io/badge/frontend-React%2019-61DAFB) ![Build](https://img.shields.io/badge/build-Vite%203-646CFF) ![Auth](https://img.shields.io/badge/auth-Firebase%20Google-FFCA28) ![Backend](https://img.shields.io/badge/backend-Cloud%20Run-34A853) ![Images](https://img.shields.io/badge/images-GitOps%20current-blueviolet)
+![Status](https://img.shields.io/badge/status-active-success)
+![Production](https://img.shields.io/badge/production-GCP-4285F4)
+![Frontend](https://img.shields.io/badge/frontend-React%2019-61DAFB)
+![Admin](https://img.shields.io/badge/admin-Cloud%20Run-34A853)
+![Auth](https://img.shields.io/badge/auth-Firebase%20Google-FFCA28)
+![Media](https://img.shields.io/badge/media-GCS%20%2B%20Worker%20Go-0F9D58)
+![Security](https://img.shields.io/badge/security-Turnstile%20%2B%20Signed%20URLs-111827)
 
-Frontend institucional e portal administrativo de upload para o acervo da Photo Vitoria.
+Frontend institucional, portal administrativo e pipeline de mídia da Photo Vitoria, hoje operando no GCP.
 
-## Visao geral
+## Visão geral
 
-Este repositório concentra 3 responsabilidades:
+O repositório concentra quatro partes principais:
 
 - site público em `React + Vite`
-- portal administrativo em `/admin/galeria`
-- pipeline GitOps de imagens com processamento automático via GitHub Actions
+- portal administrativo de fotos em `/admin/galeria`
+- APIs e gateways em `Cloud Run`
+- worker de mídia em `Go` para processamento e publicação das imagens
 
-Hoje a operação está organizada assim:
+A produção já está orientada ao alvo final:
 
-- `master`: produção no GCP
-- `staging`: homologação opcional fora de produção
-- `admin-api`: backend do portal em `Cloud Run`
-- imagens publicadas: ainda versionadas no Git e servidas pelo frontend estático
+- site público servido no GCP
+- login administrativo via `Firebase Auth + Google`
+- proteção anti-bot com `Cloudflare Turnstile`
+- upload com `Signed URLs`
+- mídia final em `Cloud Storage`
+- índice remoto da galeria em `gallery-index.json`
+- GitHub usado para código, não como caminho principal de publicação de fotos
 
 ## Arquitetura atual
 
-### Produção
+### Fluxo público
 
-- frontend estático em `Cloud Storage`
-- borda em `Cloud CDN + HTTPS Load Balancer`
-- backend admin em `Cloud Run`
-- autenticação do portal com `Firebase Auth (Google Sign-In)`
-- validação anti-bot com `Cloudflare Turnstile`
+1. o usuário acessa `https://www.estudiovitoriafreitas.com.br`
+2. a borda entrega o frontend
+3. o frontend consome a galeria pelo `media-gateway`
+4. o `media-gateway` lê:
+   - `images/galeria/**`
+   - `gallery-index.json`
+   no bucket final de mídia
 
-### Homologação
+### Fluxo do admin
 
-- branch `staging`
+1. a usuária entra em `/admin/galeria`
+2. passa por `Turnstile`
+3. faz login com Google via Firebase
+4. o frontend pede ao `admin-api` uma `Signed URL`
+5. o arquivo sobe para o bucket temporário privado
+6. o `admin-api` confirma que o objeto existe
+7. o `admin-api` chama o `image-worker`
+8. o worker processa a imagem e publica no bucket final
+9. o worker atualiza `gallery-index.json`
+10. a nova foto passa a ser servida pelo `media-gateway`
 
-### Publicação de imagens
+### Desenho resumido
 
-1. Usuário autorizado acessa `/admin/galeria`
-2. Faz login com Google via Firebase
-3. Resolve o Turnstile
-4. Envia fotos para o `admin-api`
-5. O backend cria uma branch `gallery-upload/...` e abre um PR
-6. O workflow `process-pending-uploads.yml` otimiza os arquivos, atualiza o mapa local e tenta concluir o merge automaticamente
-7. O deploy do frontend publica a nova versão do site
+```text
+[User]
+  -> Cloud CDN / Load Balancer
+    -> frontend-gateway (Cloud Run)
+    -> media-gateway (Cloud Run)
+         -> gs://photo-vitoria-gallery-prod
+            - images/galeria/*
+            - gallery-index.json
 
-## Segurança do portal
+[Admin User]
+  -> /admin/galeria
+  -> Firebase Auth + Turnstile
+  -> admin-api (Cloud Run)
+      -> signed upload URL
+      -> gs://photo-vitoria-upload-temp
+      -> image-worker (Cloud Run, Go)
+           -> AVIF + watermark
+           -> gs://photo-vitoria-gallery-prod
+           -> gallery-index.json
+```
 
-O fluxo administrativo já está endurecido com as seguintes travas:
+## Serviços e endpoints
 
-- allowlist por e-mail em `ADMIN_ALLOWED_EMAILS`
-- exigência de e-mail verificado no Firebase
-- validação server-side do Turnstile antes do login
-- validação de galeria, extensão, MIME type e base64 no backend
-- PR limitado a `uploads/pendentes/**`
-- auto-merge restrito a branches seguras do portal (`gallery-upload/**`)
-- processamento CI com conversão para AVIF e aplicação de marca d'água nas imagens publicadas
+### `frontend-gateway`
 
-## Estado da migração para GCP
+Responsabilidades:
 
-### Concluído
+- servir a SPA pública
+- validar o Turnstile global do site
 
-- frontend de produção provisionado no GCP
-- bucket público do site criado
-- `Cloud CDN` ativo
-- `HTTPS Load Balancer` ativo
-- deploy de `master` para GCS configurado em workflow
-- staging isolado opcional
-- `admin-api` em `Cloud Run`
+Endpoints:
 
-### Pendente
+- `POST /api/turnstile/verify`
+- `GET /healthz`
 
-- ativação do `Cloud Armor`
-- motivo atual: quota do projeto `fotovitoria` está com `SECURITY_POLICIES = 0`
-- migração futura das imagens para `Cloud Storage + Signed URLs`
-- base inicial dessa fase já adicionada com bucket privado temporário e endpoint de emissão de Signed URL
+### `admin-api`
+
+Responsabilidades:
+
+- validar sessão Firebase
+- aplicar allowlist de e-mails
+- validar Turnstile do admin
+- emitir `Signed URL`
+- disparar o worker de mídia
+
+Endpoints:
+
+- `POST /api/admin/turnstile-verify`
+- `POST /api/admin/upload-url`
+- `POST /api/admin/gallery-pr-manifest`
+- `GET /`
+
+Observação:
+
+- `GET /` responde `200 {"ok":true}` e hoje funciona como health básico do serviço.
+
+### `image-worker`
+
+Responsabilidades:
+
+- baixar imagem do bucket temporário
+- processar AVIF
+- aplicar watermark
+- publicar mídia final
+- atualizar `gallery-index.json`
+
+Endpoints:
+
+- `POST /process-manifest`
+- `GET /health`
+
+### `media-gateway`
+
+Responsabilidades:
+
+- servir imagens publicadas
+- servir o índice remoto da galeria
+
+Endpoints:
+
+- `GET /images/...`
+- `GET /gallery-index.json`
+- `GET /healthz`
+
+## Buckets
+
+### Temporário
+
+- `gs://photo-vitoria-upload-temp`
+- privado
+- recebe uploads brutos via `Signed URL`
+
+### Final de mídia
+
+- `gs://photo-vitoria-gallery-prod`
+- armazena:
+  - `images/galeria/**`
+  - `gallery-index.json`
+
+## Segurança
+
+O portal e o fluxo de mídia operam com estas travas:
+
+- login Google via Firebase
+- allowlist em `ADMIN_ALLOWED_EMAILS`
+- validação server-side do Turnstile
+- bucket temporário privado
+- `Signed URL` curta para upload
+- verificação de existência do objeto antes do processamento
+- worker protegido por token interno
+- bucket final servido por gateway dedicado
+- watermark aplicada na imagem publicada
 
 ## Stack principal
 
@@ -81,23 +176,23 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 - `Firebase Auth`
 - `Firebase Admin SDK`
 - `Express`
-- `GitHub Actions`
-- `Google Cloud Run`
-- `Google Cloud Storage`
+- `Go`
+- `Cloud Run`
+- `Cloud Storage`
 - `Cloud CDN`
-- `Cloud Load Balancer`
+- `HTTPS Load Balancer`
+- `GitHub Actions`
+- `Sharp`
 
 ## Estrutura importante
 
-- `src/`: frontend público e portal admin
-- `server/`: backend Express e handlers do portal
-- `public/images/galeria/`: imagens publicadas no site
-- `uploads/pendentes/`: área temporária dos uploads antes do processamento
-- `.github/workflows/`: automações de deploy e pipeline de imagens
-- `infra/gcp/frontend-spa/`: Terraform da borda/frontend no GCP
-- `infra/gcp/admin-api/`: Terraform e apoio do backend admin
-- `infra/gcp/image-upload/`: bucket privado temporário para uploads com Signed URLs
-- `docs/`: documentação complementar
+- `src/`: frontend público e tela administrativa atual
+- `server/`: gateways e handlers Node/Express
+- `backend/`: worker Go e backend de agendamento
+- `scripts/`: utilitários de build, sync e testes
+- `.github/workflows/`: deploys e automações
+- `infra/gcp/`: infraestrutura como código e documentação de apoio
+- `public/images/galeria/`: acervo legado local ainda útil como seed/teste
 
 ## Como rodar localmente
 
@@ -105,6 +200,7 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 
 - Node.js 22+
 - npm
+- Go 1.24+
 
 ### Instalação
 
@@ -112,33 +208,41 @@ O fluxo administrativo já está endurecido com as seguintes travas:
 npm install
 ```
 
-### Frontend
+### Frontend local
 
 ```bash
 npm run dev
 ```
 
-### Backend local opcional
-
-```bash
-npm run server
-```
-
-### Admin API local opcional
+### Admin API local
 
 ```bash
 npm run admin-api
 ```
 
+### Frontend gateway local
+
+```bash
+npm run server
+```
+
+### Worker Go local
+
+```bash
+cd backend
+go run ./cmd/image-worker
+```
+
 ## Scripts úteis
 
-- `npm run dev`: sobe o frontend local
-- `npm run build`: gera o build de produção
-- `npm run preview`: sobe preview do build
-- `npm run server`: sobe a API Express local
-- `npm run admin-api`: sobe o backend do portal admin
-- `npm run process:uploads`: processa uploads pendentes localmente
-- `npm run test:uploads`: testa o pipeline de processamento
+- `npm run dev`: frontend local
+- `npm run build`: build de produção
+- `npm run preview`: preview do build
+- `npm run server`: frontend gateway local
+- `npm run admin-api`: admin API local
+- `npm run process:uploads`: processador legado local
+- `npm run test:uploads`: testes do pipeline e loaders
+- `npm run smoke:gcp`: smoke test da entrega pública
 
 ## Variáveis de ambiente
 
@@ -151,76 +255,73 @@ npm run admin-api
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
-- `VITE_TURNSTILE_SITE_KEY`
+- `VITE_PUBLIC_TURNSTILE_SITE_KEY`
+- `VITE_GALLERY_INDEX_FIRST`
+- `VITE_MEDIA_BASE_URL`
 
-### Backend admin
+### `admin-api`
 
 - `TURNSTILE_SECRET_KEY`
 - `ADMIN_ALLOWED_EMAILS`
-- `GITHUB_REPO`
-- `GITHUB_BASE_BRANCH`
-- `GITHUB_UPLOAD_TOKEN`
+- `ADMIN_ALLOWED_ORIGINS`
 - `UPLOAD_TEMP_BUCKET`
+- `FINAL_MEDIA_BUCKET`
+- `FIREBASE_AUTH_PROJECT_ID`
 - `SIGNED_UPLOAD_URL_EXPIRATION_SECONDS`
+- `IMAGE_WORKER_URL`
+- `IMAGE_WORKER_TOKEN`
 
-## Deploys
+### `image-worker`
 
-### Produção
+- `PROCESSING_BUCKET`
+- `FINAL_MEDIA_BUCKET`
+- `GALLERY_INDEX_OBJECT`
+- `WATERMARK_LOGO_PATH`
+- `WORKER_AUTH_TOKEN`
 
-Workflow:
-- `.github/workflows/deploy-frontend-gcp.yml`
+## Workflows principais
 
-Origem:
-- branch `master`
+### Deploy do frontend
 
-Destino:
-- bucket `photo-vitoria-site-prod`
-- borda GCP provisionada em `infra/gcp/frontend-spa/`
+- arquivo: `.github/workflows/deploy-frontend-gcp.yml`
+- origem: `master`
+- alvo: GCP produção
 
-### Staging
+### Deploy do admin panel
 
-Workflow:
-- `.github/workflows/deploy-frontend-vercel-staging.yml`
+- arquivo: `.github/workflows/deploy-admin.yml`
+- publica:
+  - `photo-vitoria-admin-panel`
+  - `photo-vitoria-admin-api`
 
-Origem:
-- branch `staging`
+### Deploy do worker de mídia
 
-Destino:
+- arquivo: `.github/workflows/deploy-image-worker.yml`
+- publica:
+  - `photo-vitoria-image-worker`
 
-### Portal / pipeline de imagens
+## Estado da migração
 
-Workflow:
-- `.github/workflows/process-pending-uploads.yml`
+### Concluído
 
-Responsabilidades:
-- validar escopo do PR
-- otimizar imagens
-- aplicar marca d'água no pipeline
-- atualizar `src/localAssetsLoader.js`
-- limpar `uploads/pendentes/`
-- habilitar auto-merge quando o PR estiver no trilho seguro
+- runtime principal no GCP
+- `frontend-gateway`, `admin-api`, `media-gateway` e `image-worker` em `Cloud Run`
+- upload com `Signed URL`
+- bucket temporário privado
+- bucket final de mídia
+- `gallery-index.json` remoto
+- publicação de imagem fora do fluxo GitOps principal
+- remoção do Vercel do caminho ativo de produção
 
-## Infraestrutura GCP relevante
+### Em endurecimento contínuo
 
-Projeto:
-- `fotovitoria`
+- padronização de health checks (`/healthz`, `/readyz`)
+- ativação de `Cloud Armor` quando a quota permitir
+- limpeza progressiva de dependências legadas ainda presentes no código-base
 
-Região principal do backend:
-- `us-central1`
+## Documentação complementar
 
-Serviço do portal:
-- `photo-vitoria-admin-api`
-
-Bucket do frontend:
-- `photo-vitoria-site-prod`
-
-## Próxima fase planejada
-
-A próxima evolução da arquitetura é retirar os binários de imagem do fluxo Git principal e mover uploads para `Cloud Storage` privado. A base inicial já foi criada no backend e na infraestrutura, com:
-
-- upload temporário em GCS
-- `Signed URLs`
-- processamento assíncrono
-- promoção para área pública após validação
-
-Até lá, o fluxo GitOps atual continua sendo a fonte de verdade para publicação das fotos no site.
+- [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
+- [docs/GUIA-PORTAL-ADMIN.md](docs/GUIA-PORTAL-ADMIN.md)
+- [infra/gcp/image-upload/README.md](infra/gcp/image-upload/README.md)
+- [backend/README.md](backend/README.md)

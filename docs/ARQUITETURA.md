@@ -1,31 +1,32 @@
 # Arquitetura atual
 
-Este documento descreve a arquitetura real do projeto hoje, com produção e serviços principais no GCP.
+Este documento descreve a arquitetura real da Photo Vitoria no GCP em maio de 2026.
 
 ## Resumo executivo
 
 - frontend público: `React + Vite`
-- produção: `Cloud Storage + Cloud CDN + HTTPS Load Balancer`
-- staging: `ambiente opcional fora de produção`
-- portal admin: rota `/admin/galeria`
-- autenticação do portal: `Firebase Auth` com login Google
+- autenticação administrativa: `Firebase Auth` com login Google
 - proteção anti-bot: `Cloudflare Turnstile`
-- backend do portal: `Cloud Run`
-- publicação de imagens: `GitOps` via Pull Request + GitHub Actions
+- frontends e APIs: `Cloud Run`
+- mídia publicada: `Cloud Storage`
+- processamento de imagens: `image-worker` em `Go`
+- índice remoto da galeria: `gallery-index.json`
+- GitHub: código e deploys, não mais como trilha principal para publicar fotos
 
-## Fluxo atual de publicação de imagens
+## Fluxo de mídia em produção
 
 ```mermaid
 flowchart LR
-  U[Usuaria autorizada] -->|1. Acessa /admin/galeria| A[Portal Admin]
-  A -->|2. Login Google| F[Firebase Auth]
-  A -->|3. Valida desafio| T[Cloudflare Turnstile]
-  A -->|4. POST /api/admin/gallery-pr| CR[Admin API no Cloud Run]
-  CR -->|5. Cria branch + PR| GH[GitHub]
-  GH -->|6. Dispara workflow| GA[GitHub Actions]
-  GA -->|7. Otimiza fotos + atualiza mapa local| GH
-  GH -->|8. Merge| PROD[Branch master]
-  PROD -->|9. Deploy estatico| GCP[Cloud Storage + CDN + LB]
+  A[Admin /admin/galeria] --> T[Turnstile]
+  T --> F[Firebase Auth]
+  F --> API[admin-api]
+  API --> SU[Signed URL]
+  SU --> TEMP[gs://photo-vitoria-upload-temp]
+  API --> W[image-worker Go]
+  W --> FINAL[gs://photo-vitoria-gallery-prod]
+  FINAL --> IDX[gallery-index.json]
+  FINAL --> MG[media-gateway]
+  MG --> SITE[Frontend público]
 ```
 
 ## Sequência detalhada
@@ -33,106 +34,139 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   autonumber
-  participant User as Usuaria
+  participant User as Usuária admin
   participant Admin as Portal Admin
   participant Firebase as Firebase Auth
   participant Turnstile as Turnstile
-  participant API as Admin API
-  participant GitHub as GitHub
-  participant Actions as GitHub Actions
-  participant GCP as Frontend GCP
+  participant API as admin-api
+  participant Temp as Upload Temp Bucket
+  participant Worker as image-worker
+  participant Final as Final Media Bucket
+  participant Site as Site público
 
   User->>Admin: Abre /admin/galeria
   Admin->>Turnstile: Resolve desafio
   Admin->>Firebase: Login com Google
   Firebase-->>Admin: ID token
-  User->>Admin: Escolhe galeria e fotos
-  Admin->>API: POST /api/admin/gallery-pr
-  API->>Firebase: Verifica token
-  Firebase-->>API: Token valido
-  API->>GitHub: Cria branch gallery-upload/...
-  API->>GitHub: Envia uploads/pendentes/<galeria>/...
-  API->>GitHub: Abre PR
-  GitHub->>Actions: Executa process-pending-uploads.yml
-  Actions->>GitHub: Gera AVIF + atualiza src/localAssetsLoader.js
-  Actions->>GitHub: Commita na branch do PR
-  Actions->>GitHub: Auto-merge quando permitido
-  GitHub->>GCP: Workflow publica build no bucket
-  GCP-->>User: Site atualizado
+  User->>Admin: Seleciona galeria e imagem
+  Admin->>API: POST /api/admin/upload-url
+  API-->>Admin: Signed URL
+  Admin->>Temp: PUT arquivo bruto
+  Admin->>API: POST /api/admin/gallery-pr-manifest
+  API->>Temp: Verifica existência do objeto
+  API->>Worker: POST /process-manifest
+  Worker->>Temp: Lê arquivo bruto
+  Worker->>Worker: Processa AVIF + watermark
+  Worker->>Final: Publica images/galeria/**
+  Worker->>Final: Atualiza gallery-index.json
+  Worker->>Temp: Remove arquivo temporário
+  Site->>Final: Consome via media-gateway
 ```
 
 ## Componentes
 
-### Frontend público
+### `frontend-gateway`
 
-- código em `src/`
-- build estático via `vite build`
-- deploy de produção para bucket GCS
+- runtime: `Cloud Run`
+- função:
+  - servir o frontend público
+  - validar o Turnstile global
+- endpoints:
+  - `POST /api/turnstile/verify`
+  - `GET /healthz`
 
-### Portal admin
-
-- rota: `/admin/galeria`
-- arquivo principal: `src/admin/AdminGaleriaUploads.jsx`
-- login Google com Firebase
-- Turnstile validado no backend antes do login seguir
-
-### Admin API
+### `admin-api`
 
 - runtime: `Cloud Run`
 - arquivo principal: `server/adminGalleryPrHandler.mjs`
-- responsabilidades:
-  - validar token Firebase
+- função:
+  - verificar token Firebase
   - aplicar allowlist de e-mails
-  - validar payload dos arquivos
-  - criar branch e Pull Request no GitHub
+  - validar Turnstile
+  - emitir `Signed URL`
+  - disparar o worker
+- endpoints:
+  - `POST /api/admin/turnstile-verify`
+  - `POST /api/admin/upload-url`
+  - `POST /api/admin/gallery-pr-manifest`
+  - `GET /`
 
-### Workflow de processamento
+### `image-worker`
 
-- arquivo: `.github/workflows/process-pending-uploads.yml`
-- script: `scripts/processPendingUploads.mjs`
-- responsabilidades:
-  - validar escopo do PR
-  - otimizar imagens
-  - atualizar `public/images/galeria/**`
-  - atualizar `src/localAssetsLoader.js`
-  - concluir merge seguro
+- runtime: `Cloud Run`
+- linguagem: `Go`
+- função:
+  - baixar da área temporária
+  - converter e otimizar
+  - aplicar watermark
+  - publicar no bucket final
+  - atualizar `gallery-index.json`
+- endpoints:
+  - `POST /process-manifest`
+  - `GET /health`
 
-## Localização das imagens
+### `media-gateway`
 
-### Estado atual
+- runtime: `Cloud Run`
+- função:
+  - servir imagens publicadas
+  - servir `gallery-index.json`
+- endpoints:
+  - `GET /images/...`
+  - `GET /gallery-index.json`
+  - `GET /healthz`
 
-- entrada temporária: `uploads/pendentes/<galeria>/`
-- saída publicada: `public/images/galeria/<galeria>/`
-- índice local: `src/localAssetsLoader.js`
+## Armazenamento
 
-### Próxima fase planejada
+### Bucket temporário
 
-A próxima etapa da arquitetura é retirar os binários do fluxo Git principal e mover o upload para GCS privado.
+- nome: `photo-vitoria-upload-temp`
+- acesso: privado
+- uso:
+  - upload bruto vindo do admin
 
-Desenho alvo:
+### Bucket final
 
-- bucket privado temporário para upload
-- `Signed URLs` emitidas pelo backend
-- processamento assíncrono
-- promoção do arquivo aprovado para área pública
-- frontend servindo imagens já pela borda GCP
+- nome: `photo-vitoria-gallery-prod`
+- conteúdo:
+  - `images/galeria/**`
+  - `gallery-index.json`
 
-## Produção vs staging
+## Segurança
 
-### Produção
+- `Firebase Auth` para identidade
+- allowlist de e-mails em `ADMIN_ALLOWED_EMAILS`
+- `Turnstile` no site e no admin
+- upload via `Signed URL` curta
+- verificação de existência do objeto antes de processar
+- worker protegido por token interno
+- watermark no arquivo final publicado
 
-- branch: `master`
-- workflow: `.github/workflows/deploy-frontend-gcp.yml`
-- destino: `Cloud Storage + CDN + LB`
+## Borda e entrega
 
-### Staging
+- domínio principal: `www.estudiovitoriafreitas.com.br`
+- frontend servido por `frontend-gateway`
+- mídia servida por `media-gateway`
+- CDN/LB na frente da entrega pública
 
-- branch: `staging`
-- workflow: `.github/workflows/deploy-frontend-vercel-staging.yml`
-- destino: `ambiente de homologação opcional`
+## Situação do legado
 
-## Pendências reais
+### Já removido do caminho principal
 
-- `Cloud Armor` ainda não ativado por quota `SECURITY_POLICIES = 0`
-- certificado gerenciado do GCP precisa estar ativo para fechamento total da borda HTTPS
-- migração de imagens para `GCS + Signed URLs` ainda não iniciada em produção
+- Keycloak como autenticação do admin
+- VM dedicada para o portal de fotos
+- Vercel como runtime principal de produção
+- PR por foto como mecanismo obrigatório de publicação
+
+### Ainda existente no código-base, mas fora do caminho principal
+
+- parte do acervo legado em `public/images/galeria/**`
+- scripts e dependências históricas que ainda podem ser podados
+- documentação antiga em áreas específicas do repositório
+
+## Próximos endurecimentos
+
+- padronizar todos os health checks em `/healthz`
+- adicionar `/readyz` para serviços críticos
+- ativar `Cloud Armor` quando a quota permitir
+- podar dependências legadas que já não fazem parte do runtime

@@ -1,48 +1,52 @@
 # Guia do portal admin
 
-Este guia é para quem vai subir fotos no portal sem precisar usar GitHub manualmente.
+Este guia explica como funciona o portal administrativo atual de fotos.
 
 ## Acesso
 
 - endereço: `/admin/galeria`
-- login: conta Google autorizada
-- segurança adicional: desafio Turnstile antes da entrada
+- login: conta Google autorizada via Firebase
+- proteção adicional: `Cloudflare Turnstile`
 
-Se o acesso for negado, os motivos mais comuns são:
+Se o acesso for negado, as causas mais comuns são:
 
 - a conta Google não está na allowlist
-- o e-mail da conta não está verificado no Google/Firebase
-- o desafio de segurança expirou
+- o desafio Turnstile expirou
+- o navegador bloqueou popup ou sessão do Google
 
 ## Como enviar fotos
 
 1. Abra o portal admin.
-2. Clique em `Entrar com Google`.
-3. Escolha a conta autorizada.
-4. Selecione a galeria correta.
-5. Escolha as fotos do lote.
-6. Envie o formulário.
+2. Entre com a conta Google autorizada.
+3. Resolva o Turnstile.
+4. Escolha a galeria correta.
+5. Selecione as fotos.
+6. Envie o lote.
 
 ## O que acontece depois do envio
 
-O sistema não publica a foto direto no site. Ele passa por um fluxo de segurança e processamento:
+O portal não depende mais de Pull Request para publicar a foto.
 
-1. o backend valida sua sessão
-2. cria uma branch segura no GitHub
-3. abre um Pull Request automático
-4. o workflow otimiza as imagens
-5. o merge publica a alteração
-6. o deploy do site atualiza a produção
+Fluxo atual:
+
+1. o frontend pede uma `Signed URL`
+2. o arquivo sobe para o bucket temporário privado
+3. o backend confirma que o objeto existe
+4. o backend chama o `image-worker`
+5. o worker:
+   - converte para `AVIF`
+   - aplica watermark
+   - publica no bucket final
+   - atualiza `gallery-index.json`
+6. a foto passa a ser servida pela galeria pública
 
 ## Limites atuais
 
-Para manter o fluxo estável neste estágio da arquitetura:
+- até 20 fotos por envio
+- limite de 10 MB por lote no frontend
+- backend com validação adicional do tamanho total
 
-- até 10 MB por lote no frontend
-- backend com limite total de 20 MB por requisição
-- envio em lotes pequenos é o caminho mais seguro
-
-Se houver muitas fotos, envie em grupos menores.
+Enviar em lotes pequenos continua sendo o caminho mais seguro.
 
 ## Problemas comuns
 
@@ -50,35 +54,36 @@ Se houver muitas fotos, envie em grupos menores.
 
 Causas comuns:
 
-- desafio Turnstile expirado
-- conta Google fora da allowlist
-- popup bloqueado no navegador
+- Turnstile expirado
+- conta fora da allowlist
+- popup bloqueado
 
-Tente recarregar a página e repetir o login.
-
-### O envio foi aceito, mas a foto ainda não apareceu
-
-Isso normalmente significa que o fluxo ainda está processando o PR ou que o navegador está com cache.
-
-Tente:
-
-1. aguardar alguns minutos
-2. abrir o site em aba anônima
-3. atualizar a página com recarga completa
+Tente recarregar a página e refazer o login.
 
 ### O envio falhou
 
 Causas comuns:
 
+- arquivo não chegou ao bucket temporário
+- sessão expirou
 - lote grande demais
-- conexão instável
-- formato não permitido
+- instabilidade de rede
 
-A melhor alternativa é reenviar menos arquivos por vez.
+Hoje o backend valida esse caminho antes de iniciar o processamento, então o erro tende a aparecer no lugar certo.
+
+### A foto demorou para aparecer
+
+Se o envio foi aceito, a imagem ainda passa pelo worker. Em seguida, a galeria lê o índice remoto.
+
+Tente:
+
+1. aguardar alguns instantes
+2. abrir em aba anônima
+3. recarregar a página
 
 ## Informações úteis para suporte
 
-Se algo travar, envie para quem mantém o sistema:
+Se algo travar, informe:
 
 - nome da galeria
 - horário aproximado do envio
