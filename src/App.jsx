@@ -34,6 +34,8 @@ import { SidebarProvider, useSidebar } from './context/SidebarContext';
 
 const TURNSTILE_VERIFY_TIMEOUT_MS = 12000;
 const TURNSTILE_RENDER_TIMEOUT_MS = 10000;
+const GLOBAL_TURNSTILE_SESSION_TTL_MS = 30 * 60 * 1000;
+const GLOBAL_TURNSTILE_SESSION_KEY = 'photo-vitoria:global-turnstile-verified-at';
 const PROD_ADMIN_API_URL = 'https://photo-vitoria-admin-api-rxpgnk6khq-uc.a.run.app';
 const PUBLIC_TURNSTILE_SITE_KEY = '0x4AAAAAADJksWK2ejJKf8NL';
 
@@ -399,6 +401,8 @@ export default function App() {
 function GlobalTurnstileMonitor() {
   const [token, setToken] = useState('');
   const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [verified, setVerified] = useState(false);
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const isLocalHost =
@@ -410,7 +414,20 @@ function GlobalTurnstileMonitor() {
     PUBLIC_TURNSTILE_SITE_KEY;
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const verifiedAt = Number(window.sessionStorage.getItem(GLOBAL_TURNSTILE_SESSION_KEY) || 0);
+    if (verifiedAt && Date.now() - verifiedAt < GLOBAL_TURNSTILE_SESSION_TTL_MS) {
+      setVerified(true);
+      setStatus('verified');
+    } else if (verifiedAt) {
+      window.sessionStorage.removeItem(GLOBAL_TURNSTILE_SESSION_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined' || isLocalHost || !siteKey) return;
+    if (verified) return;
 
     const scriptId = 'cf-turnstile-global-visible-script';
     const renderWidget = () => {
@@ -421,12 +438,19 @@ function GlobalTurnstileMonitor() {
         callback: (value) => {
           setToken(value);
           setMessage('');
+          setStatus('verifying');
         },
         'error-callback': () => {
+          setStatus('error');
           setMessage('Nao foi possivel validar agora, mas voce pode continuar navegando.');
         },
         'expired-callback': () => {
           setToken('');
+          setStatus('idle');
+          setVerified(false);
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem(GLOBAL_TURNSTILE_SESSION_KEY);
+          }
           setMessage('A verificacao expirou. Atualize o desafio quando quiser.');
         },
       });
@@ -451,7 +475,7 @@ function GlobalTurnstileMonitor() {
       }
       widgetIdRef.current = null;
     };
-  }, [isLocalHost, siteKey]);
+  }, [isLocalHost, siteKey, verified]);
 
   useEffect(() => {
     if (!token) return;
@@ -461,16 +485,29 @@ function GlobalTurnstileMonitor() {
       try {
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), TURNSTILE_VERIFY_TIMEOUT_MS);
-        await fetch('/api/turnstile/verify', {
+        const response = await fetch('/api/turnstile/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
           signal: controller.signal,
         });
         window.clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error(`Turnstile retornou ${response.status}`);
+        }
+        if (!cancelled) {
+          window.sessionStorage.setItem(GLOBAL_TURNSTILE_SESSION_KEY, String(Date.now()));
+          setVerified(true);
+          setStatus('verified');
+          setMessage('');
+        }
       } catch (error) {
         if (!cancelled) {
           console.warn('Falha na verificacao global do Turnstile:', error);
+          setStatus('error');
+          setVerified(false);
+          window.sessionStorage.removeItem(GLOBAL_TURNSTILE_SESSION_KEY);
+          setMessage('Nao foi possivel confirmar a verificacao agora. Tente novamente em alguns instantes.');
         }
       }
     }
@@ -481,6 +518,10 @@ function GlobalTurnstileMonitor() {
     };
   }, [token]);
 
+  if (verified || isLocalHost || !siteKey) {
+    return null;
+  }
+
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[120]">
       <div className="pointer-events-auto rounded-2xl border border-pink-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
@@ -488,6 +529,11 @@ function GlobalTurnstileMonitor() {
           Verificacao Do Site
         </p>
         <div ref={containerRef} />
+        {status === 'verifying' && !message && (
+          <p className="mt-2 max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
+            Confirmando a verificacao de seguranca...
+          </p>
+        )}
         {message && (
           <p className="mt-2 max-w-[260px] text-[11px] leading-relaxed text-[#8b5e74]">
             {message}
