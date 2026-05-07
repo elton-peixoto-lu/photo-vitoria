@@ -15,6 +15,7 @@ permissions:
 
 env:
   PROJECT_ID: fotovitoria
+  IMAGE_WORKER_URL: ${{ secrets.IMAGE_WORKER_URL }}
 
 jobs:
   process-uploads:
@@ -57,7 +58,7 @@ jobs:
           while IFS= read -r file; do
             case "$file" in
               uploads/pendentes/*|uploads/manifests/*) ;;
-              .github/workflows/process-pending-uploads.yml|scripts/processPendingUploads.mjs|scripts/processPendingUploads.test.mjs)
+              .github/workflows/process-pending-uploads.yml|.github/workflows/deploy-image-worker.yml|scripts/processPendingUploads.mjs|scripts/processPendingUploads.test.mjs|scripts/processManifestWorker.mjs|Dockerfile.image-worker|backend/*|backend/*/*|backend/*/*/*|backend/*/*/*/*)
                 case "$head_ref" in
                   gallery-upload/*) ;;
                   *)
@@ -100,12 +101,50 @@ jobs:
         run: npm run test:uploads
 
       - name: Processar fotos pendentes
+        if: env.IMAGE_WORKER_URL == ''
         env:
           REQUIRE_WATERMARK: "true"
           WATERMARK_LOGO_PATH: assets/watermark-logo.svg
         run: npm run process:uploads
 
+      - name: Processar manifestos via image worker
+        if: env.IMAGE_WORKER_URL != ''
+        env:
+          GH_TOKEN: ${{ secrets.ACTIONS_BYPASS_TOKEN }}
+          IMAGE_WORKER_TOKEN: ${{ secrets.IMAGE_WORKER_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          head_ref="${{ github.event.pull_request.head.ref || github.ref_name }}"
+          repo="${{ github.repository }}"
+
+          mapfile -t manifests < <(find uploads/manifests -type f -name '*.json' | sort)
+          if [ "${#manifests[@]}" -eq 0 ]; then
+            echo "Nenhum manifesto pendente encontrado."
+            exit 0
+          fi
+
+          for manifest_path in "${manifests[@]}"; do
+            echo "Processando ${manifest_path} pelo worker..."
+            payload="$(
+              jq -cn \
+                --arg repo "$repo" \
+                --arg branch "$head_ref" \
+                --arg manifestPath "$manifest_path" \
+                --slurpfile manifest "$manifest_path" \
+                '{repo:$repo, branch:$branch, manifestPath:$manifestPath, manifest:$manifest[0]}'
+            )"
+
+            curl --fail-with-body --silent --show-error \
+              -X POST "${IMAGE_WORKER_URL}/process-manifest" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${IMAGE_WORKER_TOKEN}" \
+              -d "$payload"
+            echo
+          done
+
       - name: Comitar arquivos processados
+        if: env.IMAGE_WORKER_URL == ''
         run: |
           if [ -z "$(git status --porcelain)" ]; then
             echo "Nada para comitar."

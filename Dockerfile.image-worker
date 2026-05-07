@@ -1,0 +1,27 @@
+FROM node:20-slim AS node-deps
+WORKDIR /workspace
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+FROM golang:1.25 AS go-builder
+WORKDIR /src/backend
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o /out/image-worker ./cmd/image-worker
+
+FROM node:20-slim
+WORKDIR /workspace
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+ENV IMAGE_WORKER_REPO_ROOT=/workspace
+ENV IMAGE_WORKER_NODE_BIN=node
+COPY --from=node-deps /workspace/node_modules ./node_modules
+COPY package*.json ./
+COPY scripts ./scripts
+COPY assets ./assets
+COPY public ./public
+COPY src ./src
+COPY --from=go-builder /out/image-worker /usr/local/bin/image-worker
+EXPOSE 8080
+CMD ["image-worker"]
