@@ -23,6 +23,7 @@ env:
   PROJECT_ID: fotovitoria
   REGION: us-central1
   SERVICE_NAME: photo-vitoria-frontend-gateway
+  FRONTEND_RUNTIME_SERVICE_ACCOUNT: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
 
 jobs:
   deploy-frontend-gateway:
@@ -60,5 +61,6 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --region ${{ env.REGION }} \
             --platform managed \
+            --service-account ${{ env.FRONTEND_RUNTIME_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
             --set-secrets="TURNSTILE_SECRET_KEY=photo-vitoria-turnstile-secret:latest"
