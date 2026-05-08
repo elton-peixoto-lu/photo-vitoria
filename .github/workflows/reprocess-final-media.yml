@@ -24,13 +24,14 @@ jobs:
 
     steps:
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+          token_format: id_token
+          id_token_audience: ${{ env.IMAGE_WORKER_URL }}
+          id_token_include_email: true
 
       - name: Wait for worker deployment to be ready
         run: |
@@ -48,10 +49,9 @@ jobs:
 
       - name: Trigger final media reprocess
         run: |
-          IDENTITY_TOKEN="$(gcloud auth print-identity-token --audiences=${{ env.IMAGE_WORKER_URL }})"
           response="$(curl -sS -w '\n%{http_code}' \
             -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
-            -H "Authorization: Bearer ${IDENTITY_TOKEN}" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.id_token }}" \
             -H "Content-Type: application/json" \
             -d '{}')"
           body="$(printf '%s' "$response" | sed '$d')"
