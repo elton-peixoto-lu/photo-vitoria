@@ -13,7 +13,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 env:
   IMAGE_WORKER_URL: https://photo-vitoria-image-worker-rxpgnk6khq-uc.a.run.app
@@ -23,16 +22,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
-          token_format: id_token
-          id_token_audience: ${{ env.IMAGE_WORKER_URL }}
-          id_token_include_email: true
-
       - name: Wait for worker deployment to be ready
         run: |
           for attempt in $(seq 1 40); do
@@ -52,7 +41,7 @@ jobs:
           for attempt in $(seq 1 30); do
             response="$(curl -sS -w '\n%{http_code}' \
               -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
-              -H "Authorization: Bearer ${{ steps.auth.outputs.id_token }}" \
+              -H "Authorization: Bearer ${{ secrets.IMAGE_WORKER_TOKEN }}" \
               -H "Content-Type: application/json" \
               -d '{}')"
             body="$(printf '%s' "$response" | sed '$d')"
