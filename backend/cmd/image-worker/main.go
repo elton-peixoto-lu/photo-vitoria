@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"photo-vitoria-backend/internal/media"
@@ -24,6 +25,7 @@ func main() {
 		logger.Error("falha ao iniciar image worker", "error", err)
 		os.Exit(1)
 	}
+	var reprocessRunning atomic.Bool
 
 	mux := http.NewServeMux()
 	healthHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -73,18 +75,25 @@ func main() {
 			return
 		}
 
-		result, err := service.ReprocessPublishedMedia(r.Context())
-		if err != nil {
-			status := http.StatusBadRequest
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-				status = http.StatusGatewayTimeout
-			}
-			logger.Error("falha ao reprocessar galeria publicada", "error", err)
-			writeJSON(w, status, map[string]string{"error": err.Error()})
+		if !reprocessRunning.CompareAndSwap(false, true) {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "reprocess already running"})
 			return
 		}
 
-		writeJSON(w, http.StatusOK, result)
+		go func() {
+			defer reprocessRunning.Store(false)
+			result, err := service.ReprocessPublishedMedia(context.Background())
+			if err != nil {
+				logger.Error("falha ao reprocessar galeria publicada", "error", err)
+				return
+			}
+			logger.Info("reprocesso da galeria publicado concluido", "folder", result.Folder, "processed", result.Processed)
+		}()
+
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"accepted": true,
+			"message":  "reprocess started",
+		})
 	})
 
 	port := os.Getenv("PORT")

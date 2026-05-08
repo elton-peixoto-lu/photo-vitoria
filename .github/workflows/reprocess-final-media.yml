@@ -47,7 +47,7 @@ jobs:
             body="$(printf '%s' "$response" | sed '$d')"
             status_code="$(printf '%s' "$response" | tail -n1)"
             printf '%s\n' "$body"
-            if [ "$status_code" = "200" ]; then
+            if [ "$status_code" = "200" ] || [ "$status_code" = "202" ] || [ "$status_code" = "409" ]; then
               exit 0
             fi
             echo "Tentativa $attempt falhou com status $status_code. Aguardando nova revisao do worker..."
