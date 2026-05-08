@@ -28,7 +28,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: photo-vitoria-admin-api@fotovitoria.iam.gserviceaccount.com
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
           token_format: id_token
           id_token_audience: ${{ env.IMAGE_WORKER_URL }}
           id_token_include_email: true
@@ -49,12 +49,19 @@ jobs:
 
       - name: Trigger final media reprocess
         run: |
-          response="$(curl -sS -w '\n%{http_code}' \
-            -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
-            -H "Authorization: Bearer ${{ steps.auth.outputs.id_token }}" \
-            -H "Content-Type: application/json" \
-            -d '{}')"
-          body="$(printf '%s' "$response" | sed '$d')"
-          status_code="$(printf '%s' "$response" | tail -n1)"
-          printf '%s\n' "$body"
-          test "$status_code" = "200"
+          for attempt in $(seq 1 30); do
+            response="$(curl -sS -w '\n%{http_code}' \
+              -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
+              -H "Authorization: Bearer ${{ steps.auth.outputs.id_token }}" \
+              -H "Content-Type: application/json" \
+              -d '{}')"
+            body="$(printf '%s' "$response" | sed '$d')"
+            status_code="$(printf '%s' "$response" | tail -n1)"
+            printf '%s\n' "$body"
+            if [ "$status_code" = "200" ]; then
+              exit 0
+            fi
+            echo "Tentativa $attempt falhou com status $status_code. Aguardando nova revisao do worker..."
+            sleep 15
+          done
+          exit 1
