@@ -103,6 +103,7 @@ jobs:
 
       - name: Trigger final media reprocess
         run: |
+          triggered=0
           for attempt in $(seq 1 30); do
             response="$(curl -sS -w '\n%{http_code}' \
               -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
@@ -113,9 +114,36 @@ jobs:
             status_code="$(printf '%s' "$response" | tail -n1)"
             printf '%s\n' "$body"
             if [ "$status_code" = "200" ] || [ "$status_code" = "202" ] || [ "$status_code" = "409" ]; then
-              exit 0
+              triggered=1
+              break
             fi
             echo "Tentativa $attempt falhou com status $status_code. Aguardando nova revisao do worker..."
             sleep 15
           done
+          if [ "$triggered" != "1" ]; then
+            exit 1
+          fi
+
+          for attempt in $(seq 1 120); do
+            status_json="$(curl -sS "${{ env.IMAGE_WORKER_URL }}/reprocess-status")"
+            printf '%s\n' "$status_json"
+            if STATUS_JSON="$status_json" python3 - <<'PY'
+import json, os, sys
+payload = json.loads(os.environ["STATUS_JSON"])
+if payload.get("running") is True:
+    sys.exit(2)
+if payload.get("last_error"):
+    print(payload["last_error"])
+    sys.exit(1)
+sys.exit(0)
+PY
+              exit 0
+            fi
+            result=$?
+            if [ "$result" = "1" ]; then
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "Timeout aguardando reprocesso finalizar."
           exit 1

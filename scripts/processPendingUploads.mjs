@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG = {
   watermarkLogoPath:
     process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png'),
   watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.055),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.04),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
 
@@ -258,7 +258,7 @@ async function createWatermarkOverlay(metadata, config) {
   const accentMaxWidth = Math.max(1, Math.round(width * 0.16));
   const accentMaxHeight = Math.max(1, Math.round(height * 0.12));
 
-  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.32)));
+  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(110, Math.round(width * 0.26)));
   const accentTargetWidth = Math.min(accentMaxWidth, Math.max(56, Math.round(width * 0.1)));
 
   const centerLogo = await sharp(logoBuffer, { density: 288 })
@@ -269,7 +269,7 @@ async function createWatermarkOverlay(metadata, config) {
       withoutEnlargement: true,
     })
     .ensureAlpha(config.watermarkOpacity)
-    .rotate(-18, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .rotate(-16, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize({
       width: centerMaxWidth,
       height: centerMaxHeight,
@@ -286,7 +286,7 @@ async function createWatermarkOverlay(metadata, config) {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .ensureAlpha(Math.min(config.watermarkOpacity * 0.5, 0.022))
+    .ensureAlpha(Math.min(config.watermarkOpacity * 0.45, 0.016))
     .png()
     .toBuffer({ resolveWithObject: true });
 

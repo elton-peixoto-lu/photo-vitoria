@@ -11,7 +11,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 const GALLERY_DIR = process.env.GALLERY_DIR || path.join(ROOT_DIR, 'public', 'images', 'galeria');
 const WATERMARK_LOGO_PATH =
   process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png');
-const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.055);
+const WATERMARK_OPACITY = Number(process.env.WATERMARK_OPACITY || 0.04);
 
 async function listAvifFiles(dir) {
   const out = [];
@@ -63,7 +63,7 @@ async function createOverlayForImage(width, height, logoBuffer) {
   const accentMaxWidth = Math.max(1, Math.round(width * 0.16));
   const accentMaxHeight = Math.max(1, Math.round(height * 0.12));
 
-  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(120, Math.round(width * 0.32)));
+  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(110, Math.round(width * 0.26)));
   const accentTargetWidth = Math.min(accentMaxWidth, Math.max(56, Math.round(width * 0.1)));
 
   const centerLogo = await sharp(logoBuffer, { density: 288 })
@@ -74,7 +74,7 @@ async function createOverlayForImage(width, height, logoBuffer) {
       withoutEnlargement: true,
     })
     .ensureAlpha(WATERMARK_OPACITY)
-    .rotate(-18, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .rotate(-16, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize({
       width: centerMaxWidth,
       height: centerMaxHeight,
@@ -91,7 +91,7 @@ async function createOverlayForImage(width, height, logoBuffer) {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .ensureAlpha(Math.min(WATERMARK_OPACITY * 0.5, 0.022))
+    .ensureAlpha(Math.min(WATERMARK_OPACITY * 0.45, 0.016))
     .png()
     .toBuffer({ resolveWithObject: true });
 

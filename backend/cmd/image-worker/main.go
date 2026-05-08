@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -26,6 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 	var reprocessRunning atomic.Bool
+	reprocessState := &galleryReprocessState{}
 
 	mux := http.NewServeMux()
 	healthHandler := func(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +36,9 @@ func main() {
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/healthz", healthHandler)
 	mux.HandleFunc("/readyz", healthHandler)
+	mux.HandleFunc("/reprocess-status", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, reprocessState.snapshot(reprocessRunning.Load()))
+	})
 	mux.HandleFunc("/process-manifest", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", "POST")
@@ -76,17 +81,23 @@ func main() {
 		}
 
 		if !reprocessRunning.CompareAndSwap(false, true) {
-			writeJSON(w, http.StatusConflict, map[string]string{"error": "reprocess already running"})
+			writeJSON(w, http.StatusConflict, map[string]any{
+				"error":  "reprocess already running",
+				"status": reprocessState.snapshot(true),
+			})
 			return
 		}
+		reprocessState.markStarted()
 
 		go func() {
 			defer reprocessRunning.Store(false)
 			result, err := service.ReprocessPublishedMedia(context.Background())
 			if err != nil {
+				reprocessState.markFinished(err)
 				logger.Error("falha ao reprocessar galeria publicada", "error", err)
 				return
 			}
+			reprocessState.markFinished(nil)
 			logger.Info("reprocesso da galeria publicado concluido", "folder", result.Folder, "processed", result.Processed)
 		}()
 
@@ -112,6 +123,49 @@ func main() {
 		logger.Error("falha ao iniciar image worker", "error", err)
 		os.Exit(1)
 	}
+}
+
+type galleryReprocessState struct {
+	mu           sync.Mutex
+	LastStarted  time.Time `json:"last_started,omitempty"`
+	LastFinished time.Time `json:"last_finished,omitempty"`
+	LastError    string    `json:"last_error,omitempty"`
+}
+
+func (s *galleryReprocessState) markStarted() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.LastStarted = time.Now().UTC()
+	s.LastError = ""
+}
+
+func (s *galleryReprocessState) markFinished(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.LastFinished = time.Now().UTC()
+	if err != nil {
+		s.LastError = err.Error()
+		return
+	}
+	s.LastError = ""
+}
+
+func (s *galleryReprocessState) snapshot(running bool) map[string]any {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	payload := map[string]any{
+		"running": running,
+	}
+	if !s.LastStarted.IsZero() {
+		payload["last_started"] = s.LastStarted.Format(time.RFC3339)
+	}
+	if !s.LastFinished.IsZero() {
+		payload["last_finished"] = s.LastFinished.Format(time.RFC3339)
+	}
+	if s.LastError != "" {
+		payload["last_error"] = s.LastError
+	}
+	return payload
 }
 
 func authorizeRequest(ctx context.Context, r *http.Request) error {
