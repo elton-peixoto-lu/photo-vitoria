@@ -65,6 +65,21 @@ jobs:
                   if status == "completed" and conclusion != "success":
                       raise SystemExit(f"worker deploy failed: {conclusion}")
               else:
+                  fallback = next(
+                      (
+                          run for run in payload.get("workflow_runs", [])
+                          if run.get("name") == "Deploy Image Worker to Cloud Run"
+                          and run.get("status") == "completed"
+                          and run.get("conclusion") == "success"
+                      ),
+                      None,
+                  )
+                  if fallback:
+                      print(
+                          "usando ultimo deploy de worker bem-sucedido "
+                          f"{fallback['id']} para disparar o reprocess"
+                      )
+                      sys.exit(0)
                   print("worker deploy run ainda nao apareceu")
 
               time.sleep(10)
