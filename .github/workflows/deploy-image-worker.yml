@@ -62,5 +62,8 @@ jobs:
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --service-account ${{ env.RUNTIME_SERVICE_ACCOUNT }} \
             --allow-unauthenticated \
+            --cpu 2 \
+            --memory 2Gi \
+            --timeout 3600 \
             --set-env-vars="IMAGE_WORKER_REPO_ROOT=/workspace,IMAGE_WORKER_NODE_BIN=node,IMAGE_WORKER_PROCESS_SCRIPT=/workspace/scripts/processManifestWorker.mjs,WATERMARK_LOGO_PATH=/workspace/assets/watermark-logo.png,FINAL_MEDIA_BUCKET=${{ env.FINAL_MEDIA_BUCKET }},GALLERY_INDEX_OBJECT=gallery-index.json,IMAGE_WORKER_AUDIENCE=${{ env.SERVICE_URL }},IMAGE_WORKER_ALLOWED_CALLER=${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}" \
             --set-secrets="GITHUB_UPLOAD_TOKEN=photo-vitoria-github-upload-token:latest,IMAGE_WORKER_BEARER_TOKEN=photo-vitoria-image-worker-token:latest"
