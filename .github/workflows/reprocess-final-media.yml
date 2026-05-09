@@ -22,70 +22,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Wait for matching worker deploy
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          import sys
-          import time
-          import urllib.request
-
-          repo = os.environ["REPO"]
-          sha = os.environ["SHA"]
-          token = os.environ["GH_TOKEN"]
-          url = f"https://api.github.com/repos/{repo}/actions/runs?per_page=50"
-          headers = {
-              "Accept": "application/vnd.github+json",
-              "Authorization": f"Bearer {token}",
-              "User-Agent": "codex",
-          }
-
-          for attempt in range(1, 61):
-              req = urllib.request.Request(url, headers=headers)
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  payload = json.load(response)
-
-              matches = [
-                  run for run in payload.get("workflow_runs", [])
-                  if run.get("head_sha") == sha and run.get("name") == "Deploy Image Worker to Cloud Run"
-              ]
-
-              if matches:
-                  run = matches[0]
-                  status = run.get("status")
-                  conclusion = run.get("conclusion")
-                  print(f"worker deploy run {run['id']} -> {status}/{conclusion}")
-                  if status == "completed" and conclusion == "success":
-                      sys.exit(0)
-                  if status == "completed" and conclusion != "success":
-                      raise SystemExit(f"worker deploy failed: {conclusion}")
-              else:
-                  fallback = next(
-                      (
-                          run for run in payload.get("workflow_runs", [])
-                          if run.get("name") == "Deploy Image Worker to Cloud Run"
-                          and run.get("status") == "completed"
-                          and run.get("conclusion") == "success"
-                      ),
-                      None,
-                  )
-                  if fallback:
-                      print(
-                          "usando ultimo deploy de worker bem-sucedido "
-                          f"{fallback['id']} para disparar o reprocess"
-                      )
-                      sys.exit(0)
-                  print("worker deploy run ainda nao apareceu")
-
-              time.sleep(10)
-
-          raise SystemExit("timeout aguardando deploy do worker")
-          PY
+        run: node scripts/waitForWorkerDeploy.mjs "$REPO" "$SHA"
 
       - name: Wait for worker deployment to be ready
         run: |
@@ -124,27 +69,4 @@ jobs:
             exit 1
           fi
 
-          for attempt in $(seq 1 120); do
-            status_json="$(curl -sS "${{ env.IMAGE_WORKER_URL }}/reprocess-status")"
-            printf '%s\n' "$status_json"
-            if STATUS_JSON="$status_json" python3 - <<'PY'
-            import json, os, sys
-            payload = json.loads(os.environ["STATUS_JSON"])
-            if payload.get("running") is True:
-                sys.exit(2)
-            if payload.get("last_error"):
-                print(payload["last_error"])
-                sys.exit(1)
-            sys.exit(0)
-PY
-            then
-              exit 0
-            fi
-            result=$?
-            if [ "$result" = "1" ]; then
-              exit 1
-            fi
-            sleep 15
-          done
-          echo "Timeout aguardando reprocesso finalizar."
-          exit 1
+          node scripts/pollWorkerReprocessStatus.mjs "${{ env.IMAGE_WORKER_URL }}" 120 15
