@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! gcloud compute security-policies describe "${POLICY_NAME}" --global >/dev/null 2>&1; then
+          if ! gcloud compute security-policies describe "${POLICY_NAME}" --project="${PROJECT_ID}" --global >/dev/null 2>&1; then
             gcloud compute security-policies create "${POLICY_NAME}" \
               --project="${PROJECT_ID}" \
               --type=CLOUD_ARMOR_EDGE \

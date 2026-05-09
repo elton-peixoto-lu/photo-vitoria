@@ -69,4 +69,4 @@ jobs:
             exit 1
           fi
 
-          node scripts/pollWorkerReprocessStatus.mjs "${{ env.IMAGE_WORKER_URL }}" 120 15
+          node scripts/pollWorkerReprocessStatus.mjs "${{ env.IMAGE_WORKER_URL }}" 480 15
