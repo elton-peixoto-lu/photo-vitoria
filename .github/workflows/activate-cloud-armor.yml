@@ -17,11 +17,6 @@ env:
   BACKEND_BUCKET_NAME: photo-vitoria-site-backend
   RATE_LIMIT_COUNT: "300"
   RATE_LIMIT_INTERVAL_SEC: "60"
-  CLOUDSDK_CORE_PROJECT: fotovitoria
-  CLOUDSDK_PROJECT: fotovitoria
-  GCLOUD_PROJECT: fotovitoria
-  GCP_PROJECT: fotovitoria
-  GOOGLE_CLOUD_PROJECT: fotovitoria
 
 jobs:
   activate-cloud-armor:
@@ -38,12 +33,19 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Select target project
-        run: gcloud config set project "${{ env.PROJECT_ID }}"
+        run: |
+          unset CLOUDSDK_CORE_PROJECT CLOUDSDK_PROJECT GCLOUD_PROJECT GCP_PROJECT GOOGLE_CLOUD_PROJECT
+          gcloud config set project "${{ env.PROJECT_ID }}"
+          gcloud config list --format="text(core.project,core.account)"
 
       - name: Create or update Cloud Armor edge policy
         shell: bash
         run: |
           set -euo pipefail
+          unset CLOUDSDK_CORE_PROJECT CLOUDSDK_PROJECT GCLOUD_PROJECT GCP_PROJECT GOOGLE_CLOUD_PROJECT
+
+          gcloud services enable compute.googleapis.com --project="${PROJECT_ID}"
+          gcloud services enable cloudresourcemanager.googleapis.com --project="${PROJECT_ID}" || true
 
           if ! gcloud compute security-policies describe "${POLICY_NAME}" --project="${PROJECT_ID}" --global >/dev/null 2>&1; then
             gcloud compute security-policies create "${POLICY_NAME}" \
