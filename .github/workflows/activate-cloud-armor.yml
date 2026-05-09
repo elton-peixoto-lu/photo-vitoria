@@ -17,6 +17,11 @@ env:
   BACKEND_BUCKET_NAME: photo-vitoria-site-backend
   RATE_LIMIT_COUNT: "300"
   RATE_LIMIT_INTERVAL_SEC: "60"
+  CLOUDSDK_CORE_PROJECT: fotovitoria
+  CLOUDSDK_PROJECT: fotovitoria
+  GCLOUD_PROJECT: fotovitoria
+  GCP_PROJECT: fotovitoria
+  GOOGLE_CLOUD_PROJECT: fotovitoria
 
 jobs:
   activate-cloud-armor:
@@ -42,21 +47,25 @@ jobs:
 
           if ! gcloud compute security-policies describe "${POLICY_NAME}" --global >/dev/null 2>&1; then
             gcloud compute security-policies create "${POLICY_NAME}" \
+              --project="${PROJECT_ID}" \
               --type=CLOUD_ARMOR_EDGE \
               --description="Protecao de borda do frontend principal" \
               --global
           fi
 
           if gcloud compute security-policies rules describe 1000 \
+            --project="${PROJECT_ID}" \
             --security-policy="${POLICY_NAME}" \
             --global >/dev/null 2>&1; then
             gcloud compute security-policies rules delete 1000 \
+              --project="${PROJECT_ID}" \
               --security-policy="${POLICY_NAME}" \
               --global \
               --quiet
           fi
 
           gcloud compute security-policies rules create 1000 \
+            --project="${PROJECT_ID}" \
             --security-policy="${POLICY_NAME}" \
             --global \
             --action=throttle \
@@ -73,6 +82,7 @@ jobs:
         run: |
           set -euo pipefail
           gcloud compute backend-buckets update "${BACKEND_BUCKET_NAME}" \
+            --project="${PROJECT_ID}" \
             --global \
             --edge-security-policy="${POLICY_NAME}"
 
@@ -81,5 +91,6 @@ jobs:
         run: |
           set -euo pipefail
           gcloud compute backend-buckets describe "${BACKEND_BUCKET_NAME}" \
+            --project="${PROJECT_ID}" \
             --global \
             --format="yaml(name,edgeSecurityPolicy,enableCdn)"
