@@ -261,7 +261,7 @@ func (s *Service) ReprocessPublishedMedia(ctx context.Context) (*ProcessResponse
 	cmd.Env = append(os.Environ(),
 		"GALLERY_DIR="+publicDir,
 		"WATERMARK_LOGO_PATH="+s.watermarkPath,
-		"WATERMARK_OPACITY=0.055",
+		"WATERMARK_OPACITY=0.026",
 	)
 
 	out, err := cmd.CombinedOutput()

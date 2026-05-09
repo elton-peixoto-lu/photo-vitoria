@@ -128,14 +128,14 @@ jobs:
             status_json="$(curl -sS "${{ env.IMAGE_WORKER_URL }}/reprocess-status")"
             printf '%s\n' "$status_json"
             if STATUS_JSON="$status_json" python3 - <<'PY'
-import json, os, sys
-payload = json.loads(os.environ["STATUS_JSON"])
-if payload.get("running") is True:
-    sys.exit(2)
-if payload.get("last_error"):
-    print(payload["last_error"])
-    sys.exit(1)
-sys.exit(0)
+            import json, os, sys
+            payload = json.loads(os.environ["STATUS_JSON"])
+            if payload.get("running") is True:
+                sys.exit(2)
+            if payload.get("last_error"):
+                print(payload["last_error"])
+                sys.exit(1)
+            sys.exit(0)
 PY
             then
               exit 0
