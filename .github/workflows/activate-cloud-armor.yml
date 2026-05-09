@@ -1,0 +1,85 @@
+name: Activate Cloud Armor
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/activate-cloud-armor.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: fotovitoria
+  POLICY_NAME: photo-vitoria-site-armor
+  BACKEND_BUCKET_NAME: photo-vitoria-site-backend
+  RATE_LIMIT_COUNT: "300"
+  RATE_LIMIT_INTERVAL_SEC: "60"
+
+jobs:
+  activate-cloud-armor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Select target project
+        run: gcloud config set project "${{ env.PROJECT_ID }}"
+
+      - name: Create or update Cloud Armor edge policy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! gcloud compute security-policies describe "${POLICY_NAME}" --global >/dev/null 2>&1; then
+            gcloud compute security-policies create "${POLICY_NAME}" \
+              --type=CLOUD_ARMOR_EDGE \
+              --description="Protecao de borda do frontend principal" \
+              --global
+          fi
+
+          if gcloud compute security-policies rules describe 1000 \
+            --security-policy="${POLICY_NAME}" \
+            --global >/dev/null 2>&1; then
+            gcloud compute security-policies rules delete 1000 \
+              --security-policy="${POLICY_NAME}" \
+              --global \
+              --quiet
+          fi
+
+          gcloud compute security-policies rules create 1000 \
+            --security-policy="${POLICY_NAME}" \
+            --global \
+            --action=throttle \
+            --src-ip-ranges="*" \
+            --rate-limit-threshold-count="${RATE_LIMIT_COUNT}" \
+            --rate-limit-threshold-interval-sec="${RATE_LIMIT_INTERVAL_SEC}" \
+            --conform-action=allow \
+            --exceed-action=deny-429 \
+            --enforce-on-key=ip \
+            --description="Rate limit basico por IP no frontend"
+
+      - name: Attach policy to backend bucket
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud compute backend-buckets update "${BACKEND_BUCKET_NAME}" \
+            --global \
+            --edge-security-policy="${POLICY_NAME}"
+
+      - name: Verify attachment
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud compute backend-buckets describe "${BACKEND_BUCKET_NAME}" \
+            --global \
+            --format="yaml(name,edgeSecurityPolicy,enableCdn)"
