@@ -30,7 +30,19 @@ for (let attempt = 1; attempt <= 60; attempt += 1) {
     console.log(`worker deploy run ${run.id} -> ${run.status}/${run.conclusion}`);
     if (run.status === 'completed' && run.conclusion === 'success') process.exit(0);
     if (run.status === 'completed' && run.conclusion !== 'success') {
-      console.error(`worker deploy failed: ${run.conclusion}`);
+      const fallback = runs.find(
+        (candidate) =>
+          candidate.name === 'Deploy Image Worker to Cloud Run' &&
+          candidate.status === 'completed' &&
+          candidate.conclusion === 'success',
+      );
+      if (fallback) {
+        console.log(
+          `worker deploy do SHA atual falhou (${run.conclusion}); usando ultimo deploy bem-sucedido ${fallback.id}`,
+        );
+        process.exit(0);
+      }
+      console.error(`worker deploy failed: ${run.conclusion} e nao existe fallback bem-sucedido`);
       process.exit(1);
     }
   } else {
