@@ -7,7 +7,6 @@ import BaloesAnimados from './BaloesAnimados';
 import { ActionButtons, CONTATO } from './ContatoInfo';
 import HTMLFlipBook from 'react-pageflip';
 import React from 'react';
-import { LOGO_URL } from '../constants';
 import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUtils';
 import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
@@ -298,23 +297,6 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                     }}
                     draggable={false}
                   />
-                  {/* Marcas d'água visuais sobre a foto, espalhadas (desktop apenas) */}
-                  <div className="absolute inset-0 z-20 pointer-events-none select-none hidden md:block">
-                    {[...Array(7)].map((_, j) => (
-                      <img
-                        key={j}
-                        src={LOGO_URL}
-                        alt="Marca d'água logo"
-                        className="absolute opacity-10 w-24 md:w-32"
-                        style={{
-                          top: `${10 + 12 * j}%`,
-                          left: `${j % 2 === 0 ? 5 : 60}%`,
-                          transform: `rotate(${j % 2 === 0 ? 8 : -12}deg)`
-                        }}
-                        draggable={false}
-                      />
-                    ))}
-                  </div>
                 </div>
               ))}
             </Slider>
