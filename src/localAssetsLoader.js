@@ -129,9 +129,7 @@ const LOCAL_IMAGES_MAP = {
     "edc4ueah6cwvxguifmya_jm63dn.avif",
     "g5iyxwan5xan2yd9kvsd_oqdlqv.avif",
     "ljux2wq2yv7u5tfbx566_ex5tyc.avif",
-    "m3ptql45moedtyiu95b2.avif",
     "mx7qfltqchnji7obzib3_zg3dif.avif",
-    "w7e8ej2x8oiy16pwa6j3.avif",
     "xfzdkucp2xgwx0bfszto_jx2ixr.avif",
     "zlqk8kyrkg16jgfkgg25_jzy4ul.avif"
   ],
