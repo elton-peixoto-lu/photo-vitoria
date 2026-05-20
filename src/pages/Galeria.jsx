@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { FaSearch } from 'react-icons/fa';
 import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../components/ContatoInfo';
 import SafeImageWithBlur from '../components/ImageWithBlur';
-import { LOGO_URL } from '../constants';
 import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
 
@@ -94,23 +93,6 @@ export default function Galeria() {
           background: 'linear-gradient(135deg, #ffe4ef 0%, #fffbe9 60%, #fff 100%)',
           opacity: 0.7,
         }} />
-      </div>
-      {/* Marcas d'água decorativas sobre o conteúdo (glassmorphism) */}
-      <div className="absolute inset-0 z-30 pointer-events-none select-none">
-        {[...Array(5)].map((_, i) => (
-          <img
-            key={i}
-            src={LOGO_URL}
-            alt="Marca d'água logo"
-            className="absolute opacity-5 w-32 md:w-40"
-            style={{
-              top: `${10 + 16 * i}%`,
-              left: `${i % 2 === 0 ? 10 : 60}%`,
-              transform: `rotate(${i % 2 === 0 ? 8 : -12}deg)`
-            }}
-            draggable={false}
-          />
-        ))}
       </div>
       {/* Bloco principal centralizado */}
       <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
