@@ -1,31 +1,40 @@
 #!/usr/bin/env node
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT_DIR = path.resolve(__dirname, '..');
-const GALLERY_DIR = path.join(ROOT_DIR, 'public', 'images', 'galeria');
+import fs from 'fs/promises';
+import path from 'path';
 
-async function main() {
+const [galleryDirArg, outputArg] = process.argv.slice(2);
+
+if (!galleryDirArg || !outputArg) {
+  console.error('Uso: node scripts/generateGalleryIndex.mjs <galleryDir> <outputFile>');
+  process.exit(1);
+}
+
+const galleryDir = path.resolve(galleryDirArg);
+const outputFile = path.resolve(outputArg);
+
+async function buildGalleryIndex(rootDir) {
+  const entries = await fs.readdir(rootDir, { withFileTypes: true });
   const index = {};
-  const folders = await fs.readdir(GALLERY_DIR, { withFileTypes: true });
 
-  for (const folder of folders) {
-    if (!folder.isDirectory()) continue;
-    const folderPath = path.join(GALLERY_DIR, folder.name);
-    const files = await fs.readdir(folderPath, { withFileTypes: true });
-    index[folder.name] = files
-      .filter((file) => file.isFile() && !file.name.startsWith('.'))
-      .map((file) => file.name)
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const folderName = entry.name;
+    const folderPath = path.join(rootDir, folderName);
+    const folderEntries = await fs.readdir(folderPath, { withFileTypes: true });
+
+    index[folderName] = folderEntries
+      .filter((item) => item.isFile() && !item.name.startsWith('.'))
+      .map((item) => item.name)
       .sort((left, right) => left.localeCompare(right));
   }
 
-  process.stdout.write(`${JSON.stringify(index, null, 2)}\n`);
+  return index;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+const index = await buildGalleryIndex(galleryDir);
+await fs.writeFile(outputFile, `${JSON.stringify(index, null, 2)}\n`, 'utf8');
+console.log(`gallery-index gerado em ${outputFile}`);

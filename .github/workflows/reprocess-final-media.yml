@@ -5,17 +5,18 @@ on:
     branches: [master]
     paths:
       - 'assets/watermark-logo.png'
-      - 'backend/**'
       - 'scripts/reprocessPublishedGalleryWatermark.mjs'
-      - '.github/workflows/deploy-image-worker.yml'
+      - 'scripts/generateGalleryIndex.mjs'
       - '.github/workflows/reprocess-final-media.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 env:
-  IMAGE_WORKER_URL: ${{ secrets.IMAGE_WORKER_URL }}
+  PROJECT_ID: fotovitoria
+  FINAL_MEDIA_BUCKET: photo-vitoria-gallery-prod
 
 jobs:
   reprocess-media:
@@ -25,55 +26,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Wait for matching worker deploy
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-        run: node scripts/waitForWorkerDeploy.mjs "$REPO" "$SHA"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
 
-      - name: Wait for worker deployment to be ready
-        if: env.IMAGE_WORKER_URL != ''
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Select target project
+        run: gcloud config set project "${{ env.PROJECT_ID }}"
+
+      - name: Download published gallery from GCS
         run: |
-          for attempt in $(seq 1 40); do
-            status_code=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.IMAGE_WORKER_URL }}/health")
-            if [ "$status_code" = "200" ]; then
-              echo "Worker respondeu healthz."
-              exit 0
-            fi
-            echo "Aguardando worker ficar pronto (tentativa $attempt)..."
-            sleep 15
-          done
-          echo "Worker nao ficou pronto a tempo."
-          exit 1
+          mkdir -p public/images/galeria
+          gcloud storage rsync --recursive "gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria" "./public/images/galeria"
 
-      - name: Fail when IMAGE_WORKER_URL secret is missing
-        if: env.IMAGE_WORKER_URL == ''
+      - name: Reprocess gallery watermark locally
+        run: node scripts/reprocessPublishedGalleryWatermark.mjs
+
+      - name: Regenerate gallery index
+        run: node scripts/generateGalleryIndex.mjs "./public/images/galeria" "./gallery-index.json"
+
+      - name: Upload processed gallery to GCS
         run: |
-          echo "Secret IMAGE_WORKER_URL ausente."
-          exit 1
-
-      - name: Trigger final media reprocess
-        run: |
-          triggered=0
-          for attempt in $(seq 1 30); do
-            response="$(curl -sS -w '\n%{http_code}' \
-              -X POST "${{ env.IMAGE_WORKER_URL }}/reprocess-published-media" \
-              -H "Authorization: Bearer ${{ secrets.IMAGE_WORKER_TOKEN }}" \
-              -H "Content-Type: application/json" \
-              -d '{}')"
-            body="$(printf '%s' "$response" | sed '$d')"
-            status_code="$(printf '%s' "$response" | tail -n1)"
-            printf '%s\n' "$body"
-            if [ "$status_code" = "200" ] || [ "$status_code" = "202" ] || [ "$status_code" = "409" ]; then
-              triggered=1
-              break
-            fi
-            echo "Tentativa $attempt falhou com status $status_code. Aguardando nova revisao do worker..."
-            sleep 15
-          done
-          if [ "$triggered" != "1" ]; then
-            exit 1
-          fi
-
-          node scripts/pollWorkerReprocessStatus.mjs "${{ env.IMAGE_WORKER_URL }}" 480 15
+          gcloud storage rsync --recursive "./public/images/galeria" "gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria"
+          gcloud storage cp "./gallery-index.json" "gs://${{ env.FINAL_MEDIA_BUCKET }}/gallery-index.json" \
+            --content-type="application/json" \
+            --cache-control="public,max-age=300"
