@@ -111,7 +111,14 @@ function preloadGaleria(pasta) {
 
 function Logo({ collapsed = false, mobile = false }) {
   const useIconMark = collapsed || mobile;
-  const imageSrc = useIconMark ? BRAND_ICON_URL : LOGO_URL;
+  const preferredSrc = useIconMark ? BRAND_ICON_URL : LOGO_URL;
+  const fallbackSrc = useIconMark ? '/logo.png' : '/logo.svg';
+  const [imageSrc, setImageSrc] = useState(preferredSrc);
+
+  useEffect(() => {
+    setImageSrc(preferredSrc);
+  }, [preferredSrc]);
+
   const imageAlt = useIconMark ? 'Monograma Fotos da Vitória' : 'Logo Fotos da Vitória';
   const wrapperClassName = collapsed
     ? 'w-10 h-10'
@@ -133,6 +140,15 @@ function Logo({ collapsed = false, mobile = false }) {
           src={imageSrc}
           alt={imageAlt}
           className="max-h-full w-full object-contain drop-shadow transition-all duration-300"
+          loading="eager"
+          decoding="async"
+          onError={(event) => {
+            if (event.currentTarget.src.endsWith('/logo.svg')) {
+              event.currentTarget.style.visibility = 'hidden';
+              return;
+            }
+            setImageSrc(fallbackSrc);
+          }}
         />
         </div>
       </div>
