@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_WORKER_URL: https://photo-vitoria-image-worker-rxpgnk6khq-uc.a.run.app
+  IMAGE_WORKER_URL: ${{ secrets.IMAGE_WORKER_URL }}
 
 jobs:
   reprocess-media:
@@ -33,6 +33,7 @@ jobs:
         run: node scripts/waitForWorkerDeploy.mjs "$REPO" "$SHA"
 
       - name: Wait for worker deployment to be ready
+        if: env.IMAGE_WORKER_URL != ''
         run: |
           for attempt in $(seq 1 40); do
             status_code=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.IMAGE_WORKER_URL }}/health")
@@ -44,6 +45,12 @@ jobs:
             sleep 15
           done
           echo "Worker nao ficou pronto a tempo."
+          exit 1
+
+      - name: Fail when IMAGE_WORKER_URL secret is missing
+        if: env.IMAGE_WORKER_URL == ''
+        run: |
+          echo "Secret IMAGE_WORKER_URL ausente."
           exit 1
 
       - name: Trigger final media reprocess
