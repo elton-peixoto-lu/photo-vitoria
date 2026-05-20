@@ -21,7 +21,7 @@ const summary = await runProcessPendingUploads({
   watermarkEnabled: true,
   watermarkLogoPath: input.watermarkLogoPath,
   watermarkLogoUrl: '',
-  watermarkOpacity: 0.1,
+  watermarkOpacity: 0.009,
   requireWatermark: input.requireWatermark !== false,
 });
 

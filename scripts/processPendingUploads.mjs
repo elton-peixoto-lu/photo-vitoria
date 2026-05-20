@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG = {
   watermarkLogoPath:
     process.env.WATERMARK_LOGO_PATH || path.join(ROOT_DIR, 'assets', 'watermark-logo.png'),
   watermarkLogoUrl: process.env.WATERMARK_LOGO_URL || '',
-  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.014),
+  watermarkOpacity: Number(process.env.WATERMARK_OPACITY || 0.009),
   requireWatermark: process.env.REQUIRE_WATERMARK !== 'false',
 };
 
@@ -253,31 +253,10 @@ async function createWatermarkOverlay(metadata, config) {
 
   const horizontalPadding = Math.max(12, Math.round(width * 0.05));
   const verticalPadding = Math.max(12, Math.round(height * 0.05));
-  const centerMaxWidth = Math.max(1, width - horizontalPadding * 2);
-  const centerMaxHeight = Math.max(1, height - verticalPadding * 2);
-  const accentMaxWidth = Math.max(1, Math.round(width * 0.16));
-  const accentMaxHeight = Math.max(1, Math.round(height * 0.12));
+  const accentMaxWidth = Math.max(1, Math.round(width * 0.1));
+  const accentMaxHeight = Math.max(1, Math.round(height * 0.08));
 
-  const centerTargetWidth = Math.min(centerMaxWidth, Math.max(72, Math.round(width * 0.14)));
-  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(56, Math.round(width * 0.1)));
-
-  const centerLogo = await sharp(logoBuffer, { density: 288 })
-    .resize({
-      width: centerTargetWidth,
-      height: centerMaxHeight,
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .ensureAlpha(config.watermarkOpacity)
-    .rotate(-15, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .resize({
-      width: centerMaxWidth,
-      height: centerMaxHeight,
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .png()
-    .toBuffer({ resolveWithObject: true });
+  const accentTargetWidth = Math.min(accentMaxWidth, Math.max(42, Math.round(width * 0.065)));
 
   const accentLogo = await sharp(logoBuffer, { density: 288 })
     .resize({
@@ -286,19 +265,16 @@ async function createWatermarkOverlay(metadata, config) {
       fit: 'inside',
       withoutEnlargement: true,
     })
-    .ensureAlpha(Math.min(config.watermarkOpacity * 0.35, 0.006))
+    .ensureAlpha(Math.min(config.watermarkOpacity, 0.009))
     .png()
     .toBuffer({ resolveWithObject: true });
 
-  const centerLeft = Math.max(0, Math.round((width - centerLogo.info.width) / 2));
-  const centerTop = Math.max(0, Math.round((height - centerLogo.info.height) / 2));
   const topRightLeft = Math.max(0, width - accentLogo.info.width - horizontalPadding);
   const topRightTop = Math.max(0, verticalPadding);
   const bottomLeftLeft = Math.max(0, horizontalPadding);
   const bottomLeftTop = Math.max(0, height - accentLogo.info.height - verticalPadding);
 
   return [
-    { input: centerLogo.data, left: centerLeft, top: centerTop },
     { input: accentLogo.data, left: topRightLeft, top: topRightTop },
     { input: accentLogo.data, left: bottomLeftLeft, top: bottomLeftTop },
   ];
