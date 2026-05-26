@@ -1,0 +1,28 @@
+name: Healthcheck Gallery Index
+
+on:
+  schedule:
+    - cron: '15 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate gallery index URLs
+        env:
+          GALLERY_INDEX_URL: https://www.estudiovitoriafreitas.com.br/gallery-index.json
+          GALLERY_MEDIA_BASE_URL: https://www.estudiovitoriafreitas.com.br
+        run: node scripts/checkGalleryIndexHealth.mjs

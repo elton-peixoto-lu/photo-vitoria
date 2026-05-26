@@ -58,6 +58,9 @@ jobs:
       - name: Regenerate gallery index
         run: node scripts/generateGalleryIndex.mjs "./public/images/galeria" "./gallery-index.json"
 
+      - name: Validate gallery index before upload
+        run: node scripts/validateGalleryIndexFile.mjs "./public/images/galeria" "./gallery-index.json"
+
       - name: Upload processed gallery to GCS
         run: |
           gcloud storage rsync --recursive "./public/images/galeria" "gs://${{ env.FINAL_MEDIA_BUCKET }}/images/galeria"
