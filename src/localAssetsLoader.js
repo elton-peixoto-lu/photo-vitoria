@@ -4,6 +4,8 @@ import { getGaleriaCache, setGaleriaCache } from './cacheGalerias.js';
 const PROD_MEDIA_GATEWAY_ORIGIN =
   'https://photo-vitoria-media-gateway-rxpgnk6khq-uc.a.run.app';
 let remoteGalleryIndexPromise = null;
+let remoteGalleryIndexLoadedAt = 0;
+const REMOTE_GALLERY_INDEX_TTL_MS = 30 * 1000;
 
 function getViteEnv() {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
@@ -24,7 +26,7 @@ function getMediaBaseUrl() {
     currentHostname === 'estudiovitoriafreitas.com.br' ||
     currentHostname === 'www.estudiovitoriafreitas.com.br'
   ) {
-    return '';
+    return PROD_MEDIA_GATEWAY_ORIGIN;
   }
 
   return '';
@@ -37,7 +39,10 @@ function buildGalleryAssetUrl(pasta, filename) {
 }
 
 async function loadRemoteGalleryIndex() {
-  if (remoteGalleryIndexPromise) {
+  if (
+    remoteGalleryIndexPromise &&
+    Date.now() - remoteGalleryIndexLoadedAt < REMOTE_GALLERY_INDEX_TTL_MS
+  ) {
     return remoteGalleryIndexPromise;
   }
 
@@ -47,17 +52,21 @@ async function loadRemoteGalleryIndex() {
   }
 
   remoteGalleryIndexPromise = (async () => {
-    const response = await fetch(`${baseUrl}/gallery-index.json`, {
-      headers: { Accept: 'application/json' }
+    const response = await fetch(`${baseUrl}/gallery-index.json?t=${Date.now()}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
     });
 
     if (!response.ok) {
       throw new Error(`Gallery index retornou ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    remoteGalleryIndexLoadedAt = Date.now();
+    return data;
   })().catch((error) => {
     remoteGalleryIndexPromise = null;
+    remoteGalleryIndexLoadedAt = 0;
     throw error;
   });
 
