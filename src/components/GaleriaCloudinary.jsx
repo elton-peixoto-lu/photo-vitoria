@@ -11,6 +11,14 @@ import { getCloudinaryOptimizedUrl, getCloudinaryBlurUrl } from '../cloudinaryUt
 import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
 
+function toRasterCandidate(url) {
+  if (!url) return '';
+  if (/\.avif(\?.*)?$/i.test(url)) {
+    return url.replace(/\.avif(\?.*)?$/i, '.jpg$1');
+  }
+  return url;
+}
+
 export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, onFimAlbum, semSetasDots = false, modoGridOnly = false }) {
   const [fotos, setFotos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -175,16 +183,19 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
       <div className="w-full flex flex-col items-center justify-center gap-6 py-6 px-0 select-none" onContextMenu={(e) => e.preventDefault()}>
         {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
           <div key={foto?.public_id || foto?.url || i} className="w-full flex flex-col items-center justify-center">
-            <img
-              src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
-              alt={`Foto ${i + 1}`}
-              className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white"
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              onError={(event) => {
-                event.currentTarget.src = getGalleryFallbackUrl(pasta);
-              }}
-            />
+            <picture className="w-full">
+              <source srcSet={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))} type="image/avif" />
+              <img
+                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || '/images/fallback.jpg'}
+                alt={`Foto ${i + 1}`}
+                className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                onError={(event) => {
+                  event.currentTarget.src = '/images/fallback.jpg';
+                }}
+              />
+            </picture>
           </div>
         ))}
         {/* Action bar: abaixo de todas as fotos no mobile */}
@@ -198,17 +209,20 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
       <>
         {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
           <div key={foto?.public_id || foto?.url || i} className="relative w-full h-64 flex items-center justify-center">
-            <img
-              src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
-              alt={`Foto ${i + 1}`}
-              className="rounded-lg shadow-md w-full h-full object-cover"
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              style={{ background: '#fff' }}
-              onError={(event) => {
-                event.currentTarget.src = getGalleryFallbackUrl(pasta);
-              }}
-            />
+            <picture className="w-full h-full">
+              <source srcSet={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))} type="image/avif" />
+              <img
+                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || '/images/fallback.jpg'}
+                alt={`Foto ${i + 1}`}
+                className="rounded-lg shadow-md w-full h-full object-cover"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{ background: '#fff' }}
+                onError={(event) => {
+                  event.currentTarget.src = '/images/fallback.jpg';
+                }}
+              />
+            </picture>
           </div>
         ))}
       </>
@@ -268,7 +282,12 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
               autoplaySpeed={3000}
               className="w-full h-[60vw] max-h-[70vh] md:min-h-[400px] md:max-h-screen"
             >
-              {(Array.isArray(fotos) ? fotos : []).map((foto, i) => (
+              {(Array.isArray(fotos) ? fotos : []).map((foto, i) => {
+                const imageUrl = resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta);
+                const blurUrl = getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(imageUrl));
+                const optimizedImageUrl = getCloudinaryOptimizedUrl(imageUrl);
+                const rasterCandidate = toRasterCandidate(optimizedImageUrl) || '/images/fallback.jpg';
+                return (
                 <div
                   key={foto?.public_id || foto?.url || i}
                   className="flex flex-col md:flex-row items-center justify-center w-full h-auto min-h-[200px] md:min-h-[400px] md:max-h-screen relative group px-2 py-4"
@@ -276,7 +295,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 >
                   {/* Blur up: imagem borrada de fundo */}
                   <img
-                    src={getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta)))}
+                    src={blurUrl}
                     alt=""
                     className="absolute inset-0 w-full h-full object-cover filter blur-lg scale-105 transition-opacity duration-500"
                     style={{ opacity: sizes[i]?.loaded ? 0 : 1, zIndex: 1 }}
@@ -284,21 +303,25 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                     draggable={false}
                   />
                   {/* Foto real com fade */}
-                  <img
-                    src={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))}
-                    alt={`Foto ${i + 1}`}
-                    className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow transition-opacity duration-700 bg-white"
-                    style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
-                    onContextMenu={e => e.preventDefault()}
-                    onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
-                    onError={(event) => {
-                      event.currentTarget.src = getGalleryFallbackUrl(pasta);
-                      setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
-                    }}
-                    draggable={false}
-                  />
+                  <picture className="relative z-10">
+                    <source srcSet={optimizedImageUrl} type="image/avif" />
+                    <img
+                      src={rasterCandidate}
+                      alt={`Foto ${i + 1}`}
+                      className="relative z-10 max-h-[50vh] max-w-[90vw] md:max-h-[80vh] md:max-w-full w-auto h-auto object-contain rounded-lg shadow transition-opacity duration-700 bg-white"
+                      style={{ margin: '0 auto', opacity: sizes[i]?.loaded ? 1 : 0 }}
+                      onContextMenu={e => e.preventDefault()}
+                      onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
+                      onError={(event) => {
+                        event.currentTarget.src = '/images/fallback.jpg';
+                        setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
+                      }}
+                      draggable={false}
+                    />
+                  </picture>
                 </div>
-              ))}
+                );
+              })}
             </Slider>
           </div>
         )}
