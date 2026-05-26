@@ -15,7 +15,7 @@ export default function SafeImageWithBlur({ src, fallback, alt, className = '', 
   const [triedFallback, setTriedFallback] = useState(false);
   const imgSrc = error ? fallback : src;
   const hasRenderableSource = Boolean(imgSrc || fallback);
-  const fallbackRaster = '/images/fallback.jpg';
+  const fallbackRaster = fallback || '';
   const rasterSrc = toRasterCandidate(imgSrc) || fallback || fallbackRaster;
   const isAvifSource = /\.avif(\?.*)?$/i.test(String(imgSrc || ''));
 

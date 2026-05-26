@@ -212,7 +212,16 @@ export function resolveGalleryImageUrl(image) {
 }
 
 export function getGalleryFallbackUrl(pasta) {
-  return `/images/fallback.avif?gallery=${encodeURIComponent(pasta)}`;
+  const label = encodeURIComponent(String(pasta || 'galeria').replace(/-/g, ' '));
+  return `data:image/svg+xml;utf8,` +
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 1500'>` +
+    `<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>` +
+    `<stop offset='0%' stop-color='%23ffe4ef'/>` +
+    `<stop offset='100%' stop-color='%23fffbe9'/>` +
+    `</linearGradient></defs>` +
+    `<rect width='1200' height='1500' fill='url(%23g)'/>` +
+    `<text x='50%25' y='50%25' text-anchor='middle' font-family='Arial,sans-serif' font-size='42' fill='%23c35a86'>${label}</text>` +
+    `</svg>`;
 }
 
 export function filterRenderableGalleryImages(images = [], pasta = 'galeria') {

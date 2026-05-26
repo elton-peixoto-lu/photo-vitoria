@@ -186,13 +186,13 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             <picture className="w-full">
               <source srcSet={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))} type="image/avif" />
               <img
-                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || '/images/fallback.jpg'}
+                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || getGalleryFallbackUrl(pasta)}
                 alt={`Foto ${i + 1}`}
                 className="w-full max-w-full h-auto object-contain rounded-lg shadow bg-white"
                 draggable={false}
                 onContextMenu={(e) => e.preventDefault()}
                 onError={(event) => {
-                  event.currentTarget.src = '/images/fallback.jpg';
+                  event.currentTarget.src = getGalleryFallbackUrl(pasta);
                 }}
               />
             </picture>
@@ -212,14 +212,14 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
             <picture className="w-full h-full">
               <source srcSet={getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))} type="image/avif" />
               <img
-                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || '/images/fallback.jpg'}
+                src={toRasterCandidate(getCloudinaryOptimizedUrl(resolveGalleryImageUrl(foto))) || getGalleryFallbackUrl(pasta)}
                 alt={`Foto ${i + 1}`}
                 className="rounded-lg shadow-md w-full h-full object-cover"
                 draggable={false}
                 onContextMenu={(e) => e.preventDefault()}
                 style={{ background: '#fff' }}
                 onError={(event) => {
-                  event.currentTarget.src = '/images/fallback.jpg';
+                  event.currentTarget.src = getGalleryFallbackUrl(pasta);
                 }}
               />
             </picture>
@@ -286,7 +286,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                 const imageUrl = resolveGalleryImageUrl(foto) || getGalleryFallbackUrl(pasta);
                 const blurUrl = getCloudinaryOptimizedUrl(getCloudinaryBlurUrl(imageUrl));
                 const optimizedImageUrl = getCloudinaryOptimizedUrl(imageUrl);
-                const rasterCandidate = toRasterCandidate(optimizedImageUrl) || '/images/fallback.jpg';
+                const rasterCandidate = toRasterCandidate(optimizedImageUrl) || getGalleryFallbackUrl(pasta);
                 return (
                 <div
                   key={foto?.public_id || foto?.url || i}
@@ -313,7 +313,7 @@ export default function GaleriaCloudinary({ pasta, autoAvancarFimAlbum = false, 
                       onContextMenu={e => e.preventDefault()}
                       onLoad={e => setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true, w: e.target.naturalWidth, h: e.target.naturalHeight } }))}
                       onError={(event) => {
-                        event.currentTarget.src = '/images/fallback.jpg';
+                        event.currentTarget.src = getGalleryFallbackUrl(pasta);
                         setSizes(s => ({ ...s, [i]: { ...(s[i] || {}), loaded: true } }));
                       }}
                       draggable={false}
