@@ -138,6 +138,13 @@ const LOCAL_IMAGES_MAP = {
     "edc4ueah6cwvxguifmya_jm63dn.avif",
     "g5iyxwan5xan2yd9kvsd_oqdlqv.avif",
     "ljux2wq2yv7u5tfbx566_ex5tyc.avif",
+    "manual-128-vlf-0650.avif",
+    "manual-14-vlf-0061.avif",
+    "manual-5-vlf-0012.avif",
+    "manual-71-vlf-0347.avif",
+    "manual-77-vlf-0375.avif",
+    "manual-79-vlf-0381.avif",
+    "manual-pre-wedding-141-vlf-0696.avif",
     "mx7qfltqchnji7obzib3_zg3dif.avif",
     "xfzdkucp2xgwx0bfszto_jx2ixr.avif",
     "zlqk8kyrkg16jgfkgg25_jzy4ul.avif"
