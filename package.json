@@ -6,13 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "test:uploads": "node --test scripts/processPendingUploads.test.mjs scripts/localAssetsLoader.test.mjs",
     "preview": "vite preview",
-    "server": "node server/frontendServer.mjs",
-    "admin-api": "node server/adminGalleryPrServer.mjs",
-    "process:uploads": "node scripts/processPendingUploads.mjs",
-    "smoke:gcp": "node scripts/smokeFrontendGcp.mjs"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@google-cloud/storage": "^7.16.0",
