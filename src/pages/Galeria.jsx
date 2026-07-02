@@ -5,10 +5,14 @@ import { CONTATO, BotaoWhatsapp, BotaoEmail, BotaoInstagram } from '../component
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { filterRenderableGalleryImages, getGalleryFallbackUrl, loadGalleryImages, resolveGalleryImageUrl } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
-import { PUBLIC_GALLERIES } from '../galleryConfig';
-import InfantilNoticeBanner from '../components/InfantilNoticeBanner';
 
-const ALBUNS = PUBLIC_GALLERIES.map((album) => ({ ...album, folder: album.key }));
+const ALBUNS = [
+  { key: 'casamentos', label: 'Casamentos', folder: 'casamentos' },
+  { key: 'infantil', label: 'Infantil', folder: 'infantil' },
+  { key: 'femininos', label: 'Femininos', folder: 'femininos' },
+  { key: 'pre-weding', label: 'Pre-Weding', folder: 'pre-weding' },
+  { key: 'noivas', label: 'Noivas', folder: 'noivas' },
+];
 
 export default function Galeria() {
   const [fotosPorAlbum, setFotosPorAlbum] = useState({});
@@ -99,9 +103,6 @@ export default function Galeria() {
           <BotaoInstagram />
         </div>
         <div className="w-full max-w-7xl flex-1 flex flex-col items-center justify-center px-4 md:px-8">
-          <div className="w-full mb-10">
-            <InfantilNoticeBanner />
-          </div>
           {/* Grids por álbum */}
           {!carregando && ALBUNS.map(album => (
             <section key={album.key} className="w-full mb-16 relative flex flex-col items-center justify-center">

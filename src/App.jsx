@@ -10,7 +10,6 @@ import AdminGaleriaUploads from './admin/AdminGaleriaUploads';
 import Home from './pages/Home';
 import GaleriaCloudinary from './components/GaleriaCloudinary';
 import Galeria from './pages/Galeria';
-import GaleriaInfantilAviso from './pages/GaleriaInfantilAviso';
 import Obrigado from './pages/Obrigado';
 import Lgpd from './pages/Lgpd';
 import {
@@ -24,7 +23,7 @@ import {
   FaHeart,
   FaEnvelope,
 } from 'react-icons/fa';
-import { PiImagesLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight, PiCalendarLight } from 'react-icons/pi';
+import { PiImagesLight, PiBabyLight, PiHeartLight, PiFlowerLotusLight, PiCameraLight, PiCrownLight, PiEnvelopeSimpleLight, PiHouseLight, PiCalendarLight } from 'react-icons/pi';
 import { CONTATO } from './components/ContatoInfo';
 import { BRAND_ICON_URL, LOGO_URL } from './constants';
 import CookieBanner from './components/CookieBanner';
@@ -53,6 +52,7 @@ if (import.meta.env.DEV) {
 const MENU = [
   { label: 'Home', path: '/', icon: <PiHouseLight size={20} /> },
   { label: 'Galeria', path: '/galeria', icon: <PiImagesLight size={22} /> },
+  { label: 'Infantil', path: '/galeria-infantil', icon: <PiBabyLight size={20} /> },
   { label: 'Casamentos', path: '/galeria-casamentos', icon: <PiHeartLight size={20} /> },
   { label: 'Femininos', path: '/galeria-femininos', icon: <PiFlowerLotusLight size={20} /> },
   { label: 'Pre-Weding', path: '/galeria-pre-weding', icon: <PiCameraLight size={20} /> },
@@ -161,6 +161,7 @@ function Sidebar({ mobile = false, open = false, onClose }) {
   const MOBILE_MENU_PATHS = [
     '/',
     '/galeria',
+    '/galeria-infantil',
     '/galeria-casamentos',
     '/galeria-femininos',
     '/galeria-pre-weding',
@@ -901,7 +902,7 @@ function AppContent({ menuOpen, setMenuOpen, showInstall, handleInstallClick }) 
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/galeria" element={<Galeria />} />
-              <Route path="/galeria-infantil" element={<GaleriaInfantilAviso />} />
+              <Route path="/galeria-infantil" element={<GaleriaCloudinary pasta="infantil" semSetasDots={true} />} />
               <Route path="/galeria-casamentos" element={<GaleriaCloudinary pasta="casamentos" semSetasDots={true} />} />
               <Route path="/galeria-femininos" element={<GaleriaCloudinary pasta="femininos" semSetasDots={true} />} />
               <Route path="/galeria-pre-weding" element={<GaleriaCloudinary pasta="pre-weding" semSetasDots={true} />} />

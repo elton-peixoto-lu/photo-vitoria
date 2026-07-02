@@ -7,7 +7,6 @@ import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
 import ServicosSection from '../components/ServicosSection';
 import { useResponsive } from '../hooks/useResponsive';
-import { PUBLIC_GALLERIES } from '../galleryConfig';
 
 const DEPOIMENTOS = [
   {
@@ -34,7 +33,7 @@ function useImagensEstudio() {
       console.log('🎨 Carregando imagens para página Estúdio...');
       
       const todasImagens = [];
-      const galerias = PUBLIC_GALLERIES.map((galeria) => galeria.key);
+      const galerias = ['casamentos', 'femininos', 'infantil', 'noivas', 'pre-weding'];
       
       // Carrega algumas imagens de cada galeria
       for (const galeria of galerias) {

@@ -6,7 +6,6 @@ import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
 import { useResponsive } from '../hooks/useResponsive';
-import { PUBLIC_GALLERIES } from '../galleryConfig';
 
 // Hook para carregar imagens da galeria usando sistema híbrido
 function useImagensContato() {
@@ -18,7 +17,7 @@ function useImagensContato() {
       console.log('📧 Carregando imagens para página Contato...');
       
       const todasImagens = [];
-      const galerias = PUBLIC_GALLERIES.map((galeria) => galeria.key);
+      const galerias = ['casamentos', 'femininos', 'noivas', 'infantil', 'pre-weding'];
       
       // Carrega 1 imagem de cada galeria
       for (const galeria of galerias) {
