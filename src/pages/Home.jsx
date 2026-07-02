@@ -7,6 +7,8 @@ import { LOGO_URL } from '../constants';
 import { loadGalleryImages } from '../localAssetsLoader';
 import { gerarUrlWhatsApp, MENSAGENS_WHATSAPP } from '../utils/whatsappUtils';
 import { useResponsive } from '../hooks/useResponsive';
+import { PUBLIC_GALLERIES } from '../galleryConfig';
+import InfantilNoticeBanner from '../components/InfantilNoticeBanner';
 
 // export default function Home() {
 //   return null;
@@ -17,13 +19,7 @@ export default function Home() {
   const { columnsForGallery, isMobile, isDesktop } = useResponsive();
 
   // Todas as galerias disponíveis
-  const galerias = [
-    { key: 'casamentos', label: 'Casamentos', url: '/galeria-casamentos' },
-    { key: 'infantil', label: 'Infantil', url: '/galeria-infantil' },
-    { key: 'femininos', label: 'Femininos', url: '/galeria-femininos' },
-    { key: 'pre-weding', label: 'Pre-Wedding', url: '/galeria-pre-weding' },
-    { key: 'noivas', label: 'Noivas', url: '/galeria-noivas' }
-  ];
+  const galerias = PUBLIC_GALLERIES;
 
   // Carrega 1 imagem aleatória de cada galeria
   useEffect(() => {
@@ -142,6 +138,11 @@ export default function Home() {
           >
             Fale com a fotógrafa
           </a>
+        </div>
+      </section>
+      <section className="relative z-10 w-full px-4 pb-6 md:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <InfantilNoticeBanner />
         </div>
       </section>
       {/* Seção das galerias com imagem principal e 4 miniaturas */}
