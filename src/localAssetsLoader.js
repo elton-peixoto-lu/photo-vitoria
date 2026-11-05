@@ -15,7 +15,7 @@ function getViteEnv() {
   return {};
 }
 
-function getMediaBaseUrl() {
+export function getMediaBaseUrl() {
   const configuredBaseUrl = String(getViteEnv().VITE_MEDIA_BASE_URL || '').trim();
   if (configuredBaseUrl) {
     return configuredBaseUrl.replace(/\/$/, '');

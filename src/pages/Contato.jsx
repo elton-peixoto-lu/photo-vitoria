@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { CONTATO, BotaoInstagram, BotaoWhatsapp, BotaoEmail } from '../components/ContatoInfo.jsx';
 import SafeImageWithBlur from '../components/ImageWithBlur';
 import { LOGO_URL } from '../constants';
-import { loadGalleryImages } from '../localAssetsLoader';
+import { loadGalleryImages, getMediaBaseUrl } from '../localAssetsLoader';
+
+const FOTO_VITORIA_URL = `${getMediaBaseUrl()}/images/galeria/contato/vitoria-contato.avif`;
 import { useResponsive } from '../hooks/useResponsive';
 
 // Hook para carregar imagens da galeria usando sistema híbrido
@@ -172,11 +174,21 @@ export default function Contato() {
             )}
             
             {/* Breve história */}
+            <div className="max-w-4xl w-full flex flex-col md:flex-row items-center gap-6 md:gap-10 mb-8 mx-auto">
+            <motion.img
+              src={FOTO_VITORIA_URL}
+              alt="Vitória Freitas, fotógrafa"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 1 }}
+              className="w-48 md:w-64 aspect-[3/4] object-cover object-top rounded-2xl shadow-lg border-4 border-white/80 flex-shrink-0"
+              draggable={false}
+            />
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 1 }}
-              className="max-w-3xl w-full text-center text-lg md:text-xl text-pink-300 mb-8 mx-auto font-medium font-sans drop-shadow-sm"
+              className="flex-1 text-center md:text-left text-lg md:text-xl text-pink-300 font-medium font-sans drop-shadow-sm"
             >
               <span className="text-3xl md:text-4xl text-pink-200 font-bold mr-2 align-top">"</span>
               Olá! Sou Vitória, apaixonada por eternizar momentos especiais através da fotografia.<br />
@@ -188,6 +200,7 @@ export default function Contato() {
               <br />Será um prazer registrar sua história!
               <span className="text-3xl md:text-4xl text-pink-200 font-bold ml-2 align-bottom">"</span>
             </motion.p>
+            </div>
             
             {/* Contatos */}
             <motion.div
